@@ -39,7 +39,7 @@ on the Mac Studio by a gauntlet loop of builder and critic sub-agents. Started
 | Meshy image-to-3D | submitted for both approved concepts. Task IDs below. Results expire ~3 days after completion; fetch with `GET https://api.meshy.ai/openapi/v1/image-to-3d/<id>` and download model_urls.glb |
 | Waves 1+ | not started; gated on harness |
 
-Meshy tasks: mikasa `01a05f0f-0ac8-7194-be07-89eb90e0a418` (MESHY_OK /private/tmp/claude-501/-Users-darkeatermidir/eb3e7b58-17a9-4ce7-ba95-0e67671b4c8f/scratchpad/meshy/mikasa ['model.fbx', 'model.glb', 'task.json', 'tex_base_color.png', 'tex_metallic.png', 'tex_normal.png', 'tex_roughness.png', 'thumb.png']), titan `01a05f0f-0ac9-762c-88b9-ffaa0b53d6b9` (MESHY_OK /private/tmp/claude-501/-Users-darkeatermidir/eb3e7b58-17a9-4ce7-ba95-0e67671b4c8f/scratchpad/meshy/titan ['model.fbx', 'model.glb', 'task.json', 'tex_base_color.png', 'tex_metallic.png', 'tex_normal.png', 'tex_roughness.png', 'thumb.png']).
+Meshy raw output (GLB, FBX, PBR textures, thumb) is committed under `assets/characters/<name>/meshy-raw/`. NOT yet approved by the user, not finished, not rigged. Next step: turntable render on the Studio, send to user.
 
 ## The one rule that is not in the docs
 
