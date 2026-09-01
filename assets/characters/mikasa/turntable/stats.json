@@ -1,0 +1,19 @@
+{
+ "dims": [
+  1.206396996974945,
+  0.46402108669281006,
+  1.9022462368011475
+ ],
+ "tris": 31129,
+ "objects": [
+  "mesh_node"
+ ],
+ "materials": [
+  "material"
+ ],
+ "images": [
+  "base_color",
+  "metallic_roughness",
+  "normal"
+ ]
+}
