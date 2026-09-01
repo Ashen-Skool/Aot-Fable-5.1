@@ -84,6 +84,9 @@ namespace Shared.Capture
             try { poses = LoadPoses(); }
             catch (Exception e) { Fail("poses: " + e.Message); yield break; }
             if (poses.Count == 0) { Fail("no poses matched"); yield break; }
+            Log("[Capture] start piece=" + piece + " poses=" + poses.Count + " frame=" + Time.frameCount);
+            yield return null;
+            Log("[Capture] ticking frame=" + Time.frameCount + " t=" + Time.time.ToString("0.000"));
 
             var cam = Ctx.Get<Camera>("camera") ?? Camera.main;
             if (cam == null) { Fail("no camera"); yield break; }
@@ -105,8 +108,8 @@ namespace Shared.Capture
                 cam.transform.position = p.Pos;
                 cam.transform.LookAt(p.LookAt);
                 cam.fieldOfView = p.fov;
+                // NOTE: no WaitForEndOfFrame here: it never fires in -batchmode (no game view).
                 for (int i = 0; i < settleFrames; i++) yield return null;
-                yield return new WaitForEndOfFrame();
                 try
                 {
                     var prevTarget = cam.targetTexture;
