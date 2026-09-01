@@ -1,5 +1,5 @@
 [
-  { "name": "overview", "pos": [70, 90, -90],  "lookAt": [0, 0, 10],   "fov": 55, "timeSec": 0.0 },
+  { "name": "overview", "pos": [80, 60, -100], "lookAt": [0, 0, 20],   "fov": 60, "timeSec": 0.0 },
   { "name": "street",   "pos": [0, 2, -55],    "lookAt": [0, 4, 60],   "fov": 70, "timeSec": 0.5 },
   { "name": "titan",    "pos": [10, 2, 42],    "lookAt": [0, 11, 60],  "fov": 60, "timeSec": 1.0 },
   { "name": "flight",   "pos": [-6, 30, -70],  "lookAt": [0, 6, 60],   "fov": 75, "timeSec": 1.5 }

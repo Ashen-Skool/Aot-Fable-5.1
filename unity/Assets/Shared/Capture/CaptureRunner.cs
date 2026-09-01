@@ -36,7 +36,8 @@ namespace Shared.Capture
         public string[] only;          // pose names filter, null = all
         public string shotsDir;        // absolute dir; default <repo>/shots
         public string posesPath;       // absolute path; default <repo>/tools/poses.json
-        public int settleFrames = 2;
+        public int settleFrames = 3;
+        public int warmupFrames = 10;   // first frames render before textures/skybox are uploaded
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void AutoStart()
@@ -87,6 +88,7 @@ namespace Shared.Capture
             Log("[Capture] start piece=" + piece + " poses=" + poses.Count + " frame=" + Time.frameCount);
             yield return null;
             Log("[Capture] ticking frame=" + Time.frameCount + " t=" + Time.time.ToString("0.000"));
+            for (int i = 0; i < warmupFrames; i++) yield return null;
 
             var cam = Ctx.Get<Camera>("camera") ?? Camera.main;
             if (cam == null) { Fail("no camera"); yield break; }
