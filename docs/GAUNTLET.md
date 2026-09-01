@@ -56,3 +56,17 @@ into `main` after each wave.
 5. No per-frame allocation. Preallocate in Awake.
 6. Never emit .meta by hand; let Unity generate them and commit them.
 7. `tools/test.sh` and `tools/build.sh mac` must pass before you commit.
+
+## Studio working trees (learned the hard way)
+
+The main clone `~/dev/aot-fable-5.1` on the Studio is the director's and is
+always on `main`. Every builder works in its own worktree:
+
+```
+git -C ~/dev/aot-fable-5.1 worktree add ~/dev/lanes/<lane> -b lane/<lane> origin/main
+```
+
+Unity opens the project inside that worktree (`~/dev/lanes/<lane>/unity`),
+which means a separate Library import per lane (a few minutes, once). Never
+`git checkout` in a tree you did not create. The Studio has push access via
+gh; commit and push from there directly.
