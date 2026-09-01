@@ -22,7 +22,7 @@ sun = bpy.data.objects.new("Sun", bpy.data.lights.new("Sun", "SUN")); sun.data.e
 cam = bpy.data.objects.new("Cam", bpy.data.cameras.new("Cam")); bpy.context.collection.objects.link(cam); bpy.context.scene.camera = cam
 cam.data.lens = 50
 r = max(dims) * 1.6 + 0.5
-sc = bpy.context.scene; sc.render.engine = "BLENDER_EEVEE" if hasattr(bpy.types, "SCENE_OT_render") and "BLENDER_EEVEE" in [e.identifier for e in bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items] else "BLENDER_EEVEE_NEXT"
+sc = bpy.context.scene; sc.render.engine = "BLENDER_EEVEE"
 sc.render.resolution_x = 768; sc.render.resolution_y = 1024; sc.render.film_transparent = False
 import mathutils
 for i in range(n):
