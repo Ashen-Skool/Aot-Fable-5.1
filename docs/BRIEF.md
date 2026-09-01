@@ -66,3 +66,23 @@ frames are used only for critique, never shipped.
 WASD move · Mouse look · RMB hold: fire hooks at aim point (both anchors) ·
 Space hold: gas boost along cable · Shift: reel in · LMB: slash · Q: swap
 blades · Ctrl: dodge · Esc: pause.
+
+## Proxy rigs (piece 15) and the model swap contract
+
+Mikasa and both Titans are modelled and rigged by the director with the user,
+later. Everything else is built against **proxies**: articulated humanoids
+made from primitives with the exact bone names and zone colliders the final
+models will carry, so swapping the art is a mesh swap, not a rewrite.
+
+- `Shared/Rigs/HumanoidProxy.cs` builds a Unity Humanoid-compatible hierarchy
+  (Hips, Spine, Chest, Neck, Head, L/R UpperArm/LowerArm/Hand, L/R
+  UpperLeg/LowerLeg/Foot) from capsules, scaled by a height parameter.
+- Titan proxies add zone colliders as children with these exact names:
+  `Zone_Nape`, `Zone_HamstringL`, `Zone_HamstringR`, `Zone_ArmL`,
+  `Zone_ArmR`, `Zone_Eyes`. Combat and AI only ever talk to zones.
+- Mikasa's proxy adds `Socket_HookL`, `Socket_HookR` (hips), `Socket_BladeL`,
+  `Socket_BladeR` (hands), `Socket_Scarf` (neck).
+- Animation goes through `Shared/Rigs/IPoser` (Idle, Run, Fly, Slash, Land,
+  Stagger, Kneel, Swipe, Grab, Stomp, Sprint). Proxies implement it
+  procedurally; the final rigs implement it with Animator clips. Callers never
+  reference clips.
