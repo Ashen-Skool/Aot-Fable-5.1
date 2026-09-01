@@ -36,10 +36,9 @@ on the Mac Studio by a gauntlet loop of builder and critic sub-agents. Started
 | Harness (piece 0) | **in progress on branch `lane/harness`** (Unity project, URP, capture rig, build/test scripts, progress page). The sub-agent building it dies with the session; pick up from the branch's last commit and `docs/HARNESS.md` if present, else finish per the Piece 0 spec in docs/GAUNTLET.md |
 | Progress page | GitHub Pages enabled on main; `progress.html` at the site root once the harness lands |
 | Concept art | `assets/concepts/` — user approved **mikasa-2.png** and **titan-2.png** |
-| Meshy image-to-3D | submitted for both approved concepts. Task IDs below. Results expire ~3 days after completion; fetch with `GET https://api.meshy.ai/openapi/v1/image-to-3d/<id>` and download model_urls.glb |
+| Meshy meshes | DONE, committed under `assets/characters/<name>/meshy-raw/` (GLB+FBX+PBR, ~31k tris, both 1.9 m tall). Turntables in `assets/characters/<name>/turntable/sheet.jpg`. User said they look good for now, provisional until seen in-engine |
 | Waves 1+ | not started; gated on harness |
 
-Meshy raw output (GLB, FBX, PBR textures, thumb) is committed under `assets/characters/<name>/meshy-raw/`. NOT yet approved by the user, not finished, not rigged. Next step: turntable render on the Studio, send to user.
 
 ## The one rule that is not in the docs
 
@@ -53,7 +52,7 @@ docs/BRIEF.md. Do not let a sub-agent touch the character models.
 
 1. `git fetch`; look at every `lane/*` branch; merge what is green.
 2. Finish or verify the harness; validate it (open the PNGs) before trusting a critic.
-3. Poll the Meshy tasks; run turntables; get the user's approval.
+3. Character finish pass WITH the user: scale Titan to 15 m, Mikasa to 1.70 m; decimate if needed; cel-shade materials; auto-rig (Meshy rigging API or Blender Rigify/UBC skeleton retarget from `assets/staged/anim/`); export GLB into `unity/Assets/Characters/`. He approves each stage from a turntable render.
 4. Launch wave 1 (proxies, town, ODM flight, camera) with the prompts in docs/PROMPTS.md,
    max 4 builders, one critic each, loop until win.
 5. Keep the user updated every 10 minutes and push after every merge.
