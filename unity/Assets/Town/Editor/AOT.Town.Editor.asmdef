@@ -1,0 +1,19 @@
+{
+    "name": "AOT.Town.Editor",
+    "rootNamespace": "",
+    "references": [
+        "AOT.Shared",
+        "AOT.Town"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
