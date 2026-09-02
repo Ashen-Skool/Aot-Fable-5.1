@@ -1,0 +1,10 @@
+{
+  "piece": "proxies",
+  "round": 4,
+  "verdict": "win",
+  "gap": "Stagger vs Slash silhouettes are now clearly distinct on titan and boss: Stagger pitches the torso ~45-60deg forward with both arms flung up overhead and legs scissored wide (back leg kicked high), vs Slash's moderate lean with one arm extended straight forward and trailing legs. The ambiguity from round 3 is resolved. Note: titan/boss Stagger reads as a forward-diving stumble rather than the specifically requested 'backward off-balance' -- weight and arms pitch forward-down, not backward. Mikasa's front-facing Stagger (arms flung up/back, legs braced backward) does read correctly as backward off-balance. No regressions spotted elsewhere: Sprint/Stomp/Grab/Swipe/Kneel/Land/Run/Idle/Fly all read as distinct, unambiguous poses.",
+  "score": 8,
+  "shots": ["proxies_titan_stagger.png", "proxies_boss_stagger.png", "proxies_titan_poses.png", "proxies_boss_poses.png", "proxies_mikasa_poses.png", "proxies_titan_grab.png", "proxies_titan_kneel.png", "proxies_boss_stomp.png", "proxies_boss_swipe.png"],
+  "reference": [],
+  "ts": "2026-09-02T00:00:00Z"
+}

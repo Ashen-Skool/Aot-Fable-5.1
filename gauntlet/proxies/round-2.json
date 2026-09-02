@@ -1,0 +1,12 @@
+{
+  "piece": "proxies",
+  "round": 2,
+  "verdict": "lose",
+  "gap": "Titan and boss Stomp is still just the Run/Sprint mid-stride pose with a raised trailing leg and swinging arms — no raised foot cocked high over the ground, no backward weight shift or downward anticipation, so in a still frame it is indistinguishable from Sprint even though Grab/Swipe/Kneel/Stagger/Land are now clearly differentiated.",
+  "score": 6,
+  "shots": [
+    "flight.png","latest.png","overview.png","proxies_boss_poses.png","proxies_boss_stomp.png","proxies_boss_swipe.png","proxies_mikasa_fly.png","proxies_mikasa_poses.png","proxies_mikasa_slash.png","proxies_scale.png","proxies_street.png","proxies_titan_grab.png","proxies_titan_kneel.png","proxies_titan_poses.png","street.png","titan.png"
+  ],
+  "reference": ["contact-titan-7m.jpg","contact-titan-boss.jpg","contact-mikasa.jpg"],
+  "ts": "2026-09-02T00:00:00Z"
+}

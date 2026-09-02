@@ -1,0 +1,65 @@
+{
+  "piece": "town",
+  "round": 1,
+  "verdict": "lose",
+  "gap": "The great wall and most building facades read as one flat, tiled cardboard texture with no bevel, weathering, or scale cues, so it never registers as the city-swallowing colossal structure it is in the game.",
+  "score": 3,
+  "shots": [
+    {
+      "ours": "flight.png",
+      "reference": "town-04",
+      "comparison": "Reference wins: soft fog and cool light sell the wall's mass and depth, while ours is flat midday light on a cartoonish, obviously-tiled checkerboard wall texture."
+    },
+    {
+      "ours": "latest.png",
+      "reference": "town-08",
+      "comparison": "Reference wins: warm painterly haze and color grading over dense rooftops vs. ours' clean but flat, atmosphere-less brown roof mass with no smoke or haze."
+    },
+    {
+      "ours": "overview.png",
+      "reference": "town-04",
+      "comparison": "Reference wins: game shows a legible plaza and varied landmark buildings; ours is homogeneous repeated roof kits with no focal landmark to anchor the eye."
+    },
+    {
+      "ours": "street.png",
+      "reference": "town-10",
+      "comparison": "Reference wins: the game street has layered depth, foliage, and painterly light shafts; ours is a stiff, empty corridor with an unexplained floating pale object breaking the illusion."
+    },
+    {
+      "ours": "titan.png",
+      "reference": "town-07",
+      "comparison": "Reference wins outright: ours is a broken shot with the camera clipped inside roof/wall geometry, unusable as a game-quality frame at all."
+    },
+    {
+      "ours": "town_canyon.png",
+      "reference": "town-10",
+      "comparison": "Reference wins: game alley has hanging signage with real material depth and foliage; ours has flat solid-color placeholder banner cards and blurry, tiled stone."
+    },
+    {
+      "ours": "town_overview.png",
+      "reference": "town-04",
+      "comparison": "Reference wins: same wall-scale and atmosphere gap, ours stays a washed-out grey-brown haze with no golden-hour warmth despite a visible sun."
+    },
+    {
+      "ours": "town_rooftop.png",
+      "reference": "town-09",
+      "comparison": "Reference wins: the game frame is a cinematic gold sunbeam through smoke; ours is a competently staged fountain plaza but lit flat and contrasty, with boxy characterless buildings."
+    },
+    {
+      "ours": "town_street.png",
+      "reference": "town-10",
+      "comparison": "Reference wins, though this is our best-dressed street with cart and barrels; the game's texture fidelity, lighting falloff, and depth still read a tier above."
+    },
+    {
+      "ours": "town_sunset.png",
+      "reference": "town-06",
+      "comparison": "Closest tonal match of the set, but reference still wins: the game's dusk sky has cloud detail and character-driven mood while ours is a flat, empty navy gradient over underlit buildings."
+    },
+    {
+      "ours": "town_wall.png",
+      "reference": "town-10",
+      "comparison": "Reference wins: same placeholder-flag and flat-stone texture problem as town_canyon, though the alley massing and window rhythm are reasonably close."
+    }
+  ],
+  "ts": "2026-09-02T00:00:00Z"
+}

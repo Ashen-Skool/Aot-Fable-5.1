@@ -1,0 +1,18 @@
+{
+  "piece": "camera",
+  "round": 1,
+  "verdict": "lose",
+  "gap": "The camera itself never moves or reacts — it sits dead-center and locked behind the capsule in every shot while a flat radial speed-line decal is pasted over it, whereas the reference uses real motion blur, camera shake, dutch tilt, and orbiting dive/kill framing to sell speed and impact.",
+  "score": 1,
+  "shots": [
+    {"ours": "cam_chase.png", "reference": "cam-03.png", "note": "Reference has motion blur and a tight, slightly swaying alley chase with HUD urgency; ours is a static, perfectly centered corridor shot with cartoon speed lines and no blur or sway. Reference wins."},
+    {"ours": "cam_boost.png", "reference": "cam-02.png", "note": "Reference shows an FOV-widened, blurred chase with target locked off-center and dynamic framing; ours shows the same static locked-behind framing as the chase shot with no discernible FOV kick. Reference wins."},
+    {"ours": "cam_dive.png", "reference": "kc-07.png", "note": "Reference dive/strike has heavy directional motion blur and a diagonal energy trail converging on the target with camera shake; ours is a flat, static high-angle pose shot with a thin straight line standing in for a blade trail. Reference wins."},
+    {"ours": "cam_impact.png", "reference": "cam-01.png", "note": "Reference impact crashes the camera into the subject with a radial burst, screen shake blur, and readable hit feedback text; ours is just the same corridor chase framing with speed lines, no shake or push-in. Reference wins."},
+    {"ours": "cam_killcam_a.png", "reference": "kc-04.png", "note": "Reference kill-cam is a dramatic close orbit with motion blur, lighting change, and a huge damage number selling the finisher; ours is a static close-up on primitive capsule shapes with no orbit motion or slow-mo cue. Reference wins."},
+    {"ours": "cam_killcam_b.png", "reference": "kc-08.png", "note": "Reference is a chaotic blood-and-light close orbit on the titan's kill point; ours is a plain top-down static shot of a sphere with no orbital camera movement or slow-motion feel. Reference wins."},
+    {"ours": "cam_killcam.png", "reference": "kc-01.png", "note": "Reference slashes across the screen with a glowing blade trail and slow-mo blur on the titan's face; ours is a static wide shot with the controller/capsule off in the corner, no slow-mo, no orbit, no blade trail. Reference wins."}
+  ],
+  "reference": "AOT2 console references (cam-01..08, kc-01..09, contact-camera.jpg, contact-killcam.jpg)",
+  "ts": "2026-09-02T00:00:00Z"
+}

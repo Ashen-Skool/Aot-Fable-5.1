@@ -33,11 +33,11 @@ on the Mac Studio by a gauntlet loop of builder and critic sub-agents. Started
 | Brief, gauntlet, prompts | on main |
 | CC0 assets (town kits, textures, HDRIs, Quaternius anim library, Kenney audio) | on main under `assets/staged/`, manifest at `assets/manifest.json`. Missing: hero SFX (no Freesound key), music |
 | Reference frames (critique only, gitignored) | on the Studio at `references/` (100 frames, 11 folders, `INDEX.md`, contact sheets). Regenerate with yt-dlp if lost; see INDEX for sources |
-| Harness (piece 0) | MERGED to main. `docs/HARNESS.md` documents setup (13 s), capture (12 s / 4 shots), tests (19 s), progress page. The agent died on the monthly spend limit right after writing the docs, so **verify `tools/build.sh mac` and `tools/build.sh webgl` yourself before trusting them**; everything else it measured |
+| Harness (piece 0) | MERGED to main. `docs/HARNESS.md` documents setup (13 s), capture (12 s / 4 shots), tests (19 s), progress page. The agent died on the monthly spend limit right after writing the docs, but the director then verified both: mac build 31 s (75 MB app), WebGL 148 s (15.5 MB). Fully green |
 | Progress page | GitHub Pages enabled on main; `progress.html` at the site root once the harness lands |
 | Concept art | `assets/concepts/` — user approved **mikasa-2.png** and **titan-2.png** |
 | Meshy meshes | DONE, committed under `assets/characters/<name>/meshy-raw/` (GLB+FBX+PBR, ~31k tris, both 1.9 m tall). Turntables in `assets/characters/<name>/turntable/sheet.jpg`. User said they look good for now, provisional until seen in-engine |
-| Waves 1+ | not started. Session ended on the monthly spend limit (resets 8:40pm Chicago); wave 1 = proxies, town, ODM flight, camera |
+| Wave 1 | **all four builders died on the monthly spend limit** (second time; limit resets 1:40am Chicago on 2026-09-02). State: `lane/proxies` round 1 pushed + critic verdict in `gauntlet/proxies/round-1.json` (lose, 6/10, gap = titan poses indistinguishable; round 2 was in progress, WIP in `wip/proxies` if present). Town, ODM, camera never pushed a lane commit; their uncommitted worktree state is snapshotted as `wip/town`, `wip/odm`, `wip/camera` (stash-style commits: restore with `git checkout <wip-branch> -- .` inside a fresh worktree on main). Town's tests were passing at death; ODM and camera status unknown |
 
 
 ## The one rule that is not in the docs

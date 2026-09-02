@@ -1,0 +1,25 @@
+{
+  "piece": "proxies",
+  "round": 3,
+  "verdict": "no",
+  "gap": "Stagger and Slash still read as near-identical forward-lean-with-raised-arm silhouettes at a glance; give Stagger a clearer off-balance backward/falling read distinct from Slash's forward attack lunge.",
+  "score": 8,
+  "shots": [
+    "overview.png: full 11-pose titan lineup — every pose now has a distinct silhouette, the collapsed-crouch problem from last round is gone.",
+    "proxies_scale.png: 15m boss vs 7m titan vs 1.7m Mikasa reads at correct relative scale, clean comparison shot.",
+    "proxies_titan_poses.png: same 11-pose strip on titan proxy, Idle/Run/Fly/Slash/Land/Stagger/Kneel/Swipe/Grab/Stomp/Sprint all separable in silhouette.",
+    "proxies_titan_grab.png: Grab is a clear forward crouch-and-reach, Stomp a raised-knee kick, Sprint a driving lean — three distinct reads side by side.",
+    "proxies_titan_kneel.png: Kneel (one knee down, head low) is now unambiguously different from Swipe (wide stance, arm swept across) and Stagger (arms flung back, off-balance) — this was the exact prior-round failure and it's fixed.",
+    "proxies_boss_poses.png: 15m boss carries the same 11-pose set with equally distinct silhouettes, no collapse into a single crouch.",
+    "proxies_boss_stomp.png: Stomp's raised-leg kick and Grab's low forward lunge read instantly apart even close up.",
+    "proxies_boss_swipe.png: Swipe (wide-stance cross-body arm swing) vs Kneel (huddled ground contact) is a clean, unambiguous pair.",
+    "proxies_mikasa_poses.png: Mikasa's 11-pose strip against building silhouettes shows correct human scale, ODM gear and blades read even as primitives.",
+    "proxies_mikasa_fly.png: Fly pose shows a convincing swept-back ODM-cable glide silhouette against the rooftops, clearly not a run or jump.",
+    "proxies_mikasa_slash.png: Slash reads as a forward blade sweep with both swords extended, unambiguous action pose.",
+    "proxies_street.png / street.png / latest.png: titan-vs-building scale holds up in the street corridor, titan roughly 1.2-1.5x building height as expected for 7m.",
+    "flight.png: titan/Mikasa/building triple next to each other confirms the 15m/7m/1.7m hierarchy reads correctly from a distance.",
+    "titan.png: 7m titan next to Mikasa in a clean two-shot, proportions and scale ratio look correct."
+  ],
+  "reference": "contact-titan-7m.jpg, contact-titan-boss.jpg, contact-mikasa.jpg reviewed for proportion/action-pose sanity check.",
+  "ts": "2026-09-02T00:00:00Z"
+}

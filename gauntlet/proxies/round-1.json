@@ -1,0 +1,26 @@
+{
+  "piece": "proxies",
+  "round": 1,
+  "verdict": "lose",
+  "gap": "Across the titan and boss pose sheets, Stomp/Grab/Swipe/Kneel/Land collapse into the same generic crouched-fists-forward silhouette, so in a still frame a gameplay builder cannot tell which state they're looking at, even though the human/titan/boss scale relationship itself is correct and clearly labeled.",
+  "score": 6,
+  "shots": [
+    "proxies_mikasa_poses.png",
+    "proxies_mikasa_fly.png",
+    "proxies_mikasa_slash.png",
+    "proxies_titan_poses.png",
+    "proxies_titan_grab.png",
+    "proxies_boss_poses.png",
+    "proxies_boss_stomp.png",
+    "proxies_boss_swipe.png",
+    "proxies_scale.png",
+    "proxies_street.png",
+    "latest.png"
+  ],
+  "reference": [
+    "contact-mikasa.jpg",
+    "contact-titan-7m.jpg",
+    "contact-titan-boss.jpg"
+  ],
+  "ts": "2026-09-01T00:00:00Z"
+}
