@@ -358,22 +358,28 @@ namespace Shared.Rigs
             Limb(BoneId.RightUpperLeg, -32f, 8f); Knee(BoneId.RightLowerLeg, 6f); Foot(BoneId.RightFoot, 28f);
         }
 
-        /// <summary>Knee hauled up to the chest, torso upright, arms wide; then the slam.</summary>
+        /// <summary>Wind-up peak: right thigh cocked above horizontal with the knee in front of the body,
+        /// shin hanging vertical, foot well clear of the ground; planted leg straight; torso leaning back and
+        /// turned away from the raised leg; both arms raised outward for balance. Then the slam.</summary>
         void TitanStomp(float u)
         {
             float p = Mathf.Repeat(u, 1.6f);
             float lift = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, 0.35f, p));
             float slam = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.9f, 1.05f, p));
             float raise = lift * (1f - slam);
-            Limb(BoneId.RightUpperLeg, Mathf.Lerp(0f, 105f, raise), 24f * raise + 6f); Knee(BoneId.RightLowerLeg, Mathf.Lerp(4f, 115f, raise)); Foot(BoneId.RightFoot, -20f * raise);
-            Limb(BoneId.LeftUpperLeg, -3f, 6f); Knee(BoneId.LeftLowerLeg, 4f);
-            float lean = Mathf.Lerp(-8f, -4f, raise) + 26f * slam;
-            Hips(lean * 0.4f, -0.02f - 0.06f * slam, 0, -0.02f * raise, 0, -8f * raise);
-            Torso(BoneId.Spine, lean * 0.3f, 0, 0);
-            Torso(BoneId.Chest, lean * 0.3f, 0, 5f * raise);
-            Torso(BoneId.Head, 6f + 18f * slam, 0, 0);
-            Limb(BoneId.LeftUpperArm, Mathf.Lerp(-10f, -55f, raise), 30f); Elbow(BoneId.LeftLowerArm, 20f);
-            Limb(BoneId.RightUpperArm, Mathf.Lerp(-14f, -60f, raise), 26f); Elbow(BoneId.RightLowerArm, 24f);
+            float back = -16f * raise + 24f * slam;               // torso pitch: back on the wind-up, forward on the slam
+            Hips(back, -0.06f * slam, 0, 0, -18f * raise, 0);
+            // thigh 95 + the hips' 16 back-lean = ~110 from vertical in world: knee above the hip, out in front
+            Limb(BoneId.RightUpperLeg, Mathf.Lerp(0f, 95f, raise), 4f + 14f * raise);
+            Knee(BoneId.RightLowerLeg, Mathf.Lerp(2f, 110f, raise));   // shin hangs vertical
+            Foot(BoneId.RightFoot, 14f * raise);                        // toes dropped: foot cocked, not planted
+            Limb(BoneId.LeftUpperLeg, 0f, 4f); Knee(BoneId.LeftLowerLeg, 0f);   // planted leg straight
+            Torso(BoneId.Spine, back * 0.35f, -10f * raise, 0);
+            Torso(BoneId.Chest, back * 0.4f, -14f * raise, 4f * raise);
+            Torso(BoneId.Head, 22f * raise + 16f * slam, 12f * raise, 0);      // eyes on the target
+            float armOut = Mathf.Lerp(12f, 118f, raise) + 20f * slam;
+            Limb(BoneId.LeftUpperArm, 8f, armOut); Elbow(BoneId.LeftLowerArm, 14f);
+            Limb(BoneId.RightUpperArm, 8f, armOut - 8f); Elbow(BoneId.RightLowerArm, 14f);
         }
 
         // ---------------- helpers ----------------
