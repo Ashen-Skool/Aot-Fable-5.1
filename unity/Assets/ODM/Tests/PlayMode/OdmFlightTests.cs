@@ -64,6 +64,6 @@ public class OdmFlightTests
         float afterHop = player.Gas;
         Assert.Less(afterHop, player.GasMax, "hop cost gas");
         for (int i = 0; i < 60 * 3; i++) yield return new WaitForFixedUpdate();
-        Assert.Greater(player.Gas, afterHop, "gas refilled while grounded");
+        Assert.Greater(player.Gas, afterHop, "gas refilled while grounded (grounded=" + player.Grounded + " layer=" + player.GroundLayer + " pos=" + player.transform.position + " townCenter=" + Ctx.Has("townCenter") + " speed=" + player.Speed.ToString("0.0") + ")");
     }
 }

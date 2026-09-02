@@ -491,7 +491,11 @@ namespace ODM
             // ground probe
             bool wasGrounded = Grounded;
             Grounded = false; GroundLayer = -1;
-            if (v.y < 3f && Physics.SphereCast(pos, capsule.radius * 0.9f, Vector3.down, out hit, 0.75f, OdmLayers.GroundMask, QueryTriggerInteraction.Ignore))
+            // Probe from the collider centre, not the transform origin: rigs with the root at the
+            // feet would start the sphere inside the ground and never register a hit.
+            var probeOrigin = capsule.bounds.center;
+            float probeDist = Mathf.Max(0.75f, capsule.bounds.extents.y - capsule.radius * 0.9f + 0.35f);
+            if (v.y < 3f && Physics.SphereCast(probeOrigin, capsule.radius * 0.9f, Vector3.down, out hit, probeDist, OdmLayers.GroundMask, QueryTriggerInteraction.Ignore))
             {
                 if (hit.normal.y > 0.6f) { Grounded = true; GroundLayer = hit.collider.gameObject.layer; GroundHeight = hit.point.y; }
             }
