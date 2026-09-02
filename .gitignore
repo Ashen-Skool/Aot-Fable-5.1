@@ -1,1 +1,9 @@
-references/
+# repo-level
+shots/*/*
+!shots/*/latest.png
+builds/
+logs/
+*.log
+.DS_Store
+node_modules/
+test-results/
