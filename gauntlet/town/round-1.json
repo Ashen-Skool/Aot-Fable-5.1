@@ -1,0 +1,10 @@
+{
+  "piece": "town",
+  "round": 1,
+  "verdict": "lose",
+  "gap": "materials and atmosphere: our stone/roof textures are flat, low-res repeating tiles with no grime or weathering and skies blow out to pure white, while the reference keeps a graded moody overcast-to-gold palette with haze/smoke that gives real depth and roof silhouettes their variety.",
+  "score": 4,
+  "shots": ["overview.png", "latest.png", "street.png", "town_canyon.png", "town_overview.png", "town_rooftop.png", "town_street.png", "town_sunset.png", "town_wall.png"],
+  "reference": ["town-01.png", "town-02.png", "town-04.png", "town-06.png", "town-09.png", "town-10.png"],
+  "ts": "2026-09-02T00:00:00Z"
+}

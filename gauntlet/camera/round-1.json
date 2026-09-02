@@ -1,0 +1,10 @@
+{
+  "piece": "camera",
+  "round": 1,
+  "verdict": "loss",
+  "gap": "The game's camera stays low and tight over the shoulder with the target framed and a taut anticipation-line to it even at speed, while ours sits high and centered behind a bare capsule with no target lock, no lead-room composition, and no orbit/rotation logic visible in the killcam frame at all.",
+  "score": 3,
+  "shots": ["cam_chase.png", "cam_boost.png", "cam_dive.png", "cam_impact.png", "cam_killcam.png"],
+  "reference": ["cam-03.png", "cam-04.png", "cam-06.png", "cam-01.png", "kc-02.png"],
+  "ts": "2026-09-02T00:00:00Z"
+}
