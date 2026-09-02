@@ -80,6 +80,7 @@ namespace ODM
         LineRenderer cableL, cableR;
         Transform hookHeadL, hookHeadR;
         ParticleSystem jetL, jetR;
+        TrailRenderer trail;
         FlightScript script;
         FlightScript recorder;
         OdmInput input, liveInput;
@@ -131,6 +132,7 @@ namespace ODM
             hookHeadR = MakeHookHead("HookHead_R");
             jetL = MakeJet("GasJet_L", socketL, 11u);
             jetR = MakeJet("GasJet_R", socketR, 23u);
+            trail = MakeTrail("SpeedTrail");
             SetCablesVisible(false);
             Ctx.Set("player", this);
         }
@@ -222,10 +224,10 @@ namespace ODM
             main.loop = true; main.playOnAwake = true;
             main.startLifetime = 0.42f;
             main.startSpeed = new ParticleSystem.MinMaxCurve(10f, 16f);
-            main.startSize = new ParticleSystem.MinMaxCurve(0.22f, 0.4f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.3f, 0.55f);
             main.startColor = Color.white;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.maxParticles = 256;
+            main.maxParticles = 400;
             main.gravityModifier = -0.05f;
             var em = ps.emission; em.enabled = true; em.rateOverTime = 0f;
             var sh = ps.shape; sh.enabled = true; sh.shapeType = ParticleSystemShapeType.Cone; sh.angle = 9f; sh.radius = 0.04f;
@@ -233,11 +235,87 @@ namespace ODM
             sol.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 0.5f), new Keyframe(0.6f, 1.6f), new Keyframe(1f, 0f)));
             var r = go.GetComponent<ParticleSystemRenderer>();
             r.renderMode = ParticleSystemRenderMode.Billboard;
-            r.sharedMaterial = Mats.Unlit(new Color(0.93f, 0.94f, 0.96f));
+            r.sharedMaterial = SoftParticleMat(new Color(0.93f, 0.94f, 0.96f, 0.85f));
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             r.receiveShadows = false;
+            r.sortMode = ParticleSystemSortMode.Distance;
+            var col = ps.colorOverLifetime; col.enabled = true;
+            var grad = new Gradient();
+            grad.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(new Color(0.85f, 0.87f, 0.9f), 1f) },
+                         new[] { new GradientAlphaKey(0.9f, 0f), new GradientAlphaKey(0.55f, 0.35f), new GradientAlphaKey(0f, 1f) });
+            col.color = grad;
             ps.Play();
             return ps;
+        }
+
+        static Texture2D softDot;
+        /// <summary>Radial-falloff white dot, generated once; the gas puffs and the speed trail use it.</summary>
+        static Texture2D SoftDot()
+        {
+            if (softDot != null) return softDot;
+            const int n = 64;
+            softDot = new Texture2D(n, n, TextureFormat.RGBA32, true) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+            var px = new Color[n * n];
+            for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                float dx = (x + 0.5f) / n - 0.5f, dy = (y + 0.5f) / n - 0.5f;
+                float d = Mathf.Sqrt(dx * dx + dy * dy) * 2f;
+                float a = Mathf.Clamp01(1f - d);
+                a = a * a * (3f - 2f * a);
+                px[y * n + x] = new Color(1f, 1f, 1f, a);
+            }
+            softDot.SetPixels(px);
+            softDot.Apply(true, false);
+            return softDot;
+        }
+
+        /// <summary>
+        /// Alpha-blended particle material from the shared Particles base. Blending in URP's
+        /// Particles/Unlit is render state, not a keyword, so this survives build stripping.
+        /// </summary>
+        static Material SoftParticleMat(Color tint)
+        {
+            var baseMat = Resources.Load<Material>("Materials/Particles");
+            var m = baseMat != null ? new Material(baseMat) : Mats.Unlit(tint);
+            m.SetTexture("_BaseMap", SoftDot());
+            m.SetColor("_BaseColor", tint);
+            m.SetFloat("_Surface", 1f);
+            m.SetFloat("_Blend", 0f);
+            m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            m.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            m.SetFloat("_SrcBlendAlpha", (float)UnityEngine.Rendering.BlendMode.One);
+            m.SetFloat("_DstBlendAlpha", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            m.SetFloat("_ZWrite", 0f);
+            m.SetOverrideTag("RenderType", "Transparent");
+            m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            return m;
+        }
+
+        /// <summary>A short white ribbon behind the hips; only emits at flight speed so stills read the arc.</summary>
+        TrailRenderer MakeTrail(string name)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(transform, false);
+            go.transform.localPosition = new Vector3(0f, -0.2f, -0.3f);
+            var tr = go.AddComponent<TrailRenderer>();
+            tr.time = 0.45f;
+            tr.minVertexDistance = 0.25f;
+            tr.startWidth = 0.55f; tr.endWidth = 0.05f;
+            tr.numCapVertices = 3;
+            tr.alignment = LineAlignment.View;
+            tr.textureMode = LineTextureMode.Stretch;
+            tr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            tr.receiveShadows = false;
+            var mat = SoftParticleMat(new Color(1f, 1f, 1f, 0.6f));
+            mat.SetTexture("_BaseMap", null);
+            tr.sharedMaterial = mat;
+            var g = new Gradient();
+            g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                      new[] { new GradientAlphaKey(0.55f, 0f), new GradientAlphaKey(0.25f, 0.4f), new GradientAlphaKey(0f, 1f) });
+            tr.colorGradient = g;
+            tr.emitting = false;
+            return tr;
         }
 
         void SetCablesVisible(bool on)
@@ -248,8 +326,8 @@ namespace ODM
 
         void SetJets(bool on)
         {
-            var el = jetL.emission; el.rateOverTime = on ? 150f : 0f;
-            var er = jetR.emission; er.rateOverTime = on ? 150f : 0f;
+            var el = jetL.emission; el.rateOverTime = on ? 220f : 0f;
+            var er = jetR.emission; er.rateOverTime = on ? 220f : 0f;
         }
 
         /// <summary>Put the player somewhere at rest (scripts start from a known spot).</summary>
@@ -266,6 +344,7 @@ namespace ODM
             Gas = gasMax;
             MaxSpeedSeen = 0f; AirTime = 0f; LandTime = -1f;
             jetL.Clear(); jetR.Clear();
+            trail.Clear(); trail.emitting = false;
         }
 
         // ---------- scripting ----------
@@ -481,6 +560,7 @@ namespace ODM
             if (Speed > MaxSpeedSeen) MaxSpeedSeen = Speed;
             if (Grounded) AirTime = 0f; else AirTime += dt;
             SetJets(Boosting);
+            trail.emitting = !Grounded && Speed > 14f;
 
             // body yaw only: face the aim on the ground, face the velocity in the air (lean is visual)
             Vector3 face;
