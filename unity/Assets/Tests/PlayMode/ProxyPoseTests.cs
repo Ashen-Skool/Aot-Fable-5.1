@@ -53,6 +53,26 @@ public class ProxyPoseTests
     }
 
     [UnityTest]
+    public IEnumerator TitanPosesAreStronglyDistinctAtTheirPeakFrames()
+    {
+        var t = TitanProxy.Build("PoseTestTitan", 7f, new Vector3(150, 0, 100));
+        t.rig.autoTick = false;
+        yield return null;
+        var poses = new[] { Pose.Idle, Pose.Land, Pose.Stagger, Pose.Kneel, Pose.Swipe, Pose.Grab, Pose.Stomp };
+        var snaps = new Dictionary<Pose, Quaternion[]>();
+        foreach (var p in poses) { t.rig.Snap(p, ProxyBootstrap.BestPhase(p)); snaps[p] = Snapshot(t.rig); }
+        foreach (var a in poses)
+            foreach (var b in poses)
+                if (a < b) Assert.Greater(Distance(snaps[a], snaps[b]), 120f, a + " vs " + b + " must read differently");
+        t.rig.Snap(Pose.Stomp, ProxyBootstrap.BestPhase(Pose.Stomp));
+        var knee = t.rig.Bone(BoneId.RightLowerLeg).position.y;
+        Assert.Greater(knee, 7f * 0.5f, "stomp lifts the knee to hip height");
+        t.rig.Snap(Pose.Kneel, ProxyBootstrap.BestPhase(Pose.Kneel));
+        Assert.Less(t.rig.Bone(BoneId.RightLowerLeg).position.y, 7f * 0.1f, "kneel puts the knee on the ground");
+        UnityEngine.Object.Destroy(t.gameObject);
+    }
+
+    [UnityTest]
     public IEnumerator CyclesAdvanceWithTickAndFreezeWhenPaused()
     {
         var m = MikasaProxy.Build("PoseTestMikasa2", new Vector3(100, 0, 110));

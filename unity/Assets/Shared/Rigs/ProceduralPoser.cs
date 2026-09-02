@@ -83,6 +83,18 @@ namespace Shared.Rigs
             for (int i = 0; i < N; i++) target[i] = Quaternion.identity;
             hipsTarget = hipsBind;
             float u = phase;
+            if (rig.props.titan)
+            {
+                switch (current)
+                {
+                    case Pose.Land: TitanLand(u); return;
+                    case Pose.Stagger: TitanStagger(u); return;
+                    case Pose.Kneel: TitanKneel(u); return;
+                    case Pose.Swipe: TitanSwipe(u); return;
+                    case Pose.Grab: TitanGrab(u); return;
+                    case Pose.Stomp: TitanStomp(u); return;
+                }
+            }
             switch (current)
             {
                 case Pose.Idle: Idle(u); break;
@@ -261,6 +273,107 @@ namespace Shared.Rigs
             Torso(BoneId.Head, 18f, 0, 0);
             Limb(BoneId.LeftUpperArm, -20f, 62f); Elbow(BoneId.LeftLowerArm, 30f);
             Limb(BoneId.RightUpperArm, -26f, 58f); Elbow(BoneId.RightLowerArm, 36f);
+        }
+
+        // ---------------- titan variants: one exaggerated silhouette per state ----------------
+
+        /// <summary>Both legs bent deep, arms out wide and level for balance, chest forward, eyes up.</summary>
+        void TitanLand(float u)
+        {
+            float settle = 0.85f + 0.15f * Mathf.Exp(-u * 3f);
+            Hips(0, -0.33f * settle, -0.02f, 0, 0, 0);
+            Limb(BoneId.LeftUpperLeg, 85f * settle, 22f); Knee(BoneId.LeftLowerLeg, 112f * settle); Foot(BoneId.LeftFoot, -28f * settle);
+            Limb(BoneId.RightUpperLeg, 85f * settle, 22f); Knee(BoneId.RightLowerLeg, 112f * settle); Foot(BoneId.RightFoot, -28f * settle);
+            Torso(BoneId.Spine, 10f, 0, 0);
+            Torso(BoneId.Chest, 18f, 0, 0);
+            Torso(BoneId.Head, -24f, 0, 0);
+            Limb(BoneId.LeftUpperArm, 6f, 88f); Elbow(BoneId.LeftLowerArm, 8f);
+            Limb(BoneId.RightUpperArm, 6f, 88f); Elbow(BoneId.RightLowerArm, 8f);
+        }
+
+        /// <summary>Leaning far back off balance, arms thrown up overhead, one leg out front to catch itself.</summary>
+        void TitanStagger(float u)
+        {
+            float wob = Mathf.Sin(u * 6f) * Mathf.Exp(-u * 0.5f);
+            Hips(-32f, -0.05f, -0.08f, 0, 0, 5f * wob);
+            Torso(BoneId.Spine, -12f, 3f * wob, 0);
+            Torso(BoneId.Chest, -16f, 4f * wob, -3f * wob);
+            Torso(BoneId.Head, -22f, 0, 4f * wob);
+            Limb(BoneId.LeftUpperArm, 125f + 6f * wob, 55f); Elbow(BoneId.LeftLowerArm, 18f);
+            Limb(BoneId.RightUpperArm, 118f - 6f * wob, 62f); Elbow(BoneId.RightLowerArm, 24f);
+            Limb(BoneId.LeftUpperLeg, 42f, 10f); Knee(BoneId.LeftLowerLeg, 4f); Foot(BoneId.LeftFoot, -30f);
+            Limb(BoneId.RightUpperLeg, -12f, 14f); Knee(BoneId.RightLowerLeg, 32f); Foot(BoneId.RightFoot, 20f);
+        }
+
+        /// <summary>One knee on the ground, back arched forward over it, head hanging: the nape is up and open.</summary>
+        void TitanKneel(float u)
+        {
+            float breath = Mathf.Sin(u * 3.5f);
+            float drop = rig.props.upperLeg - 0.02f;
+            Hips(24f, -drop, 0.02f, 0, 0, 0);
+            // right knee on the ground: thigh vertical in world (cancels the hips pitch), shin folded back flat
+            Limb(BoneId.RightUpperLeg, 20f, 8f); Knee(BoneId.RightLowerLeg, 110f); Foot(BoneId.RightFoot, 30f);
+            // left leg planted in front, shin vertical
+            Limb(BoneId.LeftUpperLeg, 110f, 14f); Knee(BoneId.LeftLowerLeg, 88f); Foot(BoneId.LeftFoot, -10f);
+            // back arched over the front knee, head hanging: the nape is the highest point of the spine
+            Torso(BoneId.Spine, 22f, 0, 0);
+            Torso(BoneId.Chest, 30f + 3f * breath, 0, 0);
+            Torso(BoneId.Neck, 26f, 0, 0);
+            Torso(BoneId.Head, 44f, 0, 0);
+            Limb(BoneId.RightUpperArm, 78f, 14f); Elbow(BoneId.RightLowerArm, 2f);
+            Limb(BoneId.LeftUpperArm, 72f, 16f); Elbow(BoneId.LeftLowerArm, 4f);
+        }
+
+        /// <summary>Arm held level and swept from far behind to across the body while the torso twists after it.</summary>
+        void TitanSwipe(float u)
+        {
+            float p = Mathf.Repeat(u, 1.4f);
+            float s = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.15f, 0.40f, p));
+            float back = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(1.1f, 1.4f, p));
+            s *= back;
+            // out 90 = level with the shoulder; twist yaws the level arm: +behind, -across the front
+            Limb(BoneId.RightUpperArm, 0f, 96f, Mathf.Lerp(70f, -105f, s));
+            Elbow(BoneId.RightLowerArm, Mathf.Lerp(30f, 2f, s));
+            Limb(BoneId.LeftUpperArm, -50f, 34f); Elbow(BoneId.LeftLowerArm, 30f);
+            float twist = Mathf.Lerp(45f, -65f, s);
+            Hips(8f, -0.05f, 0, 0, twist * 0.35f, 0);
+            Torso(BoneId.Spine, 6f, twist * 0.35f, 0);
+            Torso(BoneId.Chest, 10f, twist * 0.5f, Mathf.Lerp(6f, -12f, s));
+            Torso(BoneId.Head, -4f, -twist * 0.3f, 0);
+            Limb(BoneId.LeftUpperLeg, 28f, 24f); Knee(BoneId.LeftLowerLeg, 22f);
+            Limb(BoneId.RightUpperLeg, -22f, 24f); Knee(BoneId.RightLowerLeg, 10f); Foot(BoneId.RightFoot, 15f);
+        }
+
+        /// <summary>One arm fully extended forward and low, the other swung back, torso leaning into the reach.</summary>
+        void TitanGrab(float u)
+        {
+            float reach = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(u / 0.35f));
+            Limb(BoneId.RightUpperArm, Mathf.Lerp(30f, 58f, reach), 4f); Elbow(BoneId.RightLowerArm, Mathf.Lerp(30f, 0f, reach)); Hand(BoneId.RightHand, -25f);
+            Limb(BoneId.LeftUpperArm, -60f, 22f); Elbow(BoneId.LeftLowerArm, 35f);
+            Hips(20f, -0.10f, 0.04f, 0, -12f, 0);
+            Torso(BoneId.Spine, 14f, -6f, 0);
+            Torso(BoneId.Chest, 24f * reach + 4f, -8f, 6f);
+            Torso(BoneId.Head, -14f, 10f, 0);
+            Limb(BoneId.LeftUpperLeg, 48f, 8f); Knee(BoneId.LeftLowerLeg, 48f);
+            Limb(BoneId.RightUpperLeg, -32f, 8f); Knee(BoneId.RightLowerLeg, 6f); Foot(BoneId.RightFoot, 28f);
+        }
+
+        /// <summary>Knee hauled up to the chest, torso upright, arms wide; then the slam.</summary>
+        void TitanStomp(float u)
+        {
+            float p = Mathf.Repeat(u, 1.6f);
+            float lift = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, 0.35f, p));
+            float slam = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.9f, 1.05f, p));
+            float raise = lift * (1f - slam);
+            Limb(BoneId.RightUpperLeg, Mathf.Lerp(0f, 105f, raise), 24f * raise + 6f); Knee(BoneId.RightLowerLeg, Mathf.Lerp(4f, 115f, raise)); Foot(BoneId.RightFoot, -20f * raise);
+            Limb(BoneId.LeftUpperLeg, -3f, 6f); Knee(BoneId.LeftLowerLeg, 4f);
+            float lean = Mathf.Lerp(-8f, -4f, raise) + 26f * slam;
+            Hips(lean * 0.4f, -0.02f - 0.06f * slam, 0, -0.02f * raise, 0, -8f * raise);
+            Torso(BoneId.Spine, lean * 0.3f, 0, 0);
+            Torso(BoneId.Chest, lean * 0.3f, 0, 5f * raise);
+            Torso(BoneId.Head, 6f + 18f * slam, 0, 0);
+            Limb(BoneId.LeftUpperArm, Mathf.Lerp(-10f, -55f, raise), 30f); Elbow(BoneId.LeftLowerArm, 20f);
+            Limb(BoneId.RightUpperArm, Mathf.Lerp(-14f, -60f, raise), 26f); Elbow(BoneId.RightLowerArm, 24f);
         }
 
         // ---------------- helpers ----------------

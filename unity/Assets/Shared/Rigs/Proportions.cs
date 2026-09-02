@@ -38,6 +38,7 @@ namespace Shared.Rigs
         public float footW = 0.05f;
         public float belly = 0f;          // 0 = none; radius fraction of a pot belly on the spine
         public float tempo = 1f;          // cycle-rate multiplier baked from height (set by HumanoidProxy)
+        public bool titan = false;        // titan pose set: bigger, slower, exaggerated peak silhouettes
 
         public static Proportions Human() => new Proportions();
 
@@ -50,7 +51,7 @@ namespace Shared.Rigs
                 shoulderHalf = 0.16f, upperArm = 0.20f, lowerArm = 0.19f, hand = 0.10f,
                 torsoW = 0.28f, torsoD = 0.16f, pelvisW = 0.24f,
                 thighR = 0.065f, shinR = 0.05f, upperArmR = 0.045f, lowerArmR = 0.04f, neckR = 0.045f,
-                footLen = 0.16f, footW = 0.07f, belly = 0.10f,
+                footLen = 0.16f, footW = 0.07f, belly = 0.10f, titan = true,
             };
         }
 

@@ -8,10 +8,11 @@
   { "name": "proxies_mikasa_poses", "pos": [57.5, 1.5, 75],   "lookAt": [57.5, 1.0, 60],  "fov": 70, "timeSec": 2.1 },
   { "name": "proxies_mikasa_slash", "pos": [53.6, 2.0, 64.3], "lookAt": [50.5, 1.0, 60],  "fov": 36, "timeSec": 2.2 },
   { "name": "proxies_mikasa_fly",   "pos": [50.5, 2.4, 64],   "lookAt": [47, 1.9, 60],    "fov": 36, "timeSec": 2.3 },
-  { "name": "proxies_titan_poses",  "pos": [85, 6, 34],       "lookAt": [85, 4, -10],     "fov": 70, "timeSec": 2.4 },
-  { "name": "proxies_titan_grab",   "pos": [126, 4, 6],       "lookAt": [121, 4, -10],    "fov": 45, "timeSec": 2.5 },
-  { "name": "proxies_boss_poses",   "pos": [115, 12, -14],    "lookAt": [115, 8, -100],   "fov": 70, "timeSec": 2.6 },
-  { "name": "proxies_boss_swipe",   "pos": [177, 9, -70],     "lookAt": [160, 9, -100],   "fov": 50, "timeSec": 2.7 },
-  { "name": "proxies_boss_stomp",   "pos": [175, 7, -66],     "lookAt": [190, 8, -100],   "fov": 50, "timeSec": 2.8 },
+  { "name": "proxies_titan_poses",  "pos": [85, 5, 30],       "lookAt": [85, 3.5, -10],   "fov": 72, "timeSec": 2.4 },
+  { "name": "proxies_titan_grab",   "pos": [110, 4, 6],       "lookAt": [112, 3.2, -10],  "fov": 45, "timeSec": 2.5 },
+  { "name": "proxies_titan_kneel",  "pos": [91, 4.5, 8],      "lookAt": [94, 2.0, -10],   "fov": 50, "timeSec": 2.55 },
+  { "name": "proxies_boss_poses",   "pos": [115, 10, -30],    "lookAt": [115, 7, -100],   "fov": 72, "timeSec": 2.6 },
+  { "name": "proxies_boss_swipe",   "pos": [141, 8, -68],     "lookAt": [145, 7, -100],   "fov": 50, "timeSec": 2.7 },
+  { "name": "proxies_boss_stomp",   "pos": [171, 8, -68],     "lookAt": [175, 7.5, -100], "fov": 50, "timeSec": 2.8 },
   { "name": "proxies_street",       "pos": [0, 3, 20],        "lookAt": [-6, 5, 50],      "fov": 60, "timeSec": 2.9 }
 ]

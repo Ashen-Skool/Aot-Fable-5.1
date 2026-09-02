@@ -109,12 +109,13 @@ namespace Proxies
                 m.rig.Snap(pose, BestPhase(pose)); m.rig.Paused = true;
                 Label(m.transform, pose.ToString(), MikasaProxy.Height, font);
 
-                var t = TitanProxy.Build("Lineup_Titan_" + pose, TitanProxy.SmallHeight, new Vector3(TitanRowX0 + i * TitanRowStep, fly * 3f, TitanRowZ), 0f);
+                // titans stand three-quarter on (right side toward the camera) so the acting limb reads in profile
+                var t = TitanProxy.Build("Lineup_Titan_" + pose, TitanProxy.SmallHeight, new Vector3(TitanRowX0 + i * TitanRowStep, fly * 3f, TitanRowZ), TitanLineupYaw);
                 t.transform.SetParent(titanRow, true);
                 t.rig.Snap(pose, BestPhase(pose)); t.rig.Paused = true;
                 Label(t.transform, pose.ToString(), TitanProxy.SmallHeight, font);
 
-                var bs = TitanProxy.Build("Lineup_Boss_" + pose, TitanProxy.BossHeight, new Vector3(BossRowX0 + i * BossRowStep, fly * 6f, BossRowZ), 0f);
+                var bs = TitanProxy.Build("Lineup_Boss_" + pose, TitanProxy.BossHeight, new Vector3(BossRowX0 + i * BossRowStep, fly * 6f, BossRowZ), TitanLineupYaw);
                 bs.transform.SetParent(bossRow, true);
                 bs.rig.Snap(pose, BestPhase(pose)); bs.rig.Paused = true;
                 Label(bs.transform, pose.ToString(), TitanProxy.BossHeight, font);
@@ -143,6 +144,7 @@ namespace Proxies
         public const float MikasaRowZ = 60f, MikasaRowX0 = 40f, MikasaRowStep = 3.5f;
         public const float TitanRowZ = -10f, TitanRowX0 = 40f, TitanRowStep = 9f;
         public const float BossRowZ = -100f, BossRowX0 = 40f, BossRowStep = 15f;
+        public const float TitanLineupYaw = -65f;
 
         static Transform Group(GameObject root, string name)
         {
@@ -157,7 +159,7 @@ namespace Proxies
             var go = new GameObject("Label");
             go.transform.SetParent(who, false);
             go.transform.localPosition = new Vector3(0, height * 1.12f, 0);
-            go.transform.localRotation = Quaternion.Euler(0, 180f, 0); // rows face +Z and are photographed from +Z
+            go.transform.rotation = Quaternion.Euler(0, 180f, 0); // world-facing: rows are photographed from +Z whatever the figure's yaw
             var tm = go.AddComponent<TextMesh>();
             tm.font = font;
             tm.text = text;
