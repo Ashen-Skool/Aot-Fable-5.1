@@ -550,5 +550,37 @@
   "fov": 42,
   "timeSec": 9.1,
   "_": "same kill cam 1 s real later: a different angle"
+ },
+ {
+  "name": "mikasa_closeup",
+  "piece": "mikasa",
+  "pos": [
+   2.2,
+   1.5,
+   6.3
+  ],
+  "lookAt": [
+   0,
+   1.0,
+   4.0
+  ],
+  "fov": 38,
+  "timeSec": 0.6
+ },
+ {
+  "name": "mikasa_full",
+  "piece": "mikasa",
+  "pos": [
+   3.5,
+   1.2,
+   8.0
+  ],
+  "lookAt": [
+   0,
+   0.9,
+   4.0
+  ],
+  "fov": 40,
+  "timeSec": 0.6
  }
 ]

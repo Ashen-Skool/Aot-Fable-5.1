@@ -20,6 +20,15 @@ public class CharacterImporter : AssetPostprocessor
         imp.optimizeGameObjects = false; // we need the bone transforms for sockets
     }
 
+    void OnPreprocessTexture()
+    {
+        if (!assetPath.Contains("/Resources/Characters/")) return;
+        var t = (TextureImporter)assetImporter;
+        if (assetPath.EndsWith("normal.png")) t.textureType = TextureImporterType.NormalMap;
+        t.sRGBTexture = assetPath.EndsWith("base_color.png");
+        t.maxTextureSize = 2048; t.mipmapEnabled = true;
+    }
+
     void OnPreprocessAnimation()
     {
         if (!assetPath.Contains("/Resources/Characters/")) return;

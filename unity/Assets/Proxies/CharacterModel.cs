@@ -49,9 +49,24 @@ namespace Characters
             m.animator = inst.GetComponent<Animator>() ?? inst.AddComponent<Animator>();
             m.animator.applyRootMotion = false;
             m.animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            m.ApplyTextures(resource + "Tex");
             m.BuildGraph(resource);
             m.SetPose(Pose.Idle);
             return m;
+        }
+
+        /// <summary>Unity does not unpack FBX-embedded textures; build a URP Lit material from the PBR maps in Resources.</summary>
+        void ApplyTextures(string texFolder)
+        {
+            var baseMap = Resources.Load<Texture2D>(texFolder + "/base_color");
+            if (baseMap == null) { Debug.Log("[CharacterModel] no textures at " + texFolder); return; }
+            var mat = Shared.Mats.Lit(Color.white, 0.15f);
+            mat.name = name + "_Skin";
+            mat.SetTexture("_BaseMap", baseMap); mat.mainTexture = baseMap;
+            var nrm = Resources.Load<Texture2D>(texFolder + "/normal");
+            if (nrm != null) { mat.EnableKeyword("_NORMALMAP"); mat.SetTexture("_BumpMap", nrm); mat.SetFloat("_BumpScale", 0.6f); }
+            mat.SetFloat("_Metallic", 0f);
+            foreach (var r in GetComponentsInChildren<Renderer>(true)) { var ms = r.sharedMaterials; for (int i = 0; i < ms.Length; i++) ms[i] = mat; r.sharedMaterials = ms; }
         }
 
         static UnityEngine.Bounds Bounds(GameObject go)
