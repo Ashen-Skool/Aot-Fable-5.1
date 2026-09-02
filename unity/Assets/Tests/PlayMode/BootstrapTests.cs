@@ -20,6 +20,9 @@ public class BootstrapTests
         Assert.AreEqual(Bootstrap.DefaultSeed, Ctx.Get<int>("seed"));
         var titan = Ctx.Get<GameObject>("titan");
         var h = titan.GetComponent<Collider>().bounds.size.y;
-        Assert.That(h, Is.EqualTo(15f).Within(0.5f), "titan is ~15 m tall");
+        Assert.That(h, Is.EqualTo(7f).Within(0.5f), "titan is ~7 m tall");
+        var boss = Ctx.Get<GameObject>("boss");
+        Assert.IsNotNull(boss, "boss registered in Ctx");
+        Assert.That(boss.GetComponent<Collider>().bounds.size.y, Is.EqualTo(15f).Within(0.5f), "boss is ~15 m tall");
     }
 }

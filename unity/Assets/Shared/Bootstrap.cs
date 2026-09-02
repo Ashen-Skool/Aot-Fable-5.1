@@ -22,6 +22,13 @@ namespace Shared
         public Light sun;
         public Camera cam;
 
+        /// <summary>
+        /// Set by the Proxies assembly (BeforeSceneLoad) and later by the final character
+        /// pieces: builds Mikasa and the Titans instead of the placeholder capsules and
+        /// registers them in Ctx ("mikasa", "titan", "boss", ...). Null = capsules.
+        /// </summary>
+        public static Action<Bootstrap> CharacterFactory;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void AutoBoot() => Ensure();
 
@@ -63,8 +70,8 @@ namespace Shared
             BuildLighting();
             BuildGround();
             BuildPlaceholders();
-            BuildMikasa();
-            BuildTitan();
+            if (CharacterFactory != null) CharacterFactory(this);
+            else { BuildMikasa(); BuildTitan(); }
             Debug.Log("[Bootstrap] built, seed=" + seed);
         }
 
