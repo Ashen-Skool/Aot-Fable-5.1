@@ -32,9 +32,9 @@
  {
   "name": "titan",
   "pos": [
-   3.2,
+   10,
    2,
-   40
+   42
   ],
   "lookAt": [
    0,
@@ -358,5 +358,95 @@
   ],
   "fov": 64,
   "timeSec": 0.0
+ },
+ {
+  "name": "odm_hook",
+  "pos": [
+   -6,
+   3,
+   -81
+  ],
+  "lookAt": [
+   6,
+   11,
+   -58
+  ],
+  "fov": 65,
+  "timeSec": 0.42
+ },
+ {
+  "name": "odm_boost",
+  "pos": [
+   -7,
+   5,
+   -69
+  ],
+  "lookAt": [
+   7,
+   12,
+   -52
+  ],
+  "fov": 70,
+  "timeSec": 0.85
+ },
+ {
+  "name": "odm_swing",
+  "pos": [
+   15,
+   7,
+   -58
+  ],
+  "lookAt": [
+   0,
+   16,
+   -30
+  ],
+  "fov": 70,
+  "timeSec": 1.5
+ },
+ {
+  "name": "odm_arc",
+  "pos": [
+   4,
+   20,
+   -24
+  ],
+  "lookAt": [
+   2,
+   16,
+   6
+  ],
+  "fov": 78,
+  "timeSec": 2.05
+ },
+ {
+  "name": "odm_reel",
+  "pos": [
+   -6,
+   26,
+   48
+  ],
+  "lookAt": [
+   14,
+   25,
+   26
+  ],
+  "fov": 65,
+  "timeSec": 2.95
+ },
+ {
+  "name": "odm_land",
+  "pos": [
+   12,
+   31,
+   32
+  ],
+  "lookAt": [
+   19,
+   28.5,
+   22
+  ],
+  "fov": 60,
+  "timeSec": 4.4
  }
 ]

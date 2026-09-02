@@ -1,0 +1,19 @@
+{
+    "name": "AOT.ODM.Editor",
+    "rootNamespace": "",
+    "references": [
+        "AOT.ODM",
+        "AOT.Shared"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
