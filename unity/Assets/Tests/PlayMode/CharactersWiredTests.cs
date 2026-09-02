@@ -7,6 +7,7 @@ using Shared;
 using Shared.Rigs;
 using Shared.Cam;
 using Characters;
+using Pose = Shared.Rigs.Pose;
 
 /// Code-level proof that the real Mikasa and Titan are wired into a play session exactly as the build runs them.
 public class CharactersWiredTests
