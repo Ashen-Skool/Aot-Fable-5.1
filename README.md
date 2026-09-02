@@ -33,11 +33,11 @@ on the Mac Studio by a gauntlet loop of builder and critic sub-agents. Started
 | Brief, gauntlet, prompts | on main |
 | CC0 assets (town kits, textures, HDRIs, Quaternius anim library, Kenney audio) | on main under `assets/staged/`, manifest at `assets/manifest.json`. Missing: hero SFX (no Freesound key), music |
 | Reference frames (critique only, gitignored) | on the Studio at `references/` (100 frames, 11 folders, `INDEX.md`, contact sheets). Regenerate with yt-dlp if lost; see INDEX for sources |
-| Harness (piece 0) | **in progress on branch `lane/harness`** (Unity project, URP, capture rig, build/test scripts, progress page). The sub-agent building it dies with the session; pick up from the branch's last commit and `docs/HARNESS.md` if present, else finish per the Piece 0 spec in docs/GAUNTLET.md |
+| Harness (piece 0) | MERGED to main. `docs/HARNESS.md` documents setup (13 s), capture (12 s / 4 shots), tests (19 s), progress page. The agent died on the monthly spend limit right after writing the docs, so **verify `tools/build.sh mac` and `tools/build.sh webgl` yourself before trusting them**; everything else it measured |
 | Progress page | GitHub Pages enabled on main; `progress.html` at the site root once the harness lands |
 | Concept art | `assets/concepts/` — user approved **mikasa-2.png** and **titan-2.png** |
 | Meshy meshes | DONE, committed under `assets/characters/<name>/meshy-raw/` (GLB+FBX+PBR, ~31k tris, both 1.9 m tall). Turntables in `assets/characters/<name>/turntable/sheet.jpg`. User said they look good for now, provisional until seen in-engine |
-| Waves 1+ | not started; gated on harness |
+| Waves 1+ | not started. Session ended on the monthly spend limit (resets 8:40pm Chicago); wave 1 = proxies, town, ODM flight, camera |
 
 
 ## The one rule that is not in the docs
