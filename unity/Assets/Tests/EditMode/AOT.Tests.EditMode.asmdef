@@ -4,7 +4,8 @@
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "AOT.Shared"
+        "AOT.Shared",
+        "AOT.Proxies"
     ],
     "includePlatforms": [
         "Editor"
