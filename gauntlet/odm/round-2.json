@@ -1,0 +1,17 @@
+{
+  "piece": "odm",
+  "round": 2,
+  "verdict": "lose",
+  "gap": "landing has no crouch/dust and every maneuver (hook, reel, swing, boost, arc) reuses the identical rigid diagonal capsule pose with one short tapering streak, so nothing differentiates a swing from a boost from a hook, and the trail dies out instead of whipping behind like the game's continuous gas plume.",
+  "score": 5,
+  "shots": [
+    "hook: closest ref odm-09 diving dive-in shot — reference reads far faster: flowing cloak, bent limbs, and a long bending gas trail sell the dive; ours is a static diagonal capsule with a short tapering white streak and no limb/cloak motion.",
+    "reel: closest ref odm-10 mid-swing — reference shows torque (arm cocked, leg kicked back) implying stored momentum; ours shows the same rigid capsule silhouette just facing a different building, no pose change to sell the reel-in.",
+    "swing: closest ref odm-10 arc swing — reference's extended limb and cloak whip read the arc; ours is the identical static pose seen from a wider angle, so the arc itself is invisible, only the wire line hints at swinging.",
+    "boost: closest ref odm-09 gas-thrust dive — reference has a thick, sustained trailing plume bending across the frame; ours has a decent directional streak with sparkle dots but it's short, thin, and reads more like a decal than thrust.",
+    "arc: closest ref odm-01 street-level pursuit — reference implies velocity via motion blur and a leaning camera-follow; ours is a level static shot of the same capsule pose, no banking or blur cue at all.",
+    "land: closest ref odm-06 rooftop chase — even mid-air the reference keeps blur and dynamic tilt; ours shows the capsule standing upright on the roof with a small poof underneath, no crouch, no dust burst, no impact deformation — reads as idle, not landed."
+  ],
+  "reference": ["odm-01", "odm-06", "odm-09", "odm-10"],
+  "ts": "2026-09-02T00:00:00Z"
+}
