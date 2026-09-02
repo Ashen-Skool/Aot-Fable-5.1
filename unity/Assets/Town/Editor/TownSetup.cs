@@ -63,9 +63,14 @@ namespace Town.Editor
                 if (changed) { imp.SaveAndReimport(); Debug.Log("[TownSetup] reimported " + p + (normal ? " as NormalMap" : "")); }
             }
             var hdr = AssetImporter.GetAtPath(Hdri) as TextureImporter;
-            if (hdr != null && (hdr.wrapMode != TextureWrapMode.Clamp || hdr.maxTextureSize < 2048))
+            // equirect: wrap horizontally (a clamped seam shows as a bright vertical line in the sky), clamp at the poles
+            // no mipmaps: the atan2 UV discontinuity of the panoramic shader otherwise samples the smallest mip along one column (a bright dashed line in the sky)
+            if (hdr != null && (hdr.wrapModeU != TextureWrapMode.Repeat || hdr.wrapModeV != TextureWrapMode.Clamp || hdr.maxTextureSize < 2048 || hdr.mipmapEnabled))
             {
-                hdr.wrapMode = TextureWrapMode.Clamp;
+                hdr.mipmapEnabled = false;
+                hdr.wrapModeU = TextureWrapMode.Repeat;
+                hdr.wrapModeV = TextureWrapMode.Clamp;
+                hdr.wrapModeW = TextureWrapMode.Clamp;
                 hdr.maxTextureSize = 2048;
                 hdr.SaveAndReimport();
             }

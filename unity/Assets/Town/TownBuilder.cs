@@ -16,10 +16,12 @@ namespace Town
         class Group
         {
             public readonly Dictionary<Material, MeshKit> kits = new Dictionary<Material, MeshKit>(24);
-            public MeshKit Get(Material m, Matrix4x4 xf)
+            public MeshKit Get(Material m, Matrix4x4 xf) => Get(m, xf, Vector2.zero);
+            public MeshKit Get(Material m, Matrix4x4 xf, Vector2 uv)
             {
                 if (!kits.TryGetValue(m, out var k)) { k = new MeshKit(); kits[m] = k; }
                 k.xf = xf;
+                k.uvOffset = uv;
                 return k;
             }
         }
@@ -108,18 +110,22 @@ namespace Town
             var g = Cell(h.pos);
             float hw = h.w * 0.5f, hd = h.d * 0.5f, top = h.WallTop, g0 = h.baseH + h.storeyH;
             float ov = h.Overhang, og = h.GableOverhang;
-            var stone = mats.Stone(h.stoneSet);
-            var plaster = mats.Plaster(h.plasterTint);
+            var uv = h.uvOffset;
+            var stone = mats.Stone(h.stoneSet, h.shade);
+            var plaster = mats.Plaster(h.plasterTint, h.shade);
             var roof = mats.Roof(h.roofSet % TownMaterials.RoofSets.Length, h.roofSet / TownMaterials.RoofSets.Length);
-            var kStone = g.Get(stone, xf);
-            var kPlaster = g.Get(plaster, xf);
-            var kRoof = g.Get(roof, xf);
-            var kTimber = g.Get(mats.TimberDark, xf);
-            var kPale = g.Get(mats.TimberPale, xf);
-            var kGlass = g.Get(mats.Glass, xf);
-            var kShut = g.Get(mats.Shutter(h.shutterTint), xf);
-            var kChim = g.Get(mats.Stone(0), xf);
-            var kDark = g.Get(mats.Dark, xf);
+            var kStone = g.Get(stone, xf, uv);
+            var kPlaster = g.Get(plaster, xf, uv);
+            var kRoof = g.Get(roof, xf, uv);
+            var kTimber = g.Get(mats.TimberDark, xf, uv);
+            var kPale = g.Get(mats.TimberPale, xf, uv);
+            var kGlass = g.Get(mats.Glass, xf, uv);
+            var kShut = g.Get(mats.Shutter(h.shutterTint), xf, uv);
+            var kChim = g.Get(mats.Stone(0, h.shade), xf, uv);
+            var kDark = g.Get(mats.Dark, xf, uv);
+            var kPlinth = g.Get(mats.StoneDark, xf, uv);
+            // darkened base course
+            kPlinth.Box(new Vector3(-hw - 0.12f, 0f, -hd - 0.12f), new Vector3(hw + 0.12f, 0.75f, hd + 0.12f));
 
             // body
             if (h.wallStyle == 1)
@@ -165,7 +171,7 @@ namespace Town
             // timber frame
             if (h.wallStyle == 2)
             {
-                Frame(h, kTimber, Vector3.back, hd, h.w);
+                Frame(h, g.Get(mats.TimberDark, xf, uv), Vector3.back, hd, h.w);
                 Frame(h, kTimber, Vector3.left, hw, h.d);
                 Frame(h, kTimber, Vector3.right, hw, h.d);
             }
@@ -242,11 +248,11 @@ namespace Town
         /// <summary>Windows and the door on one face. outN is the outward normal in house-local space.</summary>
         void Face(HouseSpec h, Group g, Matrix4x4 xf, Vector3 outN, float halfDepth, float width, bool front)
         {
-            var kPale = g.Get(mats.TimberPale, xf);
-            var kGlass = g.Get(mats.Glass, xf);
-            var kShut = g.Get(mats.Shutter(h.shutterTint), xf);
-            var kStone = g.Get(mats.Stone(h.stoneSet), xf);
-            var kDoor = g.Get(mats.TimberDark, xf);
+            var kPale = g.Get(mats.TimberPale, xf, h.uvOffset);
+            var kGlass = g.Get(mats.Glass, xf, h.uvOffset);
+            var kShut = g.Get(mats.Shutter(h.shutterTint), xf, h.uvOffset);
+            var kStone = g.Get(mats.Stone(h.stoneSet, h.shade), xf, h.uvOffset);
+            var kDoor = g.Get(mats.TimberDark, xf, h.uvOffset);
             var right = Vector3.Cross(outN, Vector3.up);
             int n = Mathf.Max(1, Mathf.RoundToInt(width / (front ? 2.6f : 3.2f)));
             for (int s = 0; s < h.storeys; s++)
@@ -280,9 +286,9 @@ namespace Town
             if (door)
             {
                 Slab(kDoor, mid + outN * 0.02f, outN, ww, wh, 0.1f);
-                Slab(kStone, mid - right * (ww * 0.5f + 0.14f) + outN * 0.04f, outN, 0.28f, wh + 0.3f, 0.22f);
-                Slab(kStone, mid + right * (ww * 0.5f + 0.14f) + outN * 0.04f, outN, 0.28f, wh + 0.3f, 0.22f);
-                Slab(kStone, c + Vector3.up * (wh + 0.16f) + outN * 0.04f, outN, ww + 0.56f, 0.32f, 0.22f);
+                Slab(kStone, mid - right * (ww * 0.5f + 0.16f) + outN * 0.1f, outN, 0.32f, wh + 0.3f, 0.34f);
+                Slab(kStone, mid + right * (ww * 0.5f + 0.16f) + outN * 0.1f, outN, 0.32f, wh + 0.3f, 0.34f);
+                Slab(kStone, c + Vector3.up * (wh + 0.18f) + outN * 0.12f, outN, ww + 0.64f, 0.36f, 0.38f);
                 Slab(kStone, c + Vector3.up * 0.08f + outN * 0.34f, outN, ww + 0.5f, 0.16f, 0.62f);
                 // door planks + iron bands
                 Slab(kDoor, mid + outN * 0.045f, outN, ww - 0.1f, wh - 0.1f, 0.03f);
@@ -291,19 +297,22 @@ namespace Town
             // glass, nearly flush
             var a = c - right * (ww * 0.5f) + outN * 0.02f;
             kGlass.Quad(a, a + Vector3.up * wh, a + Vector3.up * wh + right * ww, a + right * ww);
-            // frame ring
-            Slab(kPale, mid - right * (ww * 0.5f + 0.07f) + outN * 0.02f, outN, 0.14f, wh + 0.28f, 0.16f);
-            Slab(kPale, mid + right * (ww * 0.5f + 0.07f) + outN * 0.02f, outN, 0.14f, wh + 0.28f, 0.16f);
-            Slab(kPale, c + Vector3.up * (wh + 0.07f) + outN * 0.02f, outN, ww + 0.28f, 0.14f, 0.16f);
-            // mullion
+            // stone reveal: jambs and lintel stand 0.22 m proud so the glass sits in a shadowed recess
+            Slab(kStone, mid - right * (ww * 0.5f + 0.13f) + outN * 0.08f, outN, 0.26f, wh + 0.36f, 0.3f);
+            Slab(kStone, mid + right * (ww * 0.5f + 0.13f) + outN * 0.08f, outN, 0.26f, wh + 0.36f, 0.3f);
+            Slab(kStone, c + Vector3.up * (wh + 0.14f) + outN * 0.1f, outN, ww + 0.52f, 0.28f, 0.34f);
+            // inner timber frame + mullion, flush with the glass
+            Slab(kPale, mid - right * (ww * 0.5f) + outN * 0.03f, outN, 0.08f, wh + 0.08f, 0.06f);
+            Slab(kPale, mid + right * (ww * 0.5f) + outN * 0.03f, outN, 0.08f, wh + 0.08f, 0.06f);
+            Slab(kPale, c + Vector3.up * wh + outN * 0.03f, outN, ww + 0.08f, 0.08f, 0.06f);
             Slab(kPale, mid + outN * 0.03f, outN, 0.06f, wh, 0.06f);
             Slab(kPale, mid + outN * 0.03f, outN, ww, 0.06f, 0.06f);
-            // sill
-            Slab(kStone, c - Vector3.up * 0.06f + outN * 0.08f, outN, ww + 0.44f, 0.12f, 0.3f);
+            // deep sill
+            Slab(kStone, c - Vector3.up * 0.07f + outN * 0.16f, outN, ww + 0.6f, 0.14f, 0.46f);
             if (h.shutters)
             {
-                Slab(kShut, mid - right * (ww * 0.5f + 0.14f + 0.26f) + outN * 0.05f, outN, 0.5f, wh + 0.12f, 0.06f);
-                Slab(kShut, mid + right * (ww * 0.5f + 0.14f + 0.26f) + outN * 0.05f, outN, 0.5f, wh + 0.12f, 0.06f);
+                Slab(kShut, mid - right * (ww * 0.5f + 0.26f + 0.27f) + outN * 0.18f, outN, 0.52f, wh + 0.2f, 0.07f);
+                Slab(kShut, mid + right * (ww * 0.5f + 0.26f + 0.27f) + outN * 0.18f, outN, 0.52f, wh + 0.2f, 0.07f);
             }
         }
 
@@ -312,17 +321,17 @@ namespace Town
         {
             var right = Vector3.Cross(outN, Vector3.up);
             float g0 = h.baseH + h.storeyH, top = h.WallTop;
-            var surf = outN * (halfDepth + 0.02f);
+            var surf = outN * (halfDepth + 0.06f);
             for (int s = 1; s < h.storeys; s++)
-                Slab(k, surf + Vector3.up * (h.baseH + s * h.storeyH), outN, width + 0.1f, 0.24f, 0.16f);
-            Slab(k, surf + Vector3.up * (top - 0.42f), outN, width + 0.1f, 0.2f, 0.16f);
+                Slab(k, surf + Vector3.up * (h.baseH + s * h.storeyH), outN, width + 0.14f, 0.26f, 0.24f);
+            Slab(k, surf + Vector3.up * (top - 0.42f), outN, width + 0.14f, 0.22f, 0.24f);
             int n = Mathf.Max(1, Mathf.RoundToInt(width / 2.6f));
             float postH = top - 0.32f - g0;
             float yc = g0 + postH * 0.5f;
-            Slab(k, surf + right * (-width * 0.5f + 0.12f) + Vector3.up * yc, outN, 0.22f, postH, 0.16f);
-            Slab(k, surf + right * (width * 0.5f - 0.12f) + Vector3.up * yc, outN, 0.22f, postH, 0.16f);
+            Slab(k, surf + right * (-width * 0.5f + 0.12f) + Vector3.up * yc, outN, 0.24f, postH, 0.24f);
+            Slab(k, surf + right * (width * 0.5f - 0.12f) + Vector3.up * yc, outN, 0.24f, postH, 0.24f);
             for (int i = 1; i < n; i++)
-                Slab(k, surf + right * (-width * 0.5f + i * width / n) + Vector3.up * yc, outN, 0.2f, postH, 0.16f);
+                Slab(k, surf + right * (-width * 0.5f + i * width / n) + Vector3.up * yc, outN, 0.22f, postH, 0.24f);
             // diagonal braces on the top storey, first and last bay
             if (h.storeys >= 2)
             {
@@ -338,7 +347,7 @@ namespace Town
             var p0 = surf + right * x0 + Vector3.up * y0;
             var p1 = surf + right * x1 + Vector3.up * y1;
             var dir = p1 - p0;
-            k.BoxRot((p0 + p1) * 0.5f, new Vector3(0.18f, dir.magnitude, 0.14f), Quaternion.LookRotation(outN, dir.normalized));
+            k.BoxRot((p0 + p1) * 0.5f, new Vector3(0.2f, dir.magnitude, 0.22f), Quaternion.LookRotation(outN, dir.normalized));
         }
 
         // ---------------------------------------------------------------- wall + gate
@@ -347,14 +356,65 @@ namespace Town
         {
             float z0 = L.wallZ0, z1 = L.wallZ1, H = L.wallHeight, X = L.wallHalfLength;
             float gw = L.gateHalfWidth, gh = L.gateRectHeight, gr = L.gateArchRadius, gtop = gh + gr;
+            var wr = new System.Random(L.seed * 31 + 7);
             var k = wallGroup.Get(mats.WallStone, Matrix4x4.identity);
+            var km = wallGroup.Get(mats.Mortar, Matrix4x4.identity);
             var kd = wallGroup.Get(mats.WallStoneDark, Matrix4x4.identity);
             var kw = wallGroup.Get(mats.TimberDark, Matrix4x4.identity);
             var ki = wallGroup.Get(mats.Iron, Matrix4x4.identity);
+            var ks = wallGroup.Get(mats.WallStain, Matrix4x4.identity);
 
-            k.Box(new Vector3(-X, 0, z0), new Vector3(-gw, H, z1));
-            k.Box(new Vector3(gw, 0, z0), new Vector3(X, H, z1));
-            k.Box(new Vector3(-gw, gtop, z0), new Vector3(gw, H, z1));
+            // core: the mortar-dark mass the blocks stand out from
+            km.Box(new Vector3(-X, 0, z0), new Vector3(-gw, H, z1));
+            km.Box(new Vector3(gw, 0, z0), new Vector3(X, H, z1));
+            km.Box(new Vector3(-gw, gtop, z0), new Vector3(gw, H, z1));
+            k.Box(new Vector3(-X, H - 0.4f, z0), new Vector3(X, H, z1));                 // walkway
+            k.Box(new Vector3(-X, 0, z1 - 0.3f), new Vector3(X, H, z1));                 // outer skin
+
+            // stacked stone-block courses on the inner face: 1.6 m courses, 2.4-4.4 m blocks,
+            // half-offset per course, each block a little different in depth and texture offset
+            const float course = 1.6f;
+            float faceZ = z0;
+            int bandRows = Mathf.CeilToInt(H / course);
+            for (int row = 0; row < bandRows; row++)
+            {
+                float y0 = row * course, y1 = Mathf.Min(H - 0.4f, y0 + course);
+                if (y1 - y0 < 0.3f) break;
+                int band = Mathf.Clamp((int)(y0 / 12.5f), 0, 3);
+                var kb = wallGroup.Get(mats.WallBlock(band), Matrix4x4.identity);
+                float x = -X + (row % 2 == 0 ? 0f : -1.6f);
+                while (x < X)
+                {
+                    float w = 2.4f + (float)wr.NextDouble() * 2.0f;
+                    float xa = Mathf.Max(-X, x), xb = Mathf.Min(X, x + w);
+                    x += w;
+                    if (xb - xa < 0.4f) continue;
+                    // leave the gate frame clear
+                    if (xb > -gw - 2.4f && xa < gw + 2.4f && y0 < gtop + 4.2f) continue;
+                    float depth = 0.16f + (float)wr.NextDouble() * 0.16f;
+                    kb.uvOffset = new Vector2((float)wr.NextDouble() * 9f, (float)wr.NextDouble() * 9f);
+                    kb.Box(new Vector3(xa + 0.05f, y0 + 0.05f, faceZ - depth), new Vector3(xb - 0.05f, y1 - 0.05f, faceZ + 0.05f));
+                }
+            }
+            // string courses every 12.5 m (band boundaries), with a dark weather band beneath
+            for (float y = 12.5f; y < H - 1f; y += 12.5f)
+            {
+                kd.Box(new Vector3(-X, y - 0.3f, z0 - 0.55f), new Vector3(X, y + 0.3f, z0));
+                ks.Quad(new Vector3(-X, y - 1.4f, z0 - 0.36f), new Vector3(-X, y - 0.3f, z0 - 0.36f), new Vector3(X, y - 0.3f, z0 - 0.36f), new Vector3(X, y - 1.4f, z0 - 0.36f));
+            }
+            // drainage staining streaks running down from the parapet and the ledges
+            for (int i = 0; i < 46; i++)
+            {
+                float sx = -X + 4f + (float)wr.NextDouble() * (2f * X - 8f);
+                if (Mathf.Abs(sx) < gw + 4f) continue;
+                float top = (wr.NextDouble() < 0.6) ? H - 0.5f : 12.5f * (1 + wr.Next(3));
+                float len = 8f + (float)wr.NextDouble() * 22f;
+                float wt = 0.5f + (float)wr.NextDouble() * 0.9f, wb = wt * 0.35f;
+                float yb = Mathf.Max(0.5f, top - len);
+                ks.uvOffset = new Vector2((float)wr.NextDouble() * 5f, 0f);
+                ks.Quad(new Vector3(sx - wb, yb, z0 - 0.37f), new Vector3(sx - wt, top, z0 - 0.37f), new Vector3(sx + wt, top, z0 - 0.37f), new Vector3(sx + wb, yb, z0 - 0.37f));
+            }
+            // gate arch fill (stepped) and frame
             const int steps = 20;
             for (int i = 0; i < steps; i++)
             {
@@ -363,23 +423,30 @@ namespace Town
                 float y = gh + Mathf.Sqrt(Mathf.Max(0f, gr * gr - xm * xm));
                 kd.Box(new Vector3(xa, y, z0), new Vector3(xb, gtop + 0.02f, z1));
             }
-            // parapets
-            k.Box(new Vector3(-X, H, z0 - 0.2f), new Vector3(X, H + 1.8f, z0 + 1.0f));
-            k.Box(new Vector3(-X, H, z1 - 1.0f), new Vector3(X, H + 1.8f, z1 + 0.2f));
-            // a course line every 12.5 m: shallow ledges give the slab-stack read of the real wall
-            for (float y = 12.5f; y < H - 1f; y += 12.5f)
-                kd.Box(new Vector3(-X, y - 0.25f, z0 - 0.18f), new Vector3(X, y + 0.25f, z0));
-            // pilasters every 30 m
+            kd.Box(new Vector3(-gw - 2.4f, 0, z0 - 0.75f), new Vector3(-gw, gtop + 3f, z0));
+            kd.Box(new Vector3(gw, 0, z0 - 0.75f), new Vector3(gw + 2.4f, gtop + 3f, z0));
+            kd.Box(new Vector3(-gw - 2.4f, gtop + 2f, z0 - 0.75f), new Vector3(gw + 2.4f, gtop + 3.4f, z0));
+            kd.Box(new Vector3(-gw - 3.2f, gtop + 3.4f, z0 - 1.05f), new Vector3(gw + 3.2f, gtop + 4.2f, z0));
+            // parapets and crenellations
+            k.Box(new Vector3(-X, H, z0 - 0.25f), new Vector3(X, H + 1.6f, z0 + 1.1f));
+            k.Box(new Vector3(-X, H, z1 - 1.1f), new Vector3(X, H + 1.6f, z1 + 0.25f));
+            for (float x = -X + 1f; x < X - 2f; x += 4.4f)
+            {
+                k.Box(new Vector3(x, H + 1.6f, z0 - 0.25f), new Vector3(x + 2.2f, H + 3.2f, z0 + 1.1f));
+                k.Box(new Vector3(x, H + 1.6f, z1 - 1.1f), new Vector3(x + 2.2f, H + 3.2f, z1 + 0.25f));
+            }
+            // stepped buttresses every 30 m
+            var kbut = wallGroup.Get(mats.WallBlock(1), Matrix4x4.identity);
             for (float x = -150f; x <= 150f; x += 30f)
             {
-                if (Mathf.Abs(x) < 12f) continue;
-                kd.Box(new Vector3(x - 1.2f, 0, z0 - 0.45f), new Vector3(x + 1.2f, H - 4f, z0));
+                if (Mathf.Abs(x) < 14f) continue;
+                kbut.uvOffset = new Vector2(x * 0.37f, 0f);
+                kbut.Box(new Vector3(x - 1.8f, 0, z0 - 3.2f), new Vector3(x + 1.8f, 16f, z0));
+                kbut.Box(new Vector3(x - 1.5f, 0, z0 - 2.3f), new Vector3(x + 1.5f, 32f, z0));
+                kbut.Box(new Vector3(x - 1.2f, 0, z0 - 1.4f), new Vector3(x + 1.2f, H - 4f, z0));
+                kd.Box(new Vector3(x - 2.0f, 15.7f, z0 - 3.5f), new Vector3(x + 2.0f, 16.3f, z0));
+                kd.Box(new Vector3(x - 1.7f, 31.7f, z0 - 2.6f), new Vector3(x + 1.7f, 32.3f, z0));
             }
-            // gate frame
-            kd.Box(new Vector3(-gw - 2.2f, 0, z0 - 0.6f), new Vector3(-gw, gtop + 3f, z0));
-            kd.Box(new Vector3(gw, 0, z0 - 0.6f), new Vector3(gw + 2.2f, gtop + 3f, z0));
-            kd.Box(new Vector3(-gw - 2.2f, gtop + 2f, z0 - 0.6f), new Vector3(gw + 2.2f, gtop + 3.2f, z0));
-            kd.Box(new Vector3(-gw - 3f, gtop + 3.2f, z0 - 0.9f), new Vector3(gw + 3f, gtop + 4.0f, z0));
             // doors (closed) with iron straps, and the dark tympanum above them
             float dz0 = z0 + 3.0f, dz1 = dz0 + 0.6f;
             kw.Box(new Vector3(-gw, 0, dz0), new Vector3(-0.06f, gh, dz1));
@@ -391,7 +458,6 @@ namespace Town
                 ki.Box(new Vector3(-gw + 0.2f, y, dz0 - 0.05f), new Vector3(-0.15f, y + 0.4f, dz0));
                 ki.Box(new Vector3(0.15f, y, dz0 - 0.05f), new Vector3(gw - 0.2f, y + 0.4f, dz0));
             }
-            // portcullis bars above the doors
             for (float x = -gw + 0.6f; x < gw; x += 0.9f)
                 ki.Box(new Vector3(x - 0.08f, gh, dz0 + 0.2f), new Vector3(x + 0.08f, gtop - 0.1f, dz0 + 0.36f));
 

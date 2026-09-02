@@ -16,6 +16,7 @@ namespace Town
         readonly List<Vector2> uv = new List<Vector2>(8192);
         readonly List<int> t = new List<int>(16384);
         public Matrix4x4 xf = Matrix4x4.identity;
+        public Vector2 uvOffset = Vector2.zero;   // per-object shift that breaks texture repetition
 
         public int VertexCount => v.Count;
         public bool Empty => v.Count == 0;
@@ -24,7 +25,7 @@ namespace Town
         {
             v.Add(xf.MultiplyPoint3x4(p));
             n.Add(xf.MultiplyVector(nrm).normalized);
-            uv.Add(new Vector2(Vector3.Dot(p, uAxis), Vector3.Dot(p, vAxis)));
+            uv.Add(new Vector2(Vector3.Dot(p, uAxis) + uvOffset.x, Vector3.Dot(p, vAxis) + uvOffset.y));
         }
 
         /// <summary>a,b,c,d clockwise seen from the front. a->b is "up" (v), a->d is "right" (u).</summary>
@@ -147,6 +148,6 @@ namespace Town
             return m;
         }
 
-        public void Clear() { v.Clear(); n.Clear(); uv.Clear(); t.Clear(); xf = Matrix4x4.identity; }
+        public void Clear() { v.Clear(); n.Clear(); uv.Clear(); t.Clear(); xf = Matrix4x4.identity; uvOffset = Vector2.zero; }
     }
 }

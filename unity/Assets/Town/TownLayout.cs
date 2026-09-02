@@ -128,6 +128,8 @@ namespace Town
             h.shutters = rng.NextDouble() < 0.7;
             int slots = Mathf.Max(1, Mathf.RoundToInt(w / 2.6f));
             h.doorSlot = rng.Next(slots);
+            h.shade = rng.Next(3);
+            h.uvOffset = new Vector2(Range(rng, 0f, 7f), Range(rng, 0f, 7f));
             return h;
         }
 

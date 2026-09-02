@@ -66,16 +66,30 @@ namespace Town
             return m;
         }
 
-        public Material Stone(int set)
+        public static readonly float[] Shade = { 0.82f, 1.0f, 1.14f };
+        public static readonly Color FogColor = new Color(0.86f, 0.75f, 0.6f);
+
+        public Material Stone(int set, int shade = 1)
         {
-            set = Mathf.Abs(set) % StoneSets.Length;
-            return Textured("stone" + set, StoneSets[set], StoneTile[set], StoneTint[set], 0.1f, 1f);
+            set = Mathf.Abs(set) % StoneSets.Length; shade = Mathf.Abs(shade) % Shade.Length;
+            return Textured("stone" + set + "s" + shade, StoneSets[set], StoneTile[set], StoneTint[set] * Shade[shade], 0.1f, 1f);
         }
-        public Material Plaster(int tint)
+        public Material StoneDark => Textured("stonePlinth", "Bricks089", 1.5f, new Color(0.42f, 0.4f, 0.37f), 0.12f, 1.2f);
+        public Material Plaster(int tint, int shade = 1)
         {
-            tint = Mathf.Abs(tint) % PlasterTint.Length;
-            return Textured("plaster" + tint, "Plaster007", 3.5f, PlasterTint[tint], 0.08f, 0.8f);
+            tint = Mathf.Abs(tint) % PlasterTint.Length; shade = Mathf.Abs(shade) % Shade.Length;
+            return Textured("plaster" + tint + "s" + shade, "Plaster007", 3.5f, PlasterTint[tint] * Shade[shade], 0.08f, 0.8f);
         }
+        /// <summary>Wall block material per height band; lower bands are hazed toward the fog colour so the base reads far and huge.</summary>
+        public Material WallBlock(int band)
+        {
+            band = Mathf.Clamp(band, 0, 3);
+            float haze = new[] { 0.34f, 0.22f, 0.1f, 0f }[band];
+            var tint = Color.Lerp(new Color(0.74f, 0.72f, 0.66f), FogColor, haze);
+            return Textured("wallBlock" + band, "Rock030", 4.6f, tint, 0.06f, 1.1f);
+        }
+        public Material Mortar => Plain("mortar", new Color(0.26f, 0.25f, 0.23f), 0.05f);
+        public Material WallStain => Textured("wallStain", "Rock030", 3.1f, new Color(0.3f, 0.29f, 0.26f), 0.04f, 0.6f);
         public Material Roof(int set, int tint)
         {
             set = Mathf.Abs(set) % RoofSets.Length; tint = Mathf.Abs(tint) % RoofTint.Length;

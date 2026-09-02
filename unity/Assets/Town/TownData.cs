@@ -46,6 +46,8 @@ namespace Town
         public bool dormer, balcony, shutters;
         public float dormerX;
         public int doorSlot;
+        public int shade;            // 0 dark, 1 mid, 2 light: per-building tint variation
+        public Vector2 uvOffset;     // per-building texture shift
 
         public float WallTop => baseH + storeys * storeyH;
         public float Yaw => facing == Facing.NegZ ? 0f : facing == Facing.PosZ ? 180f : facing == Facing.PosX ? -90f : 90f;
