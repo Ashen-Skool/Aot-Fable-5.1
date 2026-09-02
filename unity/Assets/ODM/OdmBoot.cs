@@ -32,6 +32,9 @@ namespace ODM
             var mikasa = Ctx.Get<GameObject>("mikasa") ?? boot.mikasa;
             if (Player == null || Player.gameObject != mikasa) Player = OdmController.Attach(mikasa);
             Ctx.Set("player", Player);
+            // Camera rig follows whatever is registered as the camera target; that is the player, not the demo dummy.
+            var camTarget = Player.GetComponent<OdmCameraTarget>() ?? Player.gameObject.AddComponent<OdmCameraTarget>();
+            Ctx.Set(Shared.Cam.ICameraTarget.CtxName, (Shared.Cam.ICameraTarget)camTarget);
             // The town now surrounds the origin with houses; spawn in the open square so the
             // player is never born inside a collider (grounded checks start inside otherwise).
             if (!spawnPlaced && Ctx.Has("townCenter"))
