@@ -194,17 +194,22 @@ namespace Shared.Rigs
             Limb(BoneId.RightUpperArm, 22f, 48f); Elbow(BoneId.RightLowerArm, 25f);
         }
 
+        /// <summary>Knocked back: torso past vertical, front leg locked, arms flung up and behind, head back.
+        /// Hips pitch carries the legs with it, so leg angles are compensated to read in world space.</summary>
         void Stagger(float u)
         {
             float wob = Mathf.Sin(u * 7f) * Mathf.Exp(-u * 0.6f);
-            Hips(-18f, -0.03f, -0.06f, 0, 0, 6f * wob);
-            Torso(BoneId.Spine, -8f, 4f * wob, 0);
-            Torso(BoneId.Chest, -14f, 6f * wob, -4f * wob);
-            Torso(BoneId.Head, -24f, 0, 5f * wob);
-            Limb(BoneId.LeftUpperArm, 45f, 75f); Elbow(BoneId.LeftLowerArm, 40f);
-            Limb(BoneId.RightUpperArm, 38f, 82f); Elbow(BoneId.RightLowerArm, 50f);
-            Limb(BoneId.LeftUpperLeg, 32f, 10f); Knee(BoneId.LeftLowerLeg, 6f); Foot(BoneId.LeftFoot, -20f);
-            Limb(BoneId.RightUpperLeg, -22f, 12f); Knee(BoneId.RightLowerLeg, 40f); Foot(BoneId.RightFoot, 25f);
+            const float back = 30f;
+            Hips(-back, -0.05f, -0.08f, 0, 0, 5f * wob);
+            Torso(BoneId.Spine, -8f, 3f * wob, 0);
+            Torso(BoneId.Chest, -10f, 4f * wob, -3f * wob);
+            Torso(BoneId.Neck, -6f, 0, 0);
+            Torso(BoneId.Head, -16f, 0, 4f * wob);
+            // arms over the top: up and behind in world (chest is already ~48 deg back)
+            Limb(BoneId.LeftUpperArm, -196f + 5f * wob, 30f); Elbow(BoneId.LeftLowerArm, 18f);
+            Limb(BoneId.RightUpperArm, -190f - 5f * wob, 36f); Elbow(BoneId.RightLowerArm, 24f);
+            Limb(BoneId.LeftUpperLeg, 42f - back, 8f); Knee(BoneId.LeftLowerLeg, 0f); Foot(BoneId.LeftFoot, -26f);
+            Limb(BoneId.RightUpperLeg, -14f - back, 12f); Knee(BoneId.RightLowerLeg, 30f); Foot(BoneId.RightFoot, 20f);
         }
 
         void Kneel(float u)
@@ -292,17 +297,21 @@ namespace Shared.Rigs
         }
 
         /// <summary>Leaning far back off balance, arms thrown up overhead, one leg out front to catch itself.</summary>
+        /// <summary>Knocked back: torso well past vertical, front leg locked, arms flung up and behind, head back.
+        /// Hips pitch carries the legs with it, so leg angles are compensated to read in world space.</summary>
         void TitanStagger(float u)
         {
             float wob = Mathf.Sin(u * 6f) * Mathf.Exp(-u * 0.5f);
-            Hips(-32f, -0.05f, -0.08f, 0, 0, 5f * wob);
-            Torso(BoneId.Spine, -12f, 3f * wob, 0);
-            Torso(BoneId.Chest, -16f, 4f * wob, -3f * wob);
-            Torso(BoneId.Head, -22f, 0, 4f * wob);
-            Limb(BoneId.LeftUpperArm, 125f + 6f * wob, 55f); Elbow(BoneId.LeftLowerArm, 18f);
-            Limb(BoneId.RightUpperArm, 118f - 6f * wob, 62f); Elbow(BoneId.RightLowerArm, 24f);
-            Limb(BoneId.LeftUpperLeg, 42f, 10f); Knee(BoneId.LeftLowerLeg, 4f); Foot(BoneId.LeftFoot, -30f);
-            Limb(BoneId.RightUpperLeg, -12f, 14f); Knee(BoneId.RightLowerLeg, 32f); Foot(BoneId.RightFoot, 20f);
+            const float back = 34f;
+            Hips(-back, -0.06f, -0.10f, 0, 0, 5f * wob);
+            Torso(BoneId.Spine, -8f, 3f * wob, 0);
+            Torso(BoneId.Chest, -10f, 4f * wob, -3f * wob);
+            Torso(BoneId.Neck, -6f, 0, 0);
+            Torso(BoneId.Head, -16f, 0, 4f * wob);
+            Limb(BoneId.LeftUpperArm, -200f + 6f * wob, 32f); Elbow(BoneId.LeftLowerArm, 16f);
+            Limb(BoneId.RightUpperArm, -194f - 6f * wob, 40f); Elbow(BoneId.RightLowerArm, 22f);
+            Limb(BoneId.LeftUpperLeg, 44f - back, 10f); Knee(BoneId.LeftLowerLeg, 0f); Foot(BoneId.LeftFoot, -30f);
+            Limb(BoneId.RightUpperLeg, -14f - back, 14f); Knee(BoneId.RightLowerLeg, 32f); Foot(BoneId.RightFoot, 22f);
         }
 
         /// <summary>One knee on the ground, back arched forward over it, head hanging: the nape is up and open.</summary>
