@@ -1,0 +1,16 @@
+{
+  "piece": "camera",
+  "round": 2,
+  "verdict": "loss",
+  "gap": "The kill cam explicitly fails its own requirement: cam_killcam_a and cam_killcam_b are meant to be the same moment 1s apart from different orbit angles, but they show almost the identical static framing with barely a few degrees of drift, while the game's kill cam sweeps through completely different angles, blood-spray, slow-motion, and a 'Complete Elimination' banner between frames.",
+  "score": 2,
+  "shots": [
+    "cam_chase: closest to cam-04 (flat corridor chase, camera locked directly behind the rider) - game wins clearly, its version still carries motion blur streaking off the character and a following bounce/sway even in its flattest shots, while ours is a perfectly still, dead-center, tripod-locked capsule with zero motion cues besides the static environment.",
+    "cam_boost: closest to cam-03 (boost/speed blur shot) - game wins by a landslide, cam-03 has full-frame radial motion blur and a forward FOV punch that screams speed; ours is a static wide two-shot with no blur, no FOV change, and the capsule barely reads as moving at all.",
+    "cam_dive: closest to cam-06 (over-the-shoulder dive with radial speed lines) - game wins, its dive shot has real downward camera commitment, motion-line convergence toward the target, and dynamic framing; ours has a faint radial vignette glow but the camera itself doesn't dive or tilt, it just sits behind the capsule looking slightly down.",
+    "cam_impact: closest to cam-01 (impact freeze-frame with radiating burst lines) - game wins, cam-01's burst lines are tied to a genuine snap-zoom/shake on the hit; ours has a similar radial-line decal around the capsule but no visible camera shake, punch-in, or hit-stop, it reads as a static shot with a light effect pasted over it.",
+    "cam_killcam_a vs cam_killcam_b: closest to kc-01/kc-09 (kill cam with a completed sweep, blood spray, banner text, and slow motion) - game wins overwhelmingly, and worse, ours fails its own basic premise: the two frames meant to be 1s apart on an orbiting kill cam show nearly the same angle with almost no rotation, so there is no orbit to speak of."
+  ],
+  "reference": "AOT2 (Koei Tecmo)",
+  "ts": "2026-09-02T00:00:00Z"
+}
