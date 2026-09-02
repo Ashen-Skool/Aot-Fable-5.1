@@ -56,6 +56,9 @@ namespace Proxies
             Ctx.Set("titanProxy", titan);
             Ctx.Set("bossProxy", boss);
             Ctx.Set("mikasaPoser", (IPoser)mikasa.rig);
+            // Real rigged model, if the FBX is in Resources/Characters (made with the user; proxy otherwise).
+            var mikasaModel = Characters.CharacterModel.TryDress(mikasa.gameObject, "Characters/Mikasa", MikasaProxy.Height);
+            if (mikasaModel != null) { Ctx.Set("mikasaPoser", (IPoser)mikasaModel); Ctx.Set("mikasaModel", mikasaModel); }
             Ctx.Set("titanPoser", (IPoser)titan.rig);
             Ctx.Set("bossPoser", (IPoser)boss.rig);
             var orbit = Ctx.Get<OrbitCamera>("orbit");

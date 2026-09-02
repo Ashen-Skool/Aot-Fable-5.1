@@ -339,6 +339,7 @@ namespace ODM
 
         void OnLanded(Vector3 pos, float impactSpeed)
         {
+            landPoseTimer = 0.35f;
             LandTime = Time.fixedTime; LandSpot = pos;
             crouchT = crouchTime;
             if (dust != null)
@@ -442,7 +443,23 @@ namespace ODM
             liveInput.hasAim = false;
         }
 
-        void LateUpdate() { UpdateCables(); UpdateSpeedFx(); }
+        void LateUpdate() { UpdateCables(); UpdateSpeedFx(); UpdatePose(); }
+
+        float landPoseTimer;
+        /// <summary>Drive whichever IPoser is registered for Mikasa (proxy or the real rig) from flight state.</summary>
+        void UpdatePose()
+        {
+            var poser = Ctx.Get<Shared.Rigs.IPoser>("mikasaPoser");
+            if (poser == null) return;
+            landPoseTimer -= Time.deltaTime;
+            Shared.Rigs.Pose want;
+            if (landPoseTimer > 0f) want = Shared.Rigs.Pose.Land;
+            else if (!Grounded) want = Shared.Rigs.Pose.Fly;
+            else if (Speed > 7f) want = Shared.Rigs.Pose.Sprint;
+            else if (Speed > 0.6f) want = Shared.Rigs.Pose.Run;
+            else want = Shared.Rigs.Pose.Idle;
+            if (poser.Current != want) poser.SetPose(want);
+        }
 
         // ---------- simulation ----------
         void FixedUpdate()
