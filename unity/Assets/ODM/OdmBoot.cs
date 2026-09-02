@@ -25,12 +25,22 @@ namespace ODM
         }
 
         /// <summary>Idempotent. Attaches the controller to Mikasa and optionally builds the tower grid.</summary>
+        static bool spawnPlaced;
         public static OdmController Ensure(bool buildGrid)
         {
             var boot = Bootstrap.Ensure();
             var mikasa = Ctx.Get<GameObject>("mikasa") ?? boot.mikasa;
             if (Player == null || Player.gameObject != mikasa) Player = OdmController.Attach(mikasa);
             Ctx.Set("player", Player);
+            // The town now surrounds the origin with houses; spawn in the open square so the
+            // player is never born inside a collider (grounded checks start inside otherwise).
+            if (!spawnPlaced && Ctx.Has("townCenter"))
+            {
+                var c = Ctx.Get<Vector3>("townCenter");
+                Player.transform.position = new Vector3(c.x, 1.2f, c.z);
+                var rb = Player.GetComponent<Rigidbody>(); if (rb != null) rb.linearVelocity = Vector3.zero;
+                spawnPlaced = true;
+            }
             var titan = Ctx.Get<GameObject>("titan");
             if (titan != null) SetLayerDeep(titan.transform, OdmLayers.Titan);
             var placeholder = Ctx.Get<GameObject>("placeholder");
