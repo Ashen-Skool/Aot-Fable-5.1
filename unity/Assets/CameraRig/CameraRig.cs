@@ -257,8 +257,22 @@ namespace AotCamera
 
         void LateUpdate()
         {
-            // passive while a capture places the camera itself (poses without "camera": "game")
-            if (!driveCamera || (CaptureRunner.Capturing && !CaptureRunner.LiveCamera)) { Lines.SetVignette(0f); Lines.Tick(Cam, 0f, 0f); if (blur != null) blur.intensity.value = 0f; return; }
+            // passive while a capture places the camera itself (poses without "camera": "game"):
+            // the rig keeps simulating (dive / kill cam timers, springs) but leaves the transform alone
+            bool passive = !driveCamera || (CaptureRunner.Capturing && !CaptureRunner.LiveCamera);
+            var keepPos = transform.position; var keepRot = transform.rotation; float keepFov = Cam.fieldOfView;
+            Step();
+            if (passive)
+            {
+                transform.SetPositionAndRotation(keepPos, keepRot);
+                Cam.fieldOfView = keepFov;
+                Lines.SetVignette(0f); Lines.Tick(Cam, 0f, 0f);
+                if (blur != null) blur.intensity.value = 0f;
+            }
+        }
+
+        void Step()
+        {
             ResolveTarget();
             // "real" dt for things that must ignore slow-mo. Not Time.unscaledDeltaTime: under
             // Time.captureFramerate that is wall-clock time per frame (~1 ms), not the captured step.
@@ -449,7 +463,9 @@ namespace AotCamera
             headingDir = flat;
             var right = Vector3.Cross(Vector3.up, flat);
             var divePos = ResolveCollision(pivot, pivot - flat * diveDistance + right * diveShoulder + Vector3.up * diveHeight);
-            var pos = Vector3.Lerp(diveFrom, divePos, e);
+            // arc over the wall's edge before dropping: a straight line from the wall top would cut through the wall face
+            var ctrl = Vector3.Lerp(diveFrom, divePos, 0.35f); ctrl.y = diveFrom.y + 2f;
+            var pos = Vector3.Lerp(Vector3.Lerp(diveFrom, ctrl, e), Vector3.Lerp(ctrl, divePos, e), e);
             float el = Mathf.Clamp01(u * 1.6f); el = el * el * (3f - 2f * el); // the look finds Mikasa before the camera arrives
             var rotWall = Quaternion.LookRotation(diveLook - pos, Vector3.up);
             var rotDive = FrameAt(pos, pivot, diveScreen, Cam.fieldOfView, Aspect);
