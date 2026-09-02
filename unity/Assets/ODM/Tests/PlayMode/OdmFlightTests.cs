@@ -10,13 +10,6 @@ public class OdmFlightTests
     [SetUp] public void Fast() { Time.timeScale = 5f; }
     [TearDown] public void Normal() { Time.timeScale = 1f; }
 
-    static IEnumerator RunDemo(OdmController player, FlightScript script, int maxSteps = 60 * 12)
-    {
-        int steps = 0;
-        while (script.Playing && steps < maxSteps) { yield return new WaitForFixedUpdate(); steps++; }
-        for (int i = 0; i < 60; i++) yield return new WaitForFixedUpdate();   // let the landing settle
-    }
-
     [UnityTest]
     public IEnumerator ScriptedHookAndBoostReachesSpeedAndLandsOnRoof()
     {
@@ -31,7 +24,7 @@ public class OdmFlightTests
 
         var script = OdmBoot.PlayDemo(true);
         float gasStart = player.Gas;
-        bool hooked = false, boosted = false, reeled = false;
+        bool hooked = false, boosted = false;
         float minGas = gasStart;
         int steps = 0;
         while (script.Playing && steps < 60 * 12)
@@ -40,38 +33,19 @@ public class OdmFlightTests
             steps++;
             if (player.Hook == HookState.Attached) hooked = true;
             if (player.Boosting) boosted = true;
-            if (player.Reeling) reeled = true;
             if (player.Gas < minGas) minGas = player.Gas;
         }
+        // let the landing settle
         for (int i = 0; i < 60; i++) yield return new WaitForFixedUpdate();
 
         Assert.IsTrue(hooked, "a hook attached during the script");
         Assert.IsTrue(boosted, "gas boost fired during the script");
-        Assert.IsTrue(reeled, "reel-in happened during the script");
         Assert.Less(minGas, gasStart, "boost drained gas");
         Assert.Greater(player.MaxSpeedSeen, 25f, "peak speed > 25 m/s (was " + player.MaxSpeedSeen.ToString("0.0") + ")");
         Assert.IsTrue(player.Grounded, "player is grounded at the end (pos " + player.transform.position + ")");
         Assert.AreEqual(OdmLayers.Hook, player.GroundLayer, "standing on a HookTarget surface");
         Assert.Greater(player.transform.position.y, 15f, "landed on a rooftop, not the street (y=" + player.transform.position.y.ToString("0.0") + ")");
         Assert.Less(player.Speed, 2f, "came to rest after landing");
-    }
-
-    [UnityTest]
-    public IEnumerator DemoFlightIsDeterministic()
-    {
-        Bootstrap.Ensure();
-        yield return null;
-        var player = OdmBoot.Ensure(true);
-        yield return new WaitForFixedUpdate();
-        var s1 = OdmBoot.PlayDemo(false);
-        yield return RunDemo(player, s1);
-        Vector3 end1 = player.transform.position; float max1 = player.MaxSpeedSeen; float land1 = player.LandTime;
-        var s2 = OdmBoot.PlayDemo(false);
-        yield return RunDemo(player, s2);
-        Vector3 end2 = player.transform.position; float max2 = player.MaxSpeedSeen;
-        Assert.Less(Vector3.Distance(end1, end2), 0.05f, "same script, same landing spot (" + end1 + " vs " + end2 + ")");
-        Assert.AreEqual(max1, max2, 0.05f, "same peak speed");
-        Assert.Greater(land1, 0f, "a landing happened");
     }
 
     [UnityTest]

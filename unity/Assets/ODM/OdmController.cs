@@ -9,20 +9,14 @@ namespace ODM
     /// Rigidbody ODM controller. Ground: WASD relative to the aim yaw. Air: momentum, light
     /// steering. RMB press fires both hooks at the aim point (raycast against HookTarget +
     /// Titan, 60 m); while held the cables act as a spring-damped tether with a constant
-    /// winch pull, Space boosts along the cable (drains gas), Shift reels the cable in and,
-    /// when the anchor sits just under a roof edge, mantles you onto the roof. Release =
-    /// free swing with momentum. Landing at speed is an impact + skid, not a slide.
-    ///
-    /// The collider stays upright (yaw only); the lean into flight is applied to a "Visual"
-    /// child so the capsule never wedges under ledges. Two gas jets at the hip sockets emit
-    /// while boosting. Registered in Ctx as "player". Input comes from Input (live) or a
-    /// FlightScript (deterministic replay).
+    /// winch pull, Space boosts along the cable (drains gas), Shift reels the cable in and
+    /// pops you onto the anchor when you reach it. Release = free swing with momentum.
+    /// Registered in Ctx as "player". Input comes from Input (live) or a FlightScript.
     /// </summary>
     public class OdmController : MonoBehaviour
     {
         // ---- tuning (feel) ----
         public float runSpeed = 8f, runAccel = 45f, groundFriction = 30f;
-        public float landSkidFriction = 55f, landSkidTime = 0.5f, landImpactKeep = 0.55f;
         public float gravity = 16f;
         public float airSteer = 7f;
         public float airDrag = 0.003f;   // quadratic: a = airDrag * v^2
@@ -37,11 +31,13 @@ namespace ODM
         public float reelSpeed = 16f;      // m/s of rope shortening
         public float reelAccel = 28f;
         public float reelDetach = 2.2f;    // m from anchor at which a reel pops you off
+        public float popUp = 16f, popForward = 6f;  // the ledge mantle after a reel (popUp = max vertical)
         public float reelTangentialDamp = 2.5f, reelMaxSpeed = 30f;
-        public float mantleMaxRise = 8f, mantleClearance = 1.4f, mantleInward = 6f, mantleTimeout = 1.5f;
-        public float popUp = 6f;           // detach kick when there is no ledge to mantle
         public float gasMax = 100f, gasDrain = 22f, gasRefill = 18f, hopGas = 6f, hopSpeed = 9f;
-        public float bodyTilt = 55f, bodyRoll = 22f;   // visual lean (deg)
+        public float streamlineSpeed = 28f; // speed at which the body is fully along its velocity
+        public float crouchTime = 0.3f;
+        public float trailSeconds = 0.14f;  // smear length = speed * trailSeconds
+        public int ghostCount = 3;
 
         // ---- state (read via Ctx "player") ----
         public float Speed { get; private set; }
@@ -50,7 +46,6 @@ namespace ODM
         public HookState Hook { get; private set; }
         public bool Boosting { get; private set; }
         public bool Reeling { get; private set; }
-        public bool Mantling { get; private set; }
         public bool Grounded { get; private set; }
         public int GroundLayer { get; private set; } = -1;
         public float GroundHeight { get; private set; }
@@ -65,34 +60,36 @@ namespace ODM
         public float AirTime { get; private set; }
         public float LandTime { get; private set; } = -1f;   // Time.fixedTime of the last landing
         public Vector3 LandSpot { get; private set; }
-        public float LandSpeed { get; private set; }
         public FlightScript Script => script;
         public bool Scripted => script != null && script.Playing;
+        public bool Mantling => mantleT > 0f;
+        public bool Crouching => crouchT > 0f;
         public OdmInput Input => input;
 
         public Rigidbody Body => rb;
-        public Transform Visual => visual;
         public Transform socketL, socketR;
 
         Rigidbody rb;
         CapsuleCollider capsule;
-        Transform visual;
         LineRenderer cableL, cableR;
         Transform hookHeadL, hookHeadR;
-        ParticleSystem jetL, jetR;
-        TrailRenderer trail;
         FlightScript script;
         FlightScript recorder;
         OdmInput input, liveInput;
         bool prevHook, prevBoost;
-        RaycastHit hit, roofHit;
+        RaycastHit hit;
         Camera cam;
         public bool verbose;
-        float logAccum, hookRetry, skid;
+        float logAccum, hookRetry;
         bool wallContact; Vector3 wallNormal;
-        // mantle: the roof just above the current anchor, if any
-        bool mantleOK; float roofY; Vector3 inward;
-        float mantleRoofY, mantleTimer; Vector3 mantleDir;
+        Vector3 hookNormal = Vector3.forward;
+        float mantleT, mantleDur = 0.32f; Vector3 mantleFrom, mantleTo, mantleFacing;
+        float crouchT, preLandSpeed; int mantleGroundLayer;
+        LineRenderer trail; readonly Vector3[] trailPts = new Vector3[8];
+        Renderer[] ghosts; Transform[] ghostTf; Material[] ghostMats; float ghostBaseAlpha = 0.5f;
+        Renderer[] bodyRenderers; Transform[] bodyTfs;
+        ParticleSystem dust, gasPuff; Material puffMat;
+        Vector3 baseScale;
 
         void OnCollisionStay(Collision c)
         {
@@ -123,44 +120,232 @@ namespace ODM
             var pm = new PhysicsMaterial("odm") { dynamicFriction = 0f, staticFriction = 0f, frictionCombine = PhysicsMaterialCombine.Minimum, bounciness = 0f, bounceCombine = PhysicsMaterialCombine.Minimum };
             capsule.material = pm;
             Gas = gasMax;
-            visual = BuildVisual();
             socketL = FindSocket("Socket_HookL", new Vector3(-0.28f, -0.15f, 0.12f));
             socketR = FindSocket("Socket_HookR", new Vector3(0.28f, -0.15f, 0.12f));
             cableL = MakeCable("Cable_L");
             cableR = MakeCable("Cable_R");
             hookHeadL = MakeHookHead("HookHead_L");
             hookHeadR = MakeHookHead("HookHead_R");
-            jetL = MakeJet("GasJet_L", socketL, 11u);
-            jetR = MakeJet("GasJet_R", socketR, 23u);
-            trail = MakeTrail("SpeedTrail");
             SetCablesVisible(false);
+            baseScale = transform.localScale;
+            BuildSpeedFx();
             Ctx.Set("player", this);
         }
 
-        /// <summary>The leaning part. A rigged Mikasa provides "Visual"/"Rig"; the capsule placeholder gets one built here.</summary>
-        Transform BuildVisual()
+        // ---------- speed / landing visuals ----------
+        static Material Transparent(Material m, Color c)
         {
-            var existing = FindDeep(transform, "Visual") ?? FindDeep(transform, "Rig");
-            if (existing != null) return existing;
-            var vis = new GameObject("Visual").transform;
-            vis.SetParent(transform, false);
-            if (TryGetComponent<MeshRenderer>(out var mr) && TryGetComponent<MeshFilter>(out var mf))
+            m.SetColor("_BaseColor", c);
+            m.SetFloat("_Surface", 1f);
+            m.SetFloat("_Blend", 0f);
+            m.SetFloat("_ZWrite", 0f);
+            m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            m.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            m.SetOverrideTag("RenderType", "Transparent");
+            m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            m.DisableKeyword("_ALPHATEST_ON");
+            m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            return m;
+        }
+
+        void BuildSpeedFx()
+        {
+            // body parts to ghost: every mesh under the root that is not ours
+            var filters = GetComponentsInChildren<MeshFilter>(true);
+            int n = 0;
+            for (int i = 0; i < filters.Length; i++) if (IsBodyPart(filters[i].transform)) n++;
+            bodyRenderers = new Renderer[n]; bodyTfs = new Transform[n];
+            int k = 0;
+            for (int i = 0; i < filters.Length; i++)
+                if (IsBodyPart(filters[i].transform)) { bodyTfs[k] = filters[i].transform; bodyRenderers[k] = filters[i].GetComponent<Renderer>(); k++; }
+
+            ghosts = new Renderer[ghostCount * n]; ghostTf = new Transform[ghostCount * n]; ghostMats = new Material[ghostCount];
+            var root = new GameObject("SpeedGhosts").transform;
+            root.SetParent(null, false);
+            for (int g = 0; g < ghostCount; g++)
             {
-                var body = new GameObject("Body");
-                body.transform.SetParent(vis, false);
-                body.AddComponent<MeshFilter>().sharedMesh = mf.sharedMesh;
-                body.AddComponent<MeshRenderer>().sharedMaterial = mr.sharedMaterial;
-                mr.enabled = false;
+                float a = ghostBaseAlpha * (1f - g / (float)ghostCount);
+                ghostMats[g] = Transparent(Mats.Lit(Color.white, 0f), new Color(0.35f, 0.4f, 0.5f, a));
+                for (int b = 0; b < n; b++)
+                {
+                    var go = new GameObject("Ghost_" + g + "_" + bodyTfs[b].name);
+                    go.transform.SetParent(root, false);
+                    go.AddComponent<MeshFilter>().sharedMesh = bodyTfs[b].GetComponent<MeshFilter>().sharedMesh;
+                    var r = go.AddComponent<MeshRenderer>();
+                    r.sharedMaterial = ghostMats[g];
+                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    r.receiveShadows = false;
+                    r.enabled = false;
+                    ghosts[g * n + b] = r; ghostTf[g * n + b] = go.transform;
+                }
             }
-            for (int i = transform.childCount - 1; i >= 0; i--)
+
+            // speed smear: a tapered translucent streak behind the body along -velocity
+            var tgo = new GameObject("SpeedTrail");
+            tgo.transform.SetParent(null, false);
+            trail = tgo.AddComponent<LineRenderer>();
+            trail.positionCount = trailPts.Length;
+            trail.useWorldSpace = true;
+            trail.numCapVertices = 4;
+            trail.alignment = LineAlignment.View;
+            trail.textureMode = LineTextureMode.Stretch;
+            trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            trail.receiveShadows = false;
+            trail.sharedMaterial = Transparent(Mats.Unlit(Color.white), new Color(0.85f, 0.9f, 1f, 0.55f));
+            var grad = new Gradient();
+            grad.SetKeys(
+                new[] { new GradientColorKey(new Color(0.9f, 0.93f, 1f), 0f), new GradientColorKey(new Color(0.6f, 0.7f, 0.9f), 1f) },
+                new[] { new GradientAlphaKey(0.6f, 0f), new GradientAlphaKey(0.25f, 0.4f), new GradientAlphaKey(0f, 1f) });
+            trail.colorGradient = grad;
+            var wc = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(0.5f, 0.55f), new Keyframe(1f, 0f));
+            trail.widthCurve = wc;
+            trail.widthMultiplier = 0.9f;
+            trail.enabled = false;
+
+            // touchdown dust
+            var dgo = new GameObject("LandingDust");
+            dgo.transform.SetParent(transform, false);
+            dust = dgo.AddComponent<ParticleSystem>();
+            var main = dust.main;
+            main.playOnAwake = false;
+            main.loop = false;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.5f, 0.9f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(3f, 7f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.4f, 1.0f);
+            main.startColor = new Color(0.62f, 0.56f, 0.48f, 0.7f);
+            main.gravityModifier = 0.25f;
+            main.maxParticles = 128;
+            var em = dust.emission; em.enabled = false;
+            var sh = dust.shape; sh.enabled = true; sh.shapeType = ParticleSystemShapeType.Hemisphere; sh.radius = 0.4f;
+            var col = dust.colorOverLifetime; col.enabled = true;
+            var g2 = new Gradient();
+            g2.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                       new[] { new GradientAlphaKey(0.7f, 0f), new GradientAlphaKey(0f, 1f) });
+            col.color = g2;
+            var sol = dust.sizeOverLifetime; sol.enabled = true;
+            sol.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 0.5f), new Keyframe(1f, 1.6f)));
+            var pr = dust.GetComponent<ParticleSystemRenderer>();
+            var dm = Transparent(Mats.Unlit(Color.white), Color.white);
+            var puff = SoftPuffTexture(64);
+            dm.mainTexture = puff;
+            if (dm.HasProperty("_BaseMap")) dm.SetTexture("_BaseMap", puff);
+            pr.sharedMaterial = dm;
+            pr.renderMode = ParticleSystemRenderMode.Billboard;
+            puffMat = dm;
+
+            // gas exhaust: white puffs streaming back from the hips while boosting
+            var ggo = new GameObject("GasPuff");
+            ggo.transform.SetParent(transform, false);
+            gasPuff = ggo.AddComponent<ParticleSystem>();
+            var gm = gasPuff.main;
+            gm.playOnAwake = false; gm.loop = false;
+            gm.simulationSpace = ParticleSystemSimulationSpace.World;
+            gm.startLifetime = new ParticleSystem.MinMaxCurve(0.18f, 0.32f);
+            gm.startSpeed = new ParticleSystem.MinMaxCurve(1f, 3f);
+            gm.startSize = new ParticleSystem.MinMaxCurve(0.18f, 0.34f);
+            gm.startColor = new Color(0.95f, 0.97f, 1f, 0.5f);
+            gm.maxParticles = 256;
+            var gem = gasPuff.emission; gem.enabled = false;
+            var gsh = gasPuff.shape; gsh.enabled = true; gsh.shapeType = ParticleSystemShapeType.Sphere; gsh.radius = 0.2f;
+            var gcol = gasPuff.colorOverLifetime; gcol.enabled = true; gcol.color = g2;
+            var gsol = gasPuff.sizeOverLifetime; gsol.enabled = true;
+            gsol.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 0.6f), new Keyframe(1f, 1.5f)));
+            var gpr = gasPuff.GetComponent<ParticleSystemRenderer>();
+            gpr.sharedMaterial = puffMat;
+            gpr.renderMode = ParticleSystemRenderMode.Billboard;
+            gpr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            pr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+
+        /// <summary>Radial soft-edged white puff with alpha falloff, for dust billboards.</summary>
+        static Texture2D SoftPuffTexture(int size)
+        {
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            var px = new Color[size * size];
+            float c = (size - 1) * 0.5f;
+            for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
             {
-                var c = transform.GetChild(i);
-                if (c != vis) c.SetParent(vis, true);
+                float d = Mathf.Sqrt((x - c) * (x - c) + (y - c) * (y - c)) / c;
+                float a = Mathf.Clamp01(1f - d);
+                a = a * a * (3f - 2f * a);
+                px[y * size + x] = new Color(1f, 1f, 1f, a);
             }
-            // the visual leans every frame; nothing under it may be part of the physics compound
-            var cols = vis.GetComponentsInChildren<Collider>(true);
-            for (int i = 0; i < cols.Length; i++) Destroy(cols[i]);
-            return vis;
+            tex.SetPixels(px);
+            tex.wrapMode = TextureWrapMode.Clamp;
+            tex.filterMode = FilterMode.Bilinear;
+            tex.Apply(false, false);
+            return tex;
+        }
+
+        bool IsBodyPart(Transform t)
+        {
+            for (var p = t; p != null; p = p.parent)
+            {
+                var nm = p.name;
+                if (nm.StartsWith("Cable_") || nm.StartsWith("HookHead_") || nm == "SpeedTrail" || nm == "LandingDust") return false;
+                if (p == transform) return true;
+            }
+            return false;
+        }
+
+        void UpdateSpeedFx()
+        {
+            Vector3 v = rb.linearVelocity;
+            float sp = v.magnitude;
+            bool show = !Grounded && !Mantling && sp > 12f;
+            float k = Mathf.Clamp01((sp - 12f) / 30f);
+            Vector3 back = sp > 1e-3f ? -v / sp : -transform.forward;
+            Vector3 pos = transform.position;
+            if (show)
+            {
+                float len = sp * trailSeconds;
+                for (int i = 0; i < trailPts.Length; i++)
+                {
+                    float f = i / (float)(trailPts.Length - 1);
+                    trailPts[i] = pos + back * (0.4f + len * f);
+                }
+                trail.SetPositions(trailPts);
+                trail.widthMultiplier = 0.5f + 0.7f * k;
+                trail.enabled = true;
+                int n = bodyTfs.Length;
+                float spacing = 0.02f * sp + 0.25f;
+                for (int g = 0; g < ghostCount; g++)
+                {
+                    var c = ghostMats[g].GetColor("_BaseColor");
+                    c.a = ghostBaseAlpha * (1f - g / (float)ghostCount) * k;
+                    ghostMats[g].SetColor("_BaseColor", c);
+                    Vector3 off = back * (spacing * (g + 1));
+                    for (int b = 0; b < n; b++)
+                    {
+                        var src = bodyTfs[b];
+                        var gt = ghostTf[g * n + b];
+                        gt.SetPositionAndRotation(src.position + off, src.rotation);
+                        gt.localScale = src.lossyScale;
+                        ghosts[g * n + b].enabled = bodyRenderers[b].enabled;
+                    }
+                }
+            }
+            else
+            {
+                if (trail.enabled) trail.enabled = false;
+                for (int i = 0; i < ghosts.Length; i++) if (ghosts[i].enabled) ghosts[i].enabled = false;
+            }
+            // crouch: squash on touchdown, recover
+            float cr = crouchT > 0f ? Mathf.Sin(Mathf.Clamp01(crouchT / crouchTime) * Mathf.PI) : 0f;
+            transform.localScale = new Vector3(baseScale.x * (1f + 0.18f * cr), baseScale.y * (1f - 0.32f * cr), baseScale.z * (1f + 0.18f * cr));
+        }
+
+        void OnLanded(Vector3 pos, float impactSpeed)
+        {
+            LandTime = Time.fixedTime; LandSpot = pos;
+            crouchT = crouchTime;
+            if (dust != null)
+            {
+                dust.transform.position = pos + Vector3.down * 0.95f;
+                dust.Emit(Mathf.Clamp(12 + (int)(impactSpeed * 1.5f), 12, 48));
+            }
         }
 
         Transform FindSocket(string name, Vector3 fallbackLocal)
@@ -168,7 +353,7 @@ namespace ODM
             var t = FindDeep(transform, name);
             if (t != null) return t;
             var go = new GameObject(name);
-            go.transform.SetParent(visual, false);
+            go.transform.SetParent(transform, false);
             go.transform.localPosition = fallbackLocal;
             return go.transform;
         }
@@ -211,140 +396,24 @@ namespace ODM
             return go.transform;
         }
 
-        /// <summary>White gas puffs out of a hip socket, backwards. Rate is driven per frame; seeded so captures repeat.</summary>
-        ParticleSystem MakeJet(string name, Transform socket, uint seed)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(socket, false);
-            go.transform.localRotation = Quaternion.Euler(12f, 180f, 0f);   // back and slightly down
-            var ps = go.AddComponent<ParticleSystem>();
-            ps.useAutoRandomSeed = false;
-            ps.randomSeed = seed;
-            var main = ps.main;
-            main.loop = true; main.playOnAwake = true;
-            main.startLifetime = 0.42f;
-            main.startSpeed = new ParticleSystem.MinMaxCurve(10f, 16f);
-            main.startSize = new ParticleSystem.MinMaxCurve(0.3f, 0.55f);
-            main.startColor = Color.white;
-            main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.maxParticles = 400;
-            main.gravityModifier = -0.05f;
-            var em = ps.emission; em.enabled = true; em.rateOverTime = 0f;
-            var sh = ps.shape; sh.enabled = true; sh.shapeType = ParticleSystemShapeType.Cone; sh.angle = 9f; sh.radius = 0.04f;
-            var sol = ps.sizeOverLifetime; sol.enabled = true;
-            sol.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 0.5f), new Keyframe(0.6f, 1.6f), new Keyframe(1f, 0f)));
-            var r = go.GetComponent<ParticleSystemRenderer>();
-            r.renderMode = ParticleSystemRenderMode.Billboard;
-            r.sharedMaterial = SoftParticleMat(new Color(0.93f, 0.94f, 0.96f, 0.85f));
-            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            r.receiveShadows = false;
-            r.sortMode = ParticleSystemSortMode.Distance;
-            var col = ps.colorOverLifetime; col.enabled = true;
-            var grad = new Gradient();
-            grad.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(new Color(0.85f, 0.87f, 0.9f), 1f) },
-                         new[] { new GradientAlphaKey(0.9f, 0f), new GradientAlphaKey(0.55f, 0.35f), new GradientAlphaKey(0f, 1f) });
-            col.color = grad;
-            ps.Play();
-            return ps;
-        }
-
-        static Texture2D softDot;
-        /// <summary>Radial-falloff white dot, generated once; the gas puffs and the speed trail use it.</summary>
-        static Texture2D SoftDot()
-        {
-            if (softDot != null) return softDot;
-            const int n = 64;
-            softDot = new Texture2D(n, n, TextureFormat.RGBA32, true) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
-            var px = new Color[n * n];
-            for (int y = 0; y < n; y++)
-            for (int x = 0; x < n; x++)
-            {
-                float dx = (x + 0.5f) / n - 0.5f, dy = (y + 0.5f) / n - 0.5f;
-                float d = Mathf.Sqrt(dx * dx + dy * dy) * 2f;
-                float a = Mathf.Clamp01(1f - d);
-                a = a * a * (3f - 2f * a);
-                px[y * n + x] = new Color(1f, 1f, 1f, a);
-            }
-            softDot.SetPixels(px);
-            softDot.Apply(true, false);
-            return softDot;
-        }
-
-        /// <summary>
-        /// Alpha-blended particle material from the shared Particles base. Blending in URP's
-        /// Particles/Unlit is render state, not a keyword, so this survives build stripping.
-        /// </summary>
-        static Material SoftParticleMat(Color tint)
-        {
-            var baseMat = Resources.Load<Material>("Materials/Particles");
-            var m = baseMat != null ? new Material(baseMat) : Mats.Unlit(tint);
-            m.SetTexture("_BaseMap", SoftDot());
-            m.SetColor("_BaseColor", tint);
-            m.SetFloat("_Surface", 1f);
-            m.SetFloat("_Blend", 0f);
-            m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            m.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            m.SetFloat("_SrcBlendAlpha", (float)UnityEngine.Rendering.BlendMode.One);
-            m.SetFloat("_DstBlendAlpha", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            m.SetFloat("_ZWrite", 0f);
-            m.SetOverrideTag("RenderType", "Transparent");
-            m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-            return m;
-        }
-
-        /// <summary>A short white ribbon behind the hips; only emits at flight speed so stills read the arc.</summary>
-        TrailRenderer MakeTrail(string name)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(transform, false);
-            go.transform.localPosition = new Vector3(0f, -0.2f, -0.3f);
-            var tr = go.AddComponent<TrailRenderer>();
-            tr.time = 0.45f;
-            tr.minVertexDistance = 0.25f;
-            tr.startWidth = 0.55f; tr.endWidth = 0.05f;
-            tr.numCapVertices = 3;
-            tr.alignment = LineAlignment.View;
-            tr.textureMode = LineTextureMode.Stretch;
-            tr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            tr.receiveShadows = false;
-            var mat = SoftParticleMat(new Color(1f, 1f, 1f, 0.6f));
-            mat.SetTexture("_BaseMap", null);
-            tr.sharedMaterial = mat;
-            var g = new Gradient();
-            g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
-                      new[] { new GradientAlphaKey(0.55f, 0f), new GradientAlphaKey(0.25f, 0.4f), new GradientAlphaKey(0f, 1f) });
-            tr.colorGradient = g;
-            tr.emitting = false;
-            return tr;
-        }
-
         void SetCablesVisible(bool on)
         {
             cableL.enabled = on; cableR.enabled = on;
             hookHeadL.gameObject.SetActive(on); hookHeadR.gameObject.SetActive(on);
         }
 
-        void SetJets(bool on)
-        {
-            var el = jetL.emission; el.rateOverTime = on ? 220f : 0f;
-            var er = jetR.emission; er.rateOverTime = on ? 220f : 0f;
-        }
-
         /// <summary>Put the player somewhere at rest (scripts start from a known spot).</summary>
         public void Teleport(Vector3 position, Vector3 facing)
         {
             if (Hook == HookState.Attached) Detach();
-            Mantling = false; skid = 0f;
+            mantleT = 0f; crouchT = 0f; rb.isKinematic = false;
             rb.position = position;
             transform.position = position;
             rb.linearVelocity = Vector3.zero;
             var f = new Vector3(facing.x, 0, facing.z);
             if (f.sqrMagnitude > 1e-4f) { var q = Quaternion.LookRotation(f.normalized, Vector3.up); rb.rotation = q; transform.rotation = q; }
-            if (visual != null) visual.localRotation = Quaternion.identity;
             Gas = gasMax;
-            MaxSpeedSeen = 0f; AirTime = 0f; LandTime = -1f;
-            jetL.Clear(); jetR.Clear();
-            trail.Clear(); trail.emitting = false;
+            MaxSpeedSeen = 0f; AirTime = 0f;
         }
 
         // ---------- scripting ----------
@@ -371,14 +440,9 @@ namespace ODM
             liveInput.boost = UnityEngine.Input.GetKey(KeyCode.Space);
             liveInput.reel = UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift);
             liveInput.hasAim = false;
-            liveInput.hasLook = false;
         }
 
-        void LateUpdate()
-        {
-            UpdateCables();
-            UpdateLean(Time.deltaTime);
-        }
+        void LateUpdate() { UpdateCables(); UpdateSpeedFx(); }
 
         // ---------- simulation ----------
         void FixedUpdate()
@@ -391,6 +455,26 @@ namespace ODM
             else input = liveInput;
             if (recorder != null) recorder.RecordStep(dt, input);
 
+            if (crouchT > 0f) crouchT -= dt;
+            if (mantleT > 0f)
+            {
+                // scripted ledge mantle: an arc from the anchor to the roof, then a landing
+                mantleT -= dt;
+                float f = 1f - Mathf.Clamp01(mantleT / mantleDur);
+                Vector3 mp = Vector3.Lerp(mantleFrom, mantleTo, f) + Vector3.up * (1.6f * 4f * f * (1f - f));
+                rb.MovePosition(mp);
+                rb.MoveRotation(Quaternion.Slerp(rb.rotation, Quaternion.LookRotation(mantleFacing, Vector3.up), 1f - Mathf.Exp(-12f * dt)));
+                if (mantleT <= 0f)
+                {
+                    rb.isKinematic = false;
+                    rb.position = mantleTo;
+                    rb.linearVelocity = mantleFacing * 2.5f;
+                    Grounded = true; GroundLayer = mantleGroundLayer;
+                    OnLanded(mantleTo, 8f);
+                    Speed = 2.5f;
+                }
+                return;
+            }
             Vector3 pos = rb.position;
             Vector3 eye = pos + Vector3.up * 0.6f;
             // aim (hooks) and look (boost/body): script world points, else the camera's forward
@@ -411,20 +495,11 @@ namespace ODM
             {
                 if (hit.normal.y > 0.6f) { Grounded = true; GroundLayer = hit.collider.gameObject.layer; GroundHeight = hit.point.y; }
             }
-            if (Grounded && !wasGrounded)
-            {
-                // touchdown: the impact eats most of the horizontal speed, the rest is a short skid
-                LandTime = Time.fixedTime; LandSpot = pos; LandSpeed = v.magnitude;
-                Vector3 hv = new Vector3(v.x, 0, v.z);
-                if (hv.magnitude > 10f) { hv *= landImpactKeep; v.x = hv.x; v.z = hv.z; }
-                skid = landSkidTime;
-                Mantling = false;
-            }
 
             // hooks: fire on press, drop on release
             bool hookPressed = input.hook && !prevHook;
             if (hookPressed) hookRetry = 0.25f;               // a miss keeps searching briefly while RMB is held
-            if (input.hook && Hook == HookState.None && hookRetry > 0f && !Mantling)
+            if (input.hook && Hook == HookState.None && hookRetry > 0f)
             {
                 hookRetry -= dt;
                 if (TryHook(eye, AimDir, right, v)) { hookRetry = 0f; v = rb.linearVelocity; }
@@ -470,18 +545,27 @@ namespace ODM
                     if (closing > reelMaxSpeed) v -= dir * (closing - reelMaxSpeed);
                     if (d < reelDetach || (d < 6f && pos.y > Anchor.y + 0.3f))
                     {
-                        // reached the anchor: onto the roof if there is one just above, else a small pop
+                        // reached the anchor: mantle onto the ledge behind it when there is one,
+                        // otherwise pop up with what is left of the momentum
                         Detach();
-                        v *= 0.15f;
-                        if (mantleOK)
+                        Vector3 inward = new Vector3(-hookNormal.x, 0, -hookNormal.z);
+                        if (inward.sqrMagnitude < 1e-3f) inward = new Vector3(toA.x, 0, toA.z);
+                        inward = inward.sqrMagnitude > 1e-4f ? inward.normalized : transform.forward;
+                        Vector3 probe = Anchor + inward * 1.7f + Vector3.up * 6f;
+                        if (Physics.Raycast(probe, Vector3.down, out hit, 9f, OdmLayers.GroundMask, QueryTriggerInteraction.Ignore)
+                            && hit.normal.y > 0.7f && hit.point.y > Anchor.y - 1.5f && hit.point.y < Anchor.y + 4f)
                         {
-                            Mantling = true; mantleTimer = 0f; mantleRoofY = roofY; mantleDir = inward;
-                            float into = Vector3.Dot(v, mantleDir);
-                            if (into > 0f) v -= mantleDir * into;
-                            float bottom = pos.y - capsule.height * 0.5f;
-                            v.y = Mathf.Max(v.y, Mathf.Sqrt(2f * gravity * Mathf.Max(0.5f, mantleRoofY + mantleClearance - bottom)));
+                            mantleFrom = pos; mantleTo = hit.point + Vector3.up * 1.02f; mantleFacing = inward;
+                            mantleGroundLayer = hit.collider.gameObject.layer;
+                            mantleT = mantleDur;
+                            rb.linearVelocity = Vector3.zero;
+                            rb.isKinematic = true;
+                            Speed = 0f; Reeling = false;
+                            return;
                         }
-                        else v += Vector3.up * popUp;
+                        float rise = Mathf.Clamp(Anchor.y + 3.5f - pos.y, 1f, 12f);
+                        float up = Mathf.Clamp(Mathf.Sqrt(2f * gravity * rise), 6f, popUp);
+                        v = v * 0.15f + Vector3.up * up + inward * popForward;
                     }
                 }
                 if (input.boost && Gas > 0f)
@@ -502,7 +586,7 @@ namespace ODM
                 if (wish.sqrMagnitude > 1f) wish.Normalize();
                 Vector3 hv = new Vector3(v.x, 0, v.z);
                 Vector3 target = wish * runSpeed;
-                float accel = wish.sqrMagnitude > 0.01f ? runAccel : (skid > 0f ? landSkidFriction : groundFriction);
+                float accel = wish.sqrMagnitude > 0.01f ? runAccel : groundFriction;
                 hv = Vector3.MoveTowards(hv, target, accel * dt);
                 v.x = hv.x; v.z = hv.z;
                 if (v.y < 0f) v.y = -1f; // stick to the ground
@@ -516,7 +600,7 @@ namespace ODM
             {
                 // free air: momentum, light steering, small drag
                 v += (right * input.moveX + aimFlat * input.moveY) * (airSteer * dt);
-                if (input.boost && Gas > 0f && !Mantling)
+                if (input.boost && Gas > 0f)
                 {
                     Boosting = true;
                     v += LookDir * (boostAccel * 0.6f * dt);
@@ -524,27 +608,6 @@ namespace ODM
                 }
             }
             prevBoost = input.boost;
-            if (skid > 0f) skid -= dt;
-
-            // mantle: ride straight up the wall face until the feet clear the roof, then step in
-            if (Mantling)
-            {
-                mantleTimer += dt;
-                float bottom = pos.y - capsule.height * 0.5f;
-                if (bottom < mantleRoofY + 0.15f && mantleTimer < mantleTimeout)
-                {
-                    float into = Vector3.Dot(v, mantleDir);
-                    if (into > 0f) v -= mantleDir * into;
-                    float need = Mathf.Sqrt(2f * gravity * Mathf.Max(0.3f, mantleRoofY + mantleClearance - bottom));
-                    if (v.y < need) v.y = need;
-                }
-                else
-                {
-                    Mantling = false;
-                    v += mantleDir * mantleInward;
-                    v.y = Mathf.Min(v.y, 4f);
-                }
-            }
 
             if (!Grounded) v.y -= gravity * dt;
             // drag and cap
@@ -558,15 +621,38 @@ namespace ODM
             wallContact = false;
             Speed = v.magnitude;
             if (Speed > MaxSpeedSeen) MaxSpeedSeen = Speed;
-            if (Grounded) AirTime = 0f; else AirTime += dt;
-            SetJets(Boosting);
-            trail.emitting = !Grounded && Speed > 14f;
+            if (Grounded) { if (!wasGrounded && AirTime > 0.15f) OnLanded(pos, preLandSpeed); AirTime = 0f; }
+            else AirTime += dt;
+            preLandSpeed = Speed;
 
-            // body yaw only: face the aim on the ground, face the velocity in the air (lean is visual)
-            Vector3 face;
-            if (Grounded || Speed < 4f) face = aimFlat;
-            else { face = new Vector3(v.x, 0, v.z); if (face.sqrMagnitude < 1e-4f) face = aimFlat; face.Normalize(); }
-            rb.MoveRotation(Quaternion.Slerp(rb.rotation, Quaternion.LookRotation(face, Vector3.up), 1f - Mathf.Exp(-10f * dt)));
+            // body orientation: upright facing the look on the ground; in the air the body lies
+            // along its velocity (head first, streamlined), blended in with speed
+            Quaternion targetRot;
+            float rotRate = 10f;
+            if (Grounded || Speed < 3f) { targetRot = Quaternion.LookRotation(aimFlat, Vector3.up); rotRate = 14f; }
+            else
+            {
+                Vector3 vd = v / Mathf.Max(Speed, 1e-3f);
+                Vector3 vflat = new Vector3(vd.x, 0, vd.z);
+                if (vflat.sqrMagnitude < 1e-4f) vflat = aimFlat;
+                vflat.Normalize();
+                Quaternion upright = Quaternion.LookRotation(vflat, Vector3.up);
+                // capsule Y axis -> velocity, belly toward the ground
+                Vector3 side = Vector3.Cross(Vector3.up, vd);
+                if (side.sqrMagnitude < 1e-4f) side = Vector3.Cross(vflat, vd);
+                Vector3 belly = Vector3.Cross(vd, side).normalized;   // roughly down-facing
+                Quaternion along = Quaternion.LookRotation(-belly, vd);
+                float k = Mathf.Clamp01((Speed - 6f) / (streamlineSpeed - 6f));
+                targetRot = Quaternion.Slerp(upright, along, k);
+                rotRate = 8f;
+            }
+            rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetRot, 1f - Mathf.Exp(-rotRate * dt)));
+
+            if (Boosting && gasPuff != null)
+            {
+                gasPuff.transform.position = (socketL.position + socketR.position) * 0.5f - v.normalized * 0.5f;
+                gasPuff.Emit(1);
+            }
 
             if (verbose)
             {
@@ -575,26 +661,10 @@ namespace ODM
                 {
                     logAccum = 0f;
                     Debug.Log("[ODM] t=" + Time.fixedTime.ToString("0.00") + " pos=" + pos.ToString("0.0") + " v=" + Speed.ToString("0.0")
-                              + " hook=" + Hook + " boost=" + Boosting + " reel=" + Reeling + " mantle=" + Mantling + " gas=" + Gas.ToString("0") + " grounded=" + Grounded
+                              + " hook=" + Hook + " boost=" + Boosting + " reel=" + Reeling + " gas=" + Gas.ToString("0") + " grounded=" + Grounded
                               + " key=" + (script != null ? script.CurrentLabel : "live"));
                 }
             }
-        }
-
-        void UpdateLean(float dt)
-        {
-            if (visual == null) return;
-            Quaternion target;
-            if (Grounded || Speed < 4f) target = Quaternion.identity;
-            else
-            {
-                Vector3 vd = rb.linearVelocity.normalized;
-                float lean = Mathf.Clamp01((Speed - 6f) / 30f) * bodyTilt;
-                float pitch = Mathf.Clamp(-Mathf.Asin(Mathf.Clamp(vd.y, -1f, 1f)) * Mathf.Rad2Deg, -lean, lean);
-                float roll = -input.moveX * bodyRoll * Mathf.Clamp01((Speed - 6f) / 20f);
-                target = Quaternion.Euler(pitch, 0f, roll);
-            }
-            visual.localRotation = Quaternion.Slerp(visual.localRotation, target, 1f - Mathf.Exp(-8f * dt));
         }
 
         bool TryHook(Vector3 eye, Vector3 dir, Vector3 right, Vector3 v)
@@ -602,6 +672,7 @@ namespace ODM
             if (!Physics.Raycast(eye, dir, out hit, hookRange, OdmLayers.HookMask, QueryTriggerInteraction.Ignore)) return false;
             Hook = HookState.Attached;
             Anchor = hit.point;
+            hookNormal = hit.normal;
             // two hooks land a little apart so the cables read as a pair
             Vector3 spread = Vector3.Cross(hit.normal, Vector3.up);
             if (spread.sqrMagnitude < 1e-3f) spread = right;
@@ -609,7 +680,6 @@ namespace ODM
             AnchorL = Anchor - spread * 0.45f;
             AnchorR = Anchor + spread * 0.45f;
             RopeLength = Vector3.Distance(rb.position, Anchor);
-            ProbeRoof();
             // snappy: an immediate tug toward the anchor; from the ground the cables launch you
             Vector3 toA = (Anchor - rb.position).normalized;
             v += toA * hookSnap;
@@ -618,25 +688,6 @@ namespace ODM
             SetCablesVisible(true);
             hookHeadL.position = AnchorL; hookHeadR.position = AnchorR;
             return true;
-        }
-
-        /// <summary>Is there a roof just above this wall anchor? (Reeling in then mantles onto it.)</summary>
-        void ProbeRoof()
-        {
-            mantleOK = false; roofY = float.NaN;
-            if (hit.collider.gameObject.layer == OdmLayers.Titan) return;
-            if (Mathf.Abs(hit.normal.y) > 0.5f) return;   // hooked a roof/floor, nothing to climb
-            inward = -new Vector3(hit.normal.x, 0, hit.normal.z).normalized;
-            float top = hit.collider.bounds.max.y;
-            float above = top - hit.point.y;
-            if (above < -0.5f || above > mantleMaxRise) return;
-            Vector3 o = hit.point + inward * 1.2f + Vector3.up * (above + 3f);
-            if (!Physics.Raycast(o, Vector3.down, out roofHit, above + 6f, OdmLayers.GroundMask, QueryTriggerInteraction.Ignore)) return;
-            if (roofHit.normal.y < 0.7f) return;
-            float rise = roofHit.point.y - hit.point.y;
-            if (rise < -0.5f || rise > mantleMaxRise) return;
-            roofY = roofHit.point.y;
-            mantleOK = true;
         }
 
         void Detach()
@@ -654,6 +705,8 @@ namespace ODM
 
         void OnDestroy()
         {
+            if (trail != null) Destroy(trail.gameObject);
+            if (ghostTf != null && ghostTf.Length > 0 && ghostTf[0] != null) Destroy(ghostTf[0].parent.gameObject);
             if (ReferenceEquals(Ctx.Get<OdmController>("player"), this)) Ctx.Remove("player");
         }
     }

@@ -136,7 +136,7 @@ namespace ODM
             s.Add(1.95f, 0, 1, false, false, false, a2, "release2", up2);
             s.Add(2.45f, 0, 1, true, false, false, a3, "hook3", roof);
             s.Add(2.55f, 0, 1, true, true, false, a3, "boost3", roof);
-            s.Add(2.75f, 0, 0, true, false, true, a3, "reel3", roof);
+            s.Add(2.75f, 0, 1, true, false, true, a3, "reel3", roof);
             s.Add(6.50f, 0, 0, false, false, false, a3, "land", roof);
             s.End(8.5f);
             return s;
