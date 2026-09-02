@@ -33,6 +33,8 @@ namespace ODM
             Ctx.Set("player", Player);
             var titan = Ctx.Get<GameObject>("titan");
             if (titan != null) SetLayerDeep(titan.transform, OdmLayers.Titan);
+            var boss = Ctx.Get<GameObject>("boss");
+            if (boss != null) SetLayerDeep(boss.transform, OdmLayers.Titan);
             var placeholder = Ctx.Get<GameObject>("placeholder");
             if (placeholder != null) SetLayerDeep(placeholder.transform, OdmLayers.Hook);
             if (buildGrid) HookTestGrid.Build(Ctx.Get<int>("seed"));

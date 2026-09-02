@@ -3,12 +3,6 @@
   { "name": "street",   "pos": [0, 2, -55],    "lookAt": [0, 4, 60],   "fov": 70, "timeSec": 0.5 },
   { "name": "titan",    "pos": [10, 2, 42],    "lookAt": [0, 11, 60],  "fov": 60, "timeSec": 1.0 },
   { "name": "flight",   "pos": [-6, 30, -70],  "lookAt": [0, 6, 60],   "fov": 75, "timeSec": 1.5 },
-  { "name": "odm_hook",  "pos": [-6, 3, -81],   "lookAt": [6, 11, -58],  "fov": 65, "timeSec": 0.42 },
-  { "name": "odm_boost", "pos": [-7, 5, -69],   "lookAt": [7, 12, -52],  "fov": 70, "timeSec": 0.85 },
-  { "name": "odm_swing", "pos": [15, 7, -58],   "lookAt": [0, 16, -30],  "fov": 70, "timeSec": 1.50 },
-  { "name": "odm_arc",   "pos": [4, 20, -24],   "lookAt": [2, 16, 6],    "fov": 78, "timeSec": 2.05 },
-  { "name": "odm_reel",  "pos": [-6, 26, 48],   "lookAt": [14, 25, 26],  "fov": 65, "timeSec": 2.95 },
-  { "name": "odm_land",  "pos": [12, 31, 32],   "lookAt": [19, 28.5, 22], "fov": 60, "timeSec": 4.40 },
   { "name": "proxies_scale",        "pos": [-69, 3, -11],     "lookAt": [-69, 7, -40],    "fov": 60, "timeSec": 2.0 },
   { "name": "proxies_mikasa_poses", "pos": [57.5, 1.5, 75],   "lookAt": [57.5, 1.0, 60],  "fov": 70, "timeSec": 2.1 },
   { "name": "proxies_mikasa_slash", "pos": [53.6, 2.0, 64.3], "lookAt": [50.5, 1.0, 60],  "fov": 36, "timeSec": 2.2 },
@@ -21,5 +15,11 @@
   { "name": "proxies_boss_stomp",   "pos": [164, 8, -70],     "lookAt": [175, 7.5, -100], "fov": 50, "timeSec": 2.8 },
   { "name": "proxies_titan_stagger", "pos": [92, 4, 4.5],      "lookAt": [85, 3.5, -10],   "fov": 45, "timeSec": 2.55 },
   { "name": "proxies_boss_stagger",  "pos": [130, 8, -69],     "lookAt": [115, 7, -100],   "fov": 45, "timeSec": 2.85 },
-  { "name": "proxies_street",       "pos": [0, 3, 20],        "lookAt": [-6, 5, 50],      "fov": 60, "timeSec": 2.9 }
+  { "name": "proxies_street",       "pos": [0, 3, 20],        "lookAt": [-6, 5, 50],      "fov": 60, "timeSec": 2.9 },
+  { "name": "odm_hook",  "pos": [-4.5, 2.2, -78.5], "lookAt": [0.6, 1.6, -71.5], "fov": 60, "timeSec": 0.42 },
+  { "name": "odm_boost", "pos": [-4, 5, -66.5],     "lookAt": [3, 6.5, -60],     "fov": 60, "timeSec": 0.85 },
+  { "name": "odm_swing", "pos": [12.5, 9.5, -46],   "lookAt": [6.5, 12.5, -37],  "fov": 60, "timeSec": 1.50 },
+  { "name": "odm_arc",   "pos": [3.5, 18.5, -17],   "lookAt": [3, 16.2, -4],     "fov": 75, "timeSec": 2.05 },
+  { "name": "odm_reel",  "pos": [0, 24, 47],        "lookAt": [9, 21.5, 38],     "fov": 55, "timeSec": 2.95 },
+  { "name": "odm_land",  "pos": [14.5, 30.2, 27.5], "lookAt": [18.7, 28.6, 22],  "fov": 50, "timeSec": 4.40 }
 ]

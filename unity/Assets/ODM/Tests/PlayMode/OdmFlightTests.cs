@@ -45,6 +45,7 @@ public class OdmFlightTests
         Assert.IsTrue(player.Grounded, "player is grounded at the end (pos " + player.transform.position + ")");
         Assert.AreEqual(OdmLayers.Hook, player.GroundLayer, "standing on a HookTarget surface");
         Assert.Greater(player.transform.position.y, 15f, "landed on a rooftop, not the street (y=" + player.transform.position.y.ToString("0.0") + ")");
+        Assert.IsNotNull(Ctx.Get<Shared.Rigs.IPoser>("mikasaPoser"), "controller drives the Mikasa proxy poser");
         Assert.Less(player.Speed, 2f, "came to rest after landing");
     }
 

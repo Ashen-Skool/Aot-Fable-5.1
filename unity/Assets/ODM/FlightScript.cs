@@ -143,6 +143,6 @@ namespace ODM
         }
 
         /// <summary>Where the demo starts: on the street south of the placeholder houses, facing +z.</summary>
-        public static Vector3 DemoStart(HookTestGrid g) => new Vector3(0f, 1.0f, -76f);
+        public static Vector3 DemoStart(HookTestGrid g) => new Vector3(0f, 0.05f, -76f);   // feet position
     }
 }
