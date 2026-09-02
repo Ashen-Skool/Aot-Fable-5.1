@@ -1,0 +1,19 @@
+{
+ "dims": [
+  8.913963317871094,
+  2.898700714111328,
+  15.0
+ ],
+ "tris": 31210,
+ "objects": [
+  "Body"
+ ],
+ "materials": [
+  "material"
+ ],
+ "images": [
+  "base_color",
+  "metallic_roughness",
+  "normal"
+ ]
+}
