@@ -6,6 +6,8 @@ on the Mac Studio by a gauntlet loop of builder and critic sub-agents. Started
 
 ## SCOPE CHANGE 2026-09-02
 
+**Characters (2026-09-02 evening):** both real models are in the game. Mikasa and the Titan were Meshy image-to-3D → Meshy auto-rig + library clips (`docs/CLIPS.md`) → `tools/merge_clips.py` → `unity/Assets/Resources/Characters/<Name>.fbx` (Humanoid). `Proxies/CharacterModel.cs` dresses the proxy host at runtime (keeps its collider and sockets, hides the primitive geo, IPoser via Playables, URP material from `Resources/Characters/<Name>Tex`). Camera follows the player through `ODM/OdmCameraTarget`. The 7 m titan is still a proxy and is out of scope. User has approved concept, mesh, and rig for both; in-game look pending his check.
+
 The project was scaled down to a three-minute single-scene build with no agent loops, because the gauntlet burned half a week's plan budget in one wave. See the SCOPE v2 block at the top of `docs/BRIEF.md`. Landed so far: proxies (done, merged), ODM (lane/odm, ~5/10, round 3 in flight), town (lane/town, round 2 in flight), camera (lane/camera, 2/10, kill cam orbit broken, live-capture mode works). Next: merge odm+town when their rounds land, fix camera orbit by hand, combat, titan AI, HUD, then the character finish pass with the user.
 
 ## Read in this order
