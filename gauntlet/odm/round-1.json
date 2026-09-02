@@ -1,26 +1,18 @@
 {
- "piece": "odm",
- "round": 1,
- "verdict": "lose",
- "gap": "Nothing in our shots reads as moving: cables are drawn as two perfectly straight static rays with no slack or bow, the capsule body never leans or bends into the motion, and the gas trail is a soft stationary particle cone rather than a directional propulsive puff, so every frame looks like a posed screenshot of a parked rig instead of a mid-flight instant.",
- "score": 3,
- "shots": [
-  "odm_hook.png",
-  "odm_reel.png",
-  "odm_swing.png",
-  "odm_boost.png",
-  "odm_arc.png",
-  "odm_land.png",
-  "odm_mantle.png"
- ],
- "reference": [
-  "odm-08.png",
-  "odm-06.png",
-  "odm-04.png",
-  "odm-07.png",
-  "odm-05.png",
-  "odm-02.png",
-  "odm-05.png"
- ],
- "ts": "2026-09-02T00:00:00Z"
+  "piece": "odm",
+  "round": 1,
+  "verdict": "no",
+  "gap": "The reference sells speed with a heavy directional motion-blur streak trailing the whole body and a banked/dutch camera angle, while every one of our stills is a level, static-feeling shot of a vertical capsule with only a thin gas-puff contrail underneath — nothing about the frame itself implies velocity.",
+  "score": 3,
+  "shots": [
+    {"file": "odm_hook.png", "closest_ref": "odm-09", "note": "ref reads faster: character is horizontal, cable taut on a steep diagonal with visible motion-streak trail; ours has a near-vertical capsule standing almost still with a slack-looking dual cable and no blur."},
+    {"file": "odm_reel.png", "closest_ref": "odm-09", "note": "ref reads faster: banked camera plus a long white speed-streak sells the reel-in; ours shows a taut cable but the capsule and camera are static, so it reads as parked mid-air rather than reeling."},
+    {"file": "odm_swing.png", "closest_ref": "odm-10", "note": "ref reads faster: dynamic pose with cloak flare and blur arc through the swing; ours has a visible gas-puff arc which is the strongest cue we have, but the capsule itself shows zero lean into the turn."},
+    {"file": "odm_arc.png", "closest_ref": "odm-10", "note": "ref reads faster: the character's silhouette itself is angled into the arc with trailing blur; ours only implies the arc via a smoke trail while the rigid capsule stays upright, so the arc feels like a background effect, not body motion."},
+    {"file": "odm_boost.png", "closest_ref": "odm-09", "note": "ref reads faster: thruster streaks read as propulsion off the anchor point; ours has a thicker gas puff which is decent, but the flat un-tilted camera and static capsule undercut the boost feeling."},
+    {"file": "odm_land.png", "closest_ref": "odm-10", "note": "ref reads faster even at rest: the pose still carries coiled tension and a fading blur trail from the prior motion; ours is a capsule standing dead-still on a rooftop with no impact dust, crouch, or residual trail, so it reads as idle, not just-landed."},
+    {"file": "odm_mantle.png", "closest_ref": "odm-09", "note": "ref reads faster: the taut cable-to-anchor plus blur sells momentum into the mantle; ours shows a nicely taut diagonal cable to two distinct anchor points, the best hook readability of the set, but the capsule itself has no motion cue."}
+  ],
+  "reference": "contact-odm-flight.jpg / odm-01..10 (odm-09 and odm-10 are the true flight frames; the rest are ground combat HUD screenshots)",
+  "ts": "2026-09-02T12:31:00-07:00"
 }
