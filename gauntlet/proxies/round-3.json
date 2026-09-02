@@ -1,0 +1,34 @@
+{
+ "piece": "proxies",
+ "round": 3,
+ "verdict": "lose",
+ "gap": "Titan/boss Grab and Swipe still share the same forward-lean-with-one-arm-out silhouette (proxies_titan_grab.png, proxies_titan_poses.png) \u2014 give Grab both arms reaching low and forward with hands open/together, and keep Swipe's arm swept high and lateral across the body, so the two read apart at a glance.",
+ "score": 7,
+ "shots": [
+  "proxies_mikasa_poses.png",
+  "proxies_mikasa_fly.png",
+  "proxies_mikasa_slash.png",
+  "proxies_scale.png",
+  "proxies_street.png",
+  "proxies_boss_stomp.png",
+  "proxies_titan_poses.png",
+  "proxies_titan_grab.png",
+  "proxies_titan_kneel.png",
+  "latest.png"
+ ],
+ "reference": [
+  "contact-mikasa.jpg",
+  "contact-titan-7m.jpg",
+  "contact-titan-boss.jpg"
+ ],
+ "ts": "2026-09-02T00:00:00Z",
+ "notes": [
+  "mikasa_poses/overview.png: 1.7m rig reads correctly against buildings; Idle/Run/Fly/Slash/Kneel/Stagger/Land all distinct silhouettes with sword+ODM gear, no scale issues.",
+  "proxies_mikasa_fly.png / proxies_mikasa_slash.png: Fly reads as a clean horizontal glide with blades trailing; Slash reads as a forward lunge with blade extended \u2014 both unambiguous.",
+  "proxies_scale.png / proxies_street.png: 7m titan and 15m boss check out against each other and against building height, ~2x titan-to-boss and titan roughly building-height as expected.",
+  "latest.png / proxies_boss_stomp.png: Stomp now unmistakable from Sprint and Grab \u2014 raised front knee, wind-up arm flung high overhead, weight cocked back; this is the fix the round asked for and it lands.",
+  "proxies_titan_poses.png / proxies_titan_grab.png: Stomp vs Sprint vs Run all read clean now. Grab (hunched, one arm low-forward) and Swipe (leaning, one arm swept back) are still close enough in silhouette that a quick glance could confuse them \u2014 this is the one regression risk left over from round 2's messier titan set.",
+  "proxies_titan_kneel.png: Kneel (both hands/knee down, head low) and Stagger (one arm flailed up, legs crossed off-balance) read clearly apart from each other and from everything else.",
+  "titan.png / street.png: no intersecting limbs or clipping through geometry spotted on any rig at any scale."
+ ]
+}

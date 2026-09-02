@@ -1,0 +1,26 @@
+{
+ "piece": "odm",
+ "round": 1,
+ "verdict": "lose",
+ "gap": "Nothing in our shots reads as moving: cables are drawn as two perfectly straight static rays with no slack or bow, the capsule body never leans or bends into the motion, and the gas trail is a soft stationary particle cone rather than a directional propulsive puff, so every frame looks like a posed screenshot of a parked rig instead of a mid-flight instant.",
+ "score": 3,
+ "shots": [
+  "odm_hook.png",
+  "odm_reel.png",
+  "odm_swing.png",
+  "odm_boost.png",
+  "odm_arc.png",
+  "odm_land.png",
+  "odm_mantle.png"
+ ],
+ "reference": [
+  "odm-08.png",
+  "odm-06.png",
+  "odm-04.png",
+  "odm-07.png",
+  "odm-05.png",
+  "odm-02.png",
+  "odm-05.png"
+ ],
+ "ts": "2026-09-02T00:00:00Z"
+}
