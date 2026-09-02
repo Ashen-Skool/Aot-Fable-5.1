@@ -78,9 +78,6 @@ namespace Characters
 
         void BuildGraph(string resource)
         {
-            foreach (var c in Resources.LoadAll<AnimationClip>(System.IO.Path.GetDirectoryName(resource).Replace('\\', '/')))
-                if (!c.name.StartsWith("__")) clips[c.name] = c;
-            // Resources.LoadAll on the folder also returns clips of other characters; prefer clips embedded in this model
             var own = Resources.LoadAll<AnimationClip>(resource);
             foreach (var c in own) clips[c.name] = c;
             graph = PlayableGraph.Create("Character:" + name);
@@ -91,9 +88,17 @@ namespace Characters
             graph.Play();
         }
 
+        static readonly Dictionary<string, string[]> Alternates = new Dictionary<string, string[]>
+        {
+            { "hit", new[] { "stagger" } }, { "stagger", new[] { "hit" } }, { "running_glb_url", new[] { "walking_glb_url" } }, { "jump", new[] { "sprint", "running_glb_url" } },
+        };
         int Port(string clipName)
         {
-            if (!clips.TryGetValue(clipName, out var clip)) { if (!clips.TryGetValue("idle", out clip)) return -1; }
+            if (!clips.TryGetValue(clipName, out var clip))
+            {
+                if (Alternates.TryGetValue(clipName, out var alts)) foreach (var a in alts) if (clips.TryGetValue(a, out clip)) break;
+                if (clip == null && !clips.TryGetValue("idle", out clip)) return -1;
+            }
             for (int i = 0; i < ports.Count; i++) if (ports[i].GetAnimationClip() == clip) return i;
             var p = AnimationClipPlayable.Create(graph, clip);
             p.SetApplyFootIK(false);
