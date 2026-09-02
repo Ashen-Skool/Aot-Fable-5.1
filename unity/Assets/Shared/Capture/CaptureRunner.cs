@@ -14,6 +14,9 @@ namespace Shared.Capture
         public float[] lookAt;
         public float fov = 60f;
         public float timeSec = 0f;
+        /// <summary>"game": do not place the camera; capture whatever the live game camera rig is doing at timeSec. Default: place it at pos/lookAt/fov.</summary>
+        public string camera;
+        public bool Live => camera == "game";
         public Vector3 Pos => new Vector3(pos[0], pos[1], pos[2]);
         public Vector3 LookAt => new Vector3(lookAt[0], lookAt[1], lookAt[2]);
     }
@@ -38,6 +41,11 @@ namespace Shared.Capture
         public string posesPath;       // absolute path; default <repo>/tools/poses.json
         public int settleFrames = 3;
         public int warmupFrames = 10;   // first frames render before textures/skybox are uploaded
+
+        /// <summary>True while a capture run is in progress.</summary>
+        public static bool Capturing { get; private set; }
+        /// <summary>True while the current pose is a "camera": "game" pose: the game camera rig owns the transform and FOV.</summary>
+        public static bool LiveCamera { get; private set; }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void AutoStart()
@@ -85,6 +93,7 @@ namespace Shared.Capture
             try { poses = LoadPoses(); }
             catch (Exception e) { Fail("poses: " + e.Message); yield break; }
             if (poses.Count == 0) { Fail("no poses matched"); yield break; }
+            Capturing = true;
             Log("[Capture] start piece=" + piece + " poses=" + poses.Count + " frame=" + Time.frameCount);
             yield return null;
             Log("[Capture] ticking frame=" + Time.frameCount + " t=" + Time.time.ToString("0.000"));
@@ -106,12 +115,21 @@ namespace Shared.Capture
             foreach (var p in poses)
             {
                 // advance simulation to the pose time (never rewind)
+                LiveCamera = p.Live;
                 while (Time.time - t0 < p.timeSec - 1e-4f) yield return null;
-                cam.transform.position = p.Pos;
-                cam.transform.LookAt(p.LookAt);
-                cam.fieldOfView = p.fov;
+                if (!p.Live)
+                {
+                    cam.transform.position = p.Pos;
+                    cam.transform.LookAt(p.LookAt);
+                    cam.fieldOfView = p.fov;
+                }
                 // NOTE: no WaitForEndOfFrame here: it never fires in -batchmode (no game view).
-                for (int i = 0; i < settleFrames; i++) yield return null;
+                for (int i = 0; i < settleFrames; i++)
+                {
+                    yield return null;
+                    // live poses: render every settle frame so per-frame effects (motion vectors / motion blur) have a real previous frame
+                    if (p.Live) { var pt = cam.targetTexture; cam.targetTexture = rt; cam.Render(); cam.targetTexture = pt; }
+                }
                 try
                 {
                     var prevTarget = cam.targetTexture;
@@ -131,6 +149,7 @@ namespace Shared.Capture
                 catch (Exception e) { Fail("render " + p.name + ": " + e.Message); yield break; }
             }
             if (orbit != null) orbit.enabled = true;
+            Capturing = false; LiveCamera = false;
             Ok(n);
         }
 

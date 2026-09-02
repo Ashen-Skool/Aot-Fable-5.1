@@ -6,8 +6,9 @@ namespace AotCamera
 {
     /// <summary>
     /// Installs the CameraRig on the bootstrap camera at startup and registers it as Ctx "cameraRig".
-    /// During a capture of another piece (-piece X, X != camera) the rig stays passive so that
-    /// piece's poses hold. Without a registered "cameraTarget" a DemoTarget flies the demo path.
+    /// During a capture the rig only drives the camera for poses marked "camera": "game" (the
+    /// CaptureRunner places the others). The DemoTarget flies the demo path only for the camera
+    /// piece's own capture or in normal play without a registered "cameraTarget".
     /// </summary>
     public static class CameraBoot
     {
@@ -28,12 +29,12 @@ namespace AotCamera
             var rig = cam.GetComponent<CameraRig>() ?? cam.gameObject.AddComponent<CameraRig>();
             var piece = Bootstrap.Arg("-piece");
             bool capturingOther = !string.IsNullOrEmpty(piece) && piece != "camera";
-            rig.driveCamera = !capturingOther;
+            rig.driveCamera = true;
             rig.logEvery = Bootstrap.ArgInt("-camlog", 0);
             var orbit = Ctx.Get<OrbitCamera>("orbit");
-            if (orbit != null && rig.driveCamera) orbit.enabled = false;
+            if (orbit != null) orbit.enabled = false;
             Ctx.Set(CameraRig.CtxName, rig);
-            if (rig.driveCamera && !RunningTests() && Ctx.Get<ICameraTarget>(ICameraTarget.CtxName) == null && Object.FindFirstObjectByType<DemoTarget>() == null)
+            if (!capturingOther && !RunningTests() && Ctx.Get<ICameraTarget>(ICameraTarget.CtxName) == null && Object.FindFirstObjectByType<DemoTarget>() == null)
             {
                 var demo = DemoTarget.Create();
                 rig.fallbackTarget = demo;

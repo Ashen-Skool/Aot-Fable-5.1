@@ -7,9 +7,11 @@ namespace AotCamera
 {
     /// <summary>
     /// Stand-in for the ODM controller: a scripted, time-exact flight through the stub street
-    /// (wall dive, street run, boost, roof landing with impact, kill cam, loop) so the camera can
-    /// be captured at speed without the real character. Registers nothing in Ctx; the rig uses
-    /// it only while no "cameraTarget" is registered, and it removes itself when one appears.
+    /// (wall dive, street run, boost with the Titan locked, roof landing with impact, kill cam,
+    /// loop) so the camera can be captured at speed without the real character. Draws a taut
+    /// cable from Mikasa to the current hook anchor (rooftop ahead, or the Titan while locked).
+    /// Registers nothing in Ctx; the rig uses it only while no "cameraTarget" is registered,
+    /// and it removes itself when one appears.
     /// </summary>
     public class DemoTarget : MonoBehaviour, ICameraTarget
     {
@@ -20,13 +22,16 @@ namespace AotCamera
         }
 
         public const float LoopFrom = 3.2f;        // after the first pass, restart from the street entry
-        public float DiveAt = 0.55f, DiveDuration = 2.8f, HitAt = 7.5f, KillAt = 8.8f;
+        public float DiveAt = 0.55f, DiveDuration = 2.8f, LockAt = 3.4f, LockUntil = 9.6f, HitAt = 7.5f, KillAt = 8.8f;
 
         readonly List<Key> keys = new List<Key>(24);
         readonly List<Vector3> dense = new List<Vector3>(2048);   // spline samples
         readonly List<float> denseT = new List<float>(2048);      // time at each sample
+        readonly List<Vector3> anchors = new List<Vector3>(8);    // hook points along the street, in +Z order
         Transform body;
         GameObject root;
+        Transform titan;
+        LineRenderer cable;
         Vector3 pos, vel, fwd = Vector3.forward;
         CameraTargetState state = CameraTargetState.Grounded;
         float t0 = -1f, loopOffset, hitUntil = -1f;
@@ -40,6 +45,7 @@ namespace AotCamera
         public CameraTargetState State => state;
         public Transform Root => root != null ? root.transform : null;
         public float Elapsed => t0 < 0 ? 0f : Time.time - t0;
+        public bool CableVisible => cable != null && cable.enabled;
 
         public static DemoTarget Create()
         {
@@ -50,25 +56,26 @@ namespace AotCamera
         void Awake()
         {
             root = gameObject;
-            var titan = Ctx.Get<GameObject>("titan");
-            if (titan != null) titanNape = titan.transform.position + new Vector3(0f, 6f, 1f);
+            var titanGo = Ctx.Get<GameObject>("titan");
+            if (titanGo != null) { titan = titanGo.transform; titanNape = titan.position + new Vector3(0f, 6f, 1f); }
 
             BuildProps();
             BuildBody();
+            BuildCable();
             // wall top -> dive -> street -> boost past the titan -> land on a roof (impact) -> jump to the nape (kill cam) -> loop
             var G = CameraTargetState.Grounded; var F = CameraTargetState.Flying; var B = F | CameraTargetState.Boosting;
             keys.Add(new Key(0.0f, new Vector3(0f, 50.9f, -72f), G));
             keys.Add(new Key(0.8f, new Vector3(0f, 50.9f, -71f), G));
             keys.Add(new Key(2.0f, new Vector3(0f, 28f, -62f), F));
             keys.Add(new Key(3.2f, new Vector3(0f, 5f, -45f), F));
-            keys.Add(new Key(4.6f, new Vector3(2f, 6f, -8f), F));      // street run, through the pillars
-            keys.Add(new Key(5.6f, new Vector3(-3f, 9f, 30f), B));     // boost down the street
+            keys.Add(new Key(4.6f, new Vector3(1.5f, 6f, -8f), F));    // street run, through the pillars
+            keys.Add(new Key(5.6f, new Vector3(-2f, 9f, 30f), B));     // boost down the street at the titan
             keys.Add(new Key(6.6f, new Vector3(-6f, 16f, 62f), B));    // past the titan's left shoulder
             keys.Add(new Key(7.0f, new Vector3(-15f, 19f, 82f), F));   // swing round
             keys.Add(new Key(7.5f, new Vector3(-14f, 14.6f, 75f), G)); // roof landing facing the titan = impact
             keys.Add(new Key(8.0f, new Vector3(-13.8f, 14.6f, 74.7f), G));
-            keys.Add(new Key(8.8f, new Vector3(1f, 15f, 63f), F));     // lunge at the nape -> kill cam
-            keys.Add(new Key(9.4f, new Vector3(1.2f, 15.2f, 63.5f), F));
+            keys.Add(new Key(8.8f, new Vector3(1.5f, 15f, 63.5f), F)); // lunge at the nape -> kill cam
+            keys.Add(new Key(9.4f, new Vector3(1.7f, 15.2f, 64f), F));
             keys.Add(new Key(9.9f, new Vector3(-4f, 15f, 50f), F));
             keys.Add(new Key(11.1f, new Vector3(-9f, 11f, 20f), F));
             keys.Add(new Key(12.3f, new Vector3(0f, 6f, -10f), F));
@@ -87,6 +94,12 @@ namespace AotCamera
             Box("Pillar_L", new Vector3(-4.5f, 4.5f, -5f), new Vector3(1.6f, 9f, 1.6f), stone);
             Box("Pillar_R", new Vector3(4.5f, 4.5f, -5f), new Vector3(1.6f, 9f, 1.6f), stone);
             Box("Box_Mid", new Vector3(-9f, 6f, 30f), new Vector3(6f, 12f, 6f), stone);
+            // hook anchors: rooftop corners ahead along the street (the titan is handled by the lock)
+            anchors.Add(new Vector3(6.5f, 9.5f, -26f));    // stub-street roof, right side
+            anchors.Add(new Vector3(-4.5f, 9.2f, -5f));    // Pillar_L top
+            anchors.Add(new Vector3(7f, 9.5f, 14f));       // stub-street roof, right side
+            anchors.Add(new Vector3(-9f, 12.2f, 30f));     // Box_Mid top
+            anchors.Add(new Vector3(-14f, 14.2f, 75f));    // Box_Landing top
         }
 
         void Box(string name, Vector3 at, Vector3 size, Material m)
@@ -115,6 +128,33 @@ namespace AotCamera
             Destroy(scarf.GetComponent<Collider>());
             scarf.GetComponent<Renderer>().sharedMaterial = Mats.Lit(new Color(0.75f, 0.1f, 0.08f), 0.2f);
             body = go.transform;
+        }
+
+        void BuildCable()
+        {
+            var go = new GameObject("Cable");
+            go.transform.SetParent(transform, false);
+            cable = go.AddComponent<LineRenderer>();
+            cable.useWorldSpace = true;
+            cable.positionCount = 2;
+            cable.startWidth = 0.06f;
+            cable.endWidth = 0.035f;
+            cable.numCapVertices = 2;
+            cable.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            cable.receiveShadows = false;
+            cable.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+            cable.sharedMaterial = Mats.Unlit(new Color(0.08f, 0.08f, 0.09f));
+            cable.enabled = false;
+        }
+
+        /// <summary>Hook point for the current moment: the Titan's nape while locked, else the next rooftop anchor at least 6 m ahead.</summary>
+        bool TryAnchor(float t, out Vector3 a)
+        {
+            if (t >= LockAt && t < LockUntil) { a = titanNape; return true; }
+            if ((state & CameraTargetState.Flying) == 0 || vel.z < 4f) { a = default; return false; }
+            for (int i = 0; i < anchors.Count; i++)
+                if (anchors[i].z > pos.z + 6f && anchors[i].z < pos.z + 60f) { a = anchors[i]; return true; }
+            a = default; return false;
         }
 
         void BakeSpline()
@@ -175,7 +215,7 @@ namespace AotCamera
             pos = next;
             if (vel.sqrMagnitude > 0.5f) fwd = Vector3.Slerp(fwd, vel.normalized, 1f - Mathf.Exp(-8f * dt));
             var s = StateAt(t);
-            // the roof landing at 8.0 s is an impact: one frame of Hit
+            // the roof landing at 7.5 s is an impact: one frame of Hit
             if (!killDone && t >= HitAt && t < HitAt + 0.2f) { s |= CameraTargetState.Hit; hitUntil = t + 0.12f; }
             if (t < hitUntil) s |= CameraTargetState.Hit;
             state = s;
@@ -188,8 +228,18 @@ namespace AotCamera
                 body.rotation = look * lean;
             }
 
+            // the cable: taut line from the hip to the hook point
+            if (TryAnchor(t, out var anchor))
+            {
+                if (!cable.enabled) cable.enabled = true;
+                cable.SetPosition(0, pos + body.rotation * new Vector3(0.2f, -0.2f, 0f));
+                cable.SetPosition(1, anchor);
+            }
+            else if (cable.enabled) cable.enabled = false;
+
             var rig = Ctx.Get<CameraRig>(CameraRig.CtxName);
             if (rig == null) return;
+            rig.lockTarget = titan != null && t >= LockAt && t < LockUntil ? titan : null;
             if (!diveDone && loopOffset == 0f && t >= DiveAt)
             {
                 diveDone = true;

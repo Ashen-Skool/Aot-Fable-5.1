@@ -2,7 +2,9 @@
     "name": "AOT.CameraRig",
     "rootNamespace": "",
     "references": [
-        "AOT.Shared"
+        "AOT.Shared",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
