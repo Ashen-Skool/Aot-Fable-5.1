@@ -2,5 +2,11 @@
   { "name": "overview", "pos": [80, 60, -100], "lookAt": [0, 0, 20],   "fov": 60, "timeSec": 0.0 },
   { "name": "street",   "pos": [0, 2, -55],    "lookAt": [0, 4, 60],   "fov": 70, "timeSec": 0.5 },
   { "name": "titan",    "pos": [10, 2, 42],    "lookAt": [0, 11, 60],  "fov": 60, "timeSec": 1.0 },
-  { "name": "flight",   "pos": [-6, 30, -70],  "lookAt": [0, 6, 60],   "fov": 75, "timeSec": 1.5 }
+  { "name": "flight",   "pos": [-6, 30, -70],  "lookAt": [0, 6, 60],   "fov": 75, "timeSec": 1.5 },
+
+  { "name": "cam_dive",    "pos": [4, 56, -82],  "lookAt": [0, 20, 20],   "fov": 58, "timeSec": 2.75,  "_": "piece camera: the rig drives the camera, pos/lookAt/fov are ignored; timeSec picks the demo moment" },
+  { "name": "cam_chase",   "pos": [0, 7, -30],   "lookAt": [2, 6, -8],    "fov": 70, "timeSec": 4.0 },
+  { "name": "cam_boost",   "pos": [-2, 10, 10],  "lookAt": [-3, 9, 30],   "fov": 95, "timeSec": 5.4 },
+  { "name": "cam_impact",  "pos": [-10, 18, 65], "lookAt": [-14, 14, 75], "fov": 70, "timeSec": 7.65 },
+  { "name": "cam_killcam", "pos": [6, 16, 66],   "lookAt": [0, 13.5, 61], "fov": 48, "timeSec": 8.85 }
 ]
