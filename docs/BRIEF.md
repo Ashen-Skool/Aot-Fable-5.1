@@ -1,5 +1,23 @@
 # AOT FABLE 5.1 — the brief
 
+> ## SCOPE v2 (2026-09-02) — READ THIS FIRST, IT OVERRIDES THE REST
+> Budget reality: the gauntlet loop below burned half a week's plan on one wave.
+> The shipping target is now **one scene, three minutes**: one district block,
+> one 15 m Titan, Mikasa. Fly, cut both hamstrings, cut the nape, kill cam,
+> results screen. Health, gas, timer, title and death screens. Golden HDRI plus
+> one cel outline pass. A handful of Kenney clips for audio. Mac build to play on
+> the Studio, WebGL to GitHub Pages.
+>
+> **Process v2:** no parallel builders, no critic agents, no scheduled ticks.
+> The director builds directly, one piece at a time, on the Studio, and the
+> USER is the critic (send him a shot, fix the one thing he names). Sub-agents
+> only for something that is truly parallel and cheap. Character models are
+> still made with the user step by step.
+>
+> **Cut for now:** 7 m titans (5), destruction (9), the ten-minute script (13),
+> most of look (10) and audio (12), performance beyond 60 fps on the Studio (14).
+> Everything below stays as the long-term reference only.
+
 A ten-minute playable Attack on Titan homage built in Unity 6 through the CLI.
 You are Mikasa. ODM gear, twin blades, a walled town, Titans. The bar is the
 actual Attack on Titan console games (A.O.T. 2 / Wings of Freedom): the feel

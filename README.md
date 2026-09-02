@@ -4,6 +4,10 @@ A ten-minute playable Attack on Titan homage in Unity 6, built through the CLI
 on the Mac Studio by a gauntlet loop of builder and critic sub-agents. Started
 2026-09-01. **Read this whole file before doing anything.**
 
+## SCOPE CHANGE 2026-09-02
+
+The project was scaled down to a three-minute single-scene build with no agent loops, because the gauntlet burned half a week's plan budget in one wave. See the SCOPE v2 block at the top of `docs/BRIEF.md`. Landed so far: proxies (done, merged), ODM (lane/odm, ~5/10, round 3 in flight), town (lane/town, round 2 in flight), camera (lane/camera, 2/10, kill cam orbit broken, live-capture mode works). Next: merge odm+town when their rounds land, fix camera orbit by hand, combat, titan AI, HUD, then the character finish pass with the user.
+
 ## Read in this order
 
 1. `docs/BRIEF.md` — what the game is, the 15 pieces, the bar (the real A.O.T. 2).
