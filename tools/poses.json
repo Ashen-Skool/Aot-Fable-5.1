@@ -1,6 +1,12 @@
 [
-  { "name": "overview", "pos": [80, 60, -100], "lookAt": [0, 0, 20],   "fov": 60, "timeSec": 0.0 },
-  { "name": "street",   "pos": [0, 2, -55],    "lookAt": [0, 4, 60],   "fov": 70, "timeSec": 0.5 },
-  { "name": "titan",    "pos": [10, 2, 42],    "lookAt": [0, 11, 60],  "fov": 60, "timeSec": 1.0 },
-  { "name": "flight",   "pos": [-6, 30, -70],  "lookAt": [0, 6, 60],   "fov": 75, "timeSec": 1.5 }
+  {"name": "overview", "pos": [80, 60, -100], "lookAt": [0, 0, 20], "fov": 60, "timeSec": 0.0},
+  {"name": "street", "pos": [0, 2, -55], "lookAt": [0, 4, 60], "fov": 70, "timeSec": 0.5},
+  {"name": "titan", "pos": [10, 2, 42], "lookAt": [0, 11, 60], "fov": 60, "timeSec": 1.0},
+  {"name": "flight", "pos": [-6, 30, -70], "lookAt": [0, 6, 60], "fov": 75, "timeSec": 1.5},
+  {"name": "town_street", "pos": [1.5, 1.7, -17], "lookAt": [-0.5, 12, 118], "fov": 65, "timeSec": 0.0},
+  {"name": "town_canyon", "pos": [29.5, 1.8, -84], "lookAt": [29.5, 9, 40], "fov": 68, "timeSec": 0.0},
+  {"name": "town_rooftop", "pos": [-16, 19, -36], "lookAt": [26, 9, 30], "fov": 66, "timeSec": 0.0},
+  {"name": "town_overview", "pos": [-48, 42, -112], "lookAt": [20, 10, 50], "fov": 62, "timeSec": 0.0},
+  {"name": "town_wall", "pos": [-30, 3, 66], "lookAt": [0, 24, 122], "fov": 66, "timeSec": 0.0},
+  {"name": "town_sunset", "pos": [30, 17, 40], "lookAt": [-60, 32, -50], "fov": 64, "timeSec": 0.0}
 ]
