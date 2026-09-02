@@ -13,6 +13,6 @@
   { "name": "proxies_titan_kneel",  "pos": [91, 4.5, 8],      "lookAt": [94, 2.0, -10],   "fov": 50, "timeSec": 2.55 },
   { "name": "proxies_boss_poses",   "pos": [115, 10, -30],    "lookAt": [115, 7, -100],   "fov": 72, "timeSec": 2.6 },
   { "name": "proxies_boss_swipe",   "pos": [141, 8, -68],     "lookAt": [145, 7, -100],   "fov": 50, "timeSec": 2.7 },
-  { "name": "proxies_boss_stomp",   "pos": [171, 8, -68],     "lookAt": [175, 7.5, -100], "fov": 50, "timeSec": 2.8 },
+  { "name": "proxies_boss_stomp",   "pos": [164, 8, -70],     "lookAt": [175, 7.5, -100], "fov": 50, "timeSec": 2.8 },
   { "name": "proxies_street",       "pos": [0, 3, 20],        "lookAt": [-6, 5, 50],      "fov": 60, "timeSec": 2.9 }
 ]
