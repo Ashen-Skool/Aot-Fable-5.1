@@ -21,14 +21,17 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
   to release), Shift gas, WASD air steer, LMB attack, Esc frees the mouse, click captures it. 100 HP, knockback, respawn.
 - Camera: `CameraRig/CameraRig.cs`, centered on her, free look at any speed, heading re-based (not eased) when steering on foot.
 - Cannons: `Proxies/Cannon.cs`, placed by `ProxyBootstrap.CannonPlacer` on the 3 tallest flight-test towers (now permanent,
-  stone-dressed) + the wall walkway. E to fire within 5 m, 40 dmg, HUD markers with distance. **Tower placement in play not
-  yet verified by eye** (the town capture only shows the wall cannon because the towers only build when `-piece` is absent).
+  stone-dressed) + the wall walkway. E to fire within 5 m, 40 dmg, HUD markers with distance. Tower placement verified in a capture (`tools/unity.sh ... -odmGrid 1`): three on tower tops, one on the wall.
 - World: ground trimmed to the town bounds with invisible boundary walls; fall below -25 m respawns.
 - Props pipeline: concept (Higgsfield) → `tools/meshy.py` → `tools/prop_finish.py` → `Resources/Props/<Name>.fbx` →
   `Shared/PropAlign.Align` orients from geometry at runtime (exporter axes are not trusted).
 
-**Open items:** fist roll number from the user; verify tower cannons; audio (Kenney clips staged under
-`assets/staged/audio`, nothing wired); title screen; draw/sheathe pose; the 7 m titan is a grey proxy on purpose.
+- Audio: `Shared/Sfx.cs` pooled one-shots over `Resources/Audio` (Kenney): hooks, landing, slash, hits, titan steps and attacks, cannon.
+- Title screen (click to begin, Time.timeScale 0 until then) and ending screen live in `OdmController.OnGUI`.
+
+**Open items:** fist roll number from the user; draw/sheathe pose; the tower grid visually swallows the town from above
+(user asked for cannons on those towers, so they stay; a smaller grid or fewer towers is a design call for him);
+music; the 7 m titan is a grey proxy on purpose.
 
 **Process notes:** keep `tools/test.sh` green (36 tests incl. `CharactersWiredTests`, `GroundSnapProbe`); build with
 `tools/build.sh mac`, then rsync the app to `~/Desktop/AOT-build/` on the laptop and `open` it for him. Unity batch runs
