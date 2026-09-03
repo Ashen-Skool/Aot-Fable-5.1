@@ -1,5 +1,7 @@
 # AOT FABLE 5.1
 
+Repo: https://github.com/Ashen-Skool/Aot-Fable-5.1 (moved from the personal account 2026-09-02). Progress page: https://ashen-skool.github.io/Aot-Fable-5.1/progress.html
+
 A ten-minute playable Attack on Titan homage in Unity 6, built through the CLI
 on the Mac Studio by a gauntlet loop of builder and critic sub-agents. Started
 2026-09-01. **Read this whole file before doing anything.**
