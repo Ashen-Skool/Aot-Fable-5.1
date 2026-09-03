@@ -1,7 +1,9 @@
 {
     "name": "AOT.Shared",
     "rootNamespace": "",
-    "references": [],
+    "references": [
+        "Unity.InputSystem"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
