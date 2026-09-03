@@ -19,7 +19,7 @@ namespace ODM
         {
             string piece = Bootstrap.Arg("-piece");
             bool capturingOdm = piece == "odm";
-            bool wantGrid = capturingOdm || Bootstrap.Arg("-odmGrid") != null || (piece == null && !Ctx.Has("town"));
+            bool wantGrid = capturingOdm || Bootstrap.Arg("-odmGrid") != null || piece == null; // in play the towers are part of the district now
             Ensure(wantGrid);
             if (capturingOdm || Bootstrap.Arg("-odmScript") != null) PlayDemo(true);
         }
@@ -48,7 +48,7 @@ namespace ODM
             if (titan != null) SetLayerDeep(titan.transform, OdmLayers.Titan);
             var placeholder = Ctx.Get<GameObject>("placeholder");
             if (placeholder != null) SetLayerDeep(placeholder.transform, OdmLayers.Hook);
-            if (buildGrid) HookTestGrid.Build(Ctx.Get<int>("seed"));
+            if (buildGrid) { var g = HookTestGrid.Build(Ctx.Get<int>("seed")); Ctx.Set("odmGrid", (object)g); }
             return Player;
         }
 

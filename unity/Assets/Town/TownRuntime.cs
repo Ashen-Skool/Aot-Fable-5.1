@@ -59,8 +59,21 @@ namespace Town
             var r = ground.GetComponent<Renderer>();
             if (r == null) return;
             // Bootstrap's plane is 400 m with 0..1 UVs; tile the cobbles every 3.2 m.
-            var m = Materials.Textured("groundPlane", "PavingStones131", 3.2f / 400f, new Color(0.5f, 0.46f, 0.4f), 0.08f, 1f);
+            // Trim the world to the built-out district: the plane covers the town bounds (plus a street's margin), and
+            // invisible walls keep the player inside. Beyond the wall there is nothing.
+            var b = Info.bounds; float margin = 12f;
+            var size = new Vector3(b.size.x + margin * 2f, 1f, b.size.z + margin * 2f);
+            ground.transform.position = new Vector3(b.center.x, 0f, b.center.z);
+            ground.transform.localScale = new Vector3(size.x / 10f, 1f, size.z / 10f);
+            var m = Materials.Textured("groundPlane", "PavingStones131", 3.2f / Mathf.Max(size.x, size.z), new Color(0.5f, 0.46f, 0.4f), 0.08f, 1f);
             r.sharedMaterial = m;
+            var fence = new GameObject("Boundary"); fence.transform.SetParent(Root.transform, false);
+            void Fence(Vector3 c, Vector3 s) { var f = fence.AddComponent<BoxCollider>(); f.center = c; f.size = s; }
+            float h = 140f, t = 2f; float x0 = b.min.x - margin, x1 = b.max.x + margin, z0 = b.min.z - margin, z1 = b.max.z + margin;
+            Fence(new Vector3(x0, h * 0.5f, b.center.z), new Vector3(t, h, size.z)); Fence(new Vector3(x1, h * 0.5f, b.center.z), new Vector3(t, h, size.z));
+            Fence(new Vector3(b.center.x, h * 0.5f, z0), new Vector3(size.x, h, t)); Fence(new Vector3(b.center.x, h * 0.5f, z1), new Vector3(size.x, h, t));
+            Ctx.Set("town.wallTop", new Vector3(b.max.x * 0.45f, Info.wallHeight, Info.wallZ + 5f));
+            Ctx.Set("town.stoneMat", Materials.WallStone); Ctx.Set("town.roofMat", Materials.WallStoneDark);
         }
 
         public static Vector3 SunDirection()

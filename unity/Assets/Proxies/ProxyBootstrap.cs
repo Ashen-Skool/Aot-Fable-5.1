@@ -77,23 +77,53 @@ namespace Proxies
             void Update()
             {
                 waited += Time.deltaTime;
-                if (Ctx.Get<Vector3[]>("town.rooftops") != null) { PlaceCannons(); Destroy(gameObject); }
-                else if (waited > 5f) { Debug.Log("[Cannons] no town rooftops after 5 s; none placed"); Destroy(gameObject); }
+                bool ready = Ctx.Get<Vector3[]>("town.rooftops") != null && Ctx.Has("odmGrid");
+                if (ready || waited > 5f) { DressTowers(); PlaceCannons(); Destroy(gameObject); }
             }
         }
 
-        /// <summary>Cannons on the highest rooftops, spread across the district.</summary>
+        static Transform GridRoot()
+        {
+            var g = Ctx.Get<object>("odmGrid");
+            return g is Component c ? c.transform : g is GameObject go ? go.transform : null;
+        }
+
+        /// <summary>The flight-test towers become part of the district: town stone bodies, dark stone flat tops.</summary>
+        static void DressTowers()
+        {
+            var root = GridRoot(); if (root == null) return;
+            var stone = Ctx.Get<Material>("town.stoneMat"); var top = Ctx.Get<Material>("town.roofMat");
+            if (stone == null) return;
+            foreach (var r in root.GetComponentsInChildren<MeshRenderer>())
+                r.sharedMaterial = r.transform.localScale.y < 1.5f && r.transform.parent != root ? top : stone;
+        }
+
+        /// <summary>Flat tops of the tallest towers, then a point on top of each.</summary>
+        static System.Collections.Generic.List<Vector3> TowerTops()
+        {
+            var tops = new System.Collections.Generic.List<Vector3>();
+            var root = GridRoot(); if (root == null) return tops;
+            foreach (var col in root.GetComponentsInChildren<BoxCollider>())
+            {
+                var b = col.bounds; if (b.size.y < 10f) continue;
+                tops.Add(new Vector3(b.center.x, b.max.y, b.center.z));
+            }
+            tops.Sort((a, b) => b.y.CompareTo(a.y));
+            return tops;
+        }
+
+        /// <summary>Cannons: the three tallest tower tops, spread out, plus one on the Titan wall's walkway.</summary>
         public static void PlaceCannons()
         {
-            var roofs = Ctx.Get<Vector3[]>("town.rooftops"); if (roofs == null || roofs.Length == 0) return;
             var picked = new System.Collections.Generic.List<Vector3>();
-            var sorted = new System.Collections.Generic.List<Vector3>(roofs); sorted.Sort((a, b) => b.y.CompareTo(a.y));
-            foreach (var r in sorted)
+            foreach (var r in TowerTops())
             {
-                bool far = true; foreach (var p in picked) if (Vector3.Distance(p, r) < 45f) { far = false; break; }
+                bool far = true; foreach (var p in picked) if (Vector3.Distance(p, r) < 30f) { far = false; break; }
                 if (!far) continue;
-                picked.Add(r); if (picked.Count == 4) break;
+                picked.Add(r); if (picked.Count == 3) break;
             }
+            if (Ctx.Has("town.wallTop")) picked.Add(Ctx.Get<Vector3>("town.wallTop"));
+            if (picked.Count == 0) { var roofs = Ctx.Get<Vector3[]>("town.rooftops"); if (roofs != null && roofs.Length > 0) picked.Add(roofs[0]); }
             var list = new System.Collections.Generic.List<Cannon>();
             foreach (var r in picked) list.Add(Cannon.Place(r, 0f));
             Ctx.Set("cannons", list.ToArray());

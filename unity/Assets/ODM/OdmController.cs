@@ -460,6 +460,7 @@ namespace ODM
                 slashPoseSet = model != null; // the model already plays the clip; UpdatePose must not restart it
             }
             if (Health <= 0f) { deathTimer -= Time.deltaTime; if (deathTimer <= 0f) Respawn(); }
+            if (rb.position.y < -25f) Respawn(); // fell off the world
             if (UnityEngine.Input.GetKeyDown(KeyCode.LeftBracket)) Characters.CharacterModel.FistRollDeg -= 15f;
             if (UnityEngine.Input.GetKeyDown(KeyCode.RightBracket)) Characters.CharacterModel.FistRollDeg += 15f;
         }
