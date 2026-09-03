@@ -34,7 +34,7 @@ namespace AotCamera
         public float boostDistanceMul = 0.82f;       // pull in a little while the FOV kicks so she does not shrink
         public float heightIdle = 1.3f;              // above the shoulder pivot
         public float heightFast = 1.6f;
-        public Vector2 playerScreen = new Vector2(0.36f, 0.30f);   // where the pivot sits in the frame (0..1, from bottom-left)
+        public Vector2 playerScreen = new Vector2(0.5f, 0.42f);    // centered under the crosshair (user call)
         public float speedRef = 40f;
         public float posSmoothTime = 0.11f;
         public float headingSharpness = 6f;
@@ -518,7 +518,13 @@ namespace AotCamera
             // is actively steering with WASD on the ground, so a run looks where it goes but flight lets you look around.
             var mv = Shared.GameInput.Move;
             bool steering = (Target.State & CameraTargetState.Grounded) != 0 && mv.sqrMagnitude > 0.1f && Speed > 2f;
-            if (steering) { float k = 1f - Mathf.Exp(-2.5f * dt); mouseYaw = Mathf.Lerp(mouseYaw, 0f, k); mousePitch = Mathf.Lerp(mousePitch, 0f, k); }
+            if (steering && Mathf.Abs(mouseYaw) > 0.01f)
+            {
+                // Re-base: fold the yaw offset into the heading so the view does not move at all. Easing the offset back
+                // toward a stale frozen heading is what made runs curve to one side.
+                headingDir = Quaternion.AngleAxis(mouseYaw, Vector3.up) * headingDir; headingDir.Normalize();
+                mouseYaw = 0f;
+            }
         }
 
         static Vector3 ClampPitch(Vector3 d, float maxDeg)
