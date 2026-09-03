@@ -28,7 +28,7 @@ namespace AotCamera
 
         [Header("Chase")]
         public float pivotHeight = 1.35f;            // shoulder
-        public float shoulderRight = 0.85f;
+        public float shoulderRight = 0f;                // centered on Mikasa (user call); lock mode widens it
         public float distanceIdle = 3.2f;
         public float distanceFast = 4.0f;
         public float boostDistanceMul = 0.82f;       // pull in a little while the FOV kicks so she does not shrink

@@ -50,6 +50,7 @@ namespace Characters
             m.animator.applyRootMotion = false;
             m.animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             m.ApplyTextures(resource + "Tex");
+            if (resource.EndsWith("Mikasa")) m.AddBlades(height);
             m.BuildGraph(resource);
             m.SetPose(Pose.Idle);
             return m;
@@ -147,7 +148,35 @@ namespace Characters
             graph.Evaluate(0f);
         }
 
-        void LateUpdate() { if (!Paused || fade < 1f) Tick(Time.deltaTime); }
+        int groundFixFrames = 3;
+        void LateUpdate()
+        {
+            if (!Paused || fade < 1f) Tick(Time.deltaTime);
+            // After the rig has evaluated, put the rendered feet exactly on the host origin (the bounds used at
+            // dress time come from an unevaluated skinned mesh and can float the model).
+            if (groundFixFrames > 0 && --groundFixFrames == 0)
+            {
+                var rs = GetComponentsInChildren<SkinnedMeshRenderer>(); if (rs.Length == 0) return;
+                var b = rs[0].bounds; foreach (var r in rs) b.Encapsulate(r.bounds);
+                float delta = b.min.y - transform.parent.position.y;
+                if (Mathf.Abs(delta) > 0.02f) transform.position += Vector3.down * delta;
+            }
+        }
+
+        /// <summary>Twin ODM blades on the hands (thin steel boxes until a modelled blade exists).</summary>
+        void AddBlades(float height)
+        {
+            foreach (var (bone, nm) in new[] { (HumanBodyBones.RightHand, "Blade_R"), (HumanBodyBones.LeftHand, "Blade_L") })
+            {
+                var hand = animator.GetBoneTransform(bone); if (hand == null) continue;
+                var g = GameObject.CreatePrimitive(PrimitiveType.Cube); g.name = nm; Destroy(g.GetComponent<Collider>());
+                g.transform.SetParent(hand, false);
+                float L = height * 0.55f;
+                g.transform.localScale = new Vector3(0.012f, 0.05f, L) / transform.localScale.x;
+                g.transform.localPosition = new Vector3(0f, 0f, L * 0.45f) / transform.localScale.x;
+                g.GetComponent<Renderer>().sharedMaterial = Shared.Mats.Lit(new Color(0.82f, 0.85f, 0.9f), 0.9f, 1f);
+            }
+        }
         void OnDestroy() { if (graph.IsValid()) graph.Destroy(); }
     }
 }

@@ -441,7 +441,9 @@ namespace ODM
             liveInput.boost = UnityEngine.Input.GetKey(KeyCode.Space);
             liveInput.reel = UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift);
             liveInput.hasAim = false;
+            if (UnityEngine.Input.GetMouseButtonDown(0)) slashTimer = 0.7f;
         }
+        float slashTimer;
 
         void LateUpdate() { UpdateCables(); UpdateSpeedFx(); UpdatePose(); }
 
@@ -459,7 +461,7 @@ namespace ODM
             GUI.color = Color.white;
             GUI.Label(new Rect(16, 12, 640, 220),
                 "<b>WASD</b> move   <b>Mouse</b> aim   <b>Hold RMB</b> fire hooks at the crosshair (buildings/titan within 60 m)\n" +
-                "<b>Hold Space</b> gas boost (in the air: along the cable)   <b>Shift</b> reel in   <b>Esc</b> quit\n" +
+                "<b>Hold Space</b> gas boost (in the air: along the cable)   <b>Shift</b> reel in   <b>LMB</b> slash   <b>Esc</b> quit\n" +
                 "gas " + Gas.ToString("0") + "   speed " + Speed.ToString("0") + " m/s   " + (Hook != HookState.None ? "<color=#ff9933>HOOKED</color>" : (Grounded ? "grounded" : "airborne")), hudStyle);
             if (UnityEngine.Input.GetKey(KeyCode.Escape)) Application.Quit();
         }
@@ -470,9 +472,10 @@ namespace ODM
         {
             var poser = Ctx.Get<Shared.Rigs.IPoser>("mikasaPoser");
             if (poser == null) return;
-            landPoseTimer -= Time.deltaTime;
+            landPoseTimer -= Time.deltaTime; slashTimer -= Time.deltaTime;
             Shared.Rigs.Pose want;
-            if (landPoseTimer > 0f) want = Shared.Rigs.Pose.Land;
+            if (slashTimer > 0f) want = Shared.Rigs.Pose.Slash;
+            else if (landPoseTimer > 0f) want = Shared.Rigs.Pose.Land;
             else if (!Grounded) want = Shared.Rigs.Pose.Fly;
             else if (Speed > 7f) want = Shared.Rigs.Pose.Sprint;
             else if (Speed > 0.6f) want = Shared.Rigs.Pose.Run;
