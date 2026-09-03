@@ -64,8 +64,27 @@ namespace Proxies
             var bossModel = Characters.CharacterModel.TryDress(boss.gameObject, "Characters/Titan", TitanProxy.BossHeight);
             if (bossModel != null) { Ctx.Set("bossPoser", (IPoser)bossModel); Ctx.Set("bossModel", bossModel); bossModel.SetPose(Pose.Idle); }
             Ctx.Set("bossBrain", TitanBrain.Attach(boss.gameObject, TitanProxy.BossHeight));
+            PlaceCannons();
             var orbit = Ctx.Get<OrbitCamera>("orbit");
             if (orbit != null) orbit.target = mikasa.rig.Bone(BoneId.Chest);
+        }
+
+        /// <summary>Cannons on the highest rooftops, spread across the district.</summary>
+        static void PlaceCannons()
+        {
+            var roofs = Ctx.Get<Vector3[]>("town.rooftops"); if (roofs == null || roofs.Length == 0) return;
+            var picked = new System.Collections.Generic.List<Vector3>();
+            var sorted = new System.Collections.Generic.List<Vector3>(roofs); sorted.Sort((a, b) => b.y.CompareTo(a.y));
+            foreach (var r in sorted)
+            {
+                bool far = true; foreach (var p in picked) if (Vector3.Distance(p, r) < 45f) { far = false; break; }
+                if (!far) continue;
+                picked.Add(r); if (picked.Count == 4) break;
+            }
+            var list = new System.Collections.Generic.List<Cannon>();
+            foreach (var r in picked) list.Add(Cannon.Place(r, 0f));
+            Ctx.Set("cannons", list.ToArray());
+            Debug.Log("[Cannons] placed " + list.Count + " on roofs up to " + (picked.Count > 0 ? picked[0].y.ToString("0.0") : "-") + " m");
         }
 
         // ---------------- pose lineup for the capture rig ----------------

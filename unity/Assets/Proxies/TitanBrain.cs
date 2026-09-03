@@ -106,7 +106,7 @@ namespace Proxies
         public void Hit(string zone, Vector3 from)
         {
             if (Current == State.Dead) return;
-            float dmg = zone == "Zone_Nape" ? (Current == State.Kneel ? 100f : 40f) : zone.StartsWith("Zone_Hamstring") ? 18f : zone.StartsWith("Zone_") ? 12f : 6f;
+            float dmg = zone == "cannon" ? 40f : zone == "Zone_Nape" ? (Current == State.Kneel ? 100f : 40f) : zone.StartsWith("Zone_Hamstring") ? 18f : zone.StartsWith("Zone_") ? 12f : 6f;
             HP = Mathf.Max(0f, HP - dmg);
             if (HP <= 0f)
             {
@@ -116,7 +116,7 @@ namespace Proxies
             if (zone == "Zone_HamstringL") HamL = true;
             if (zone == "Zone_HamstringR") HamR = true;
             if (HamL && HamR && Current != State.Kneel) { Current = State.Kneel; kneelTimer = 4f; t = 0f; Set(Pose.Kneel); return; }
-            if (Current != State.Kneel && zone != "body") { Current = State.Stagger; t = 0f; Set(Pose.Stagger); }
+            if (Current != State.Kneel && zone != "body") { Current = State.Stagger; if (zone == "cannon") t = -0.6f; else t = 0f; Set(Pose.Stagger); }
         }
         void DeathPose() { var m = Ctx.Get<Characters.CharacterModel>("bossModel"); if (m != null) m.PlayClip("death"); }
     }

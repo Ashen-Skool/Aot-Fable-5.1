@@ -209,57 +209,41 @@ namespace Characters
         /// finger), with a short grip behind the hand, so it reads as held rather than growing out of the wrist.
         /// </summary>
         readonly System.Collections.Generic.List<(Transform root, Transform hand, Transform arm)> blades = new System.Collections.Generic.List<(Transform, Transform, Transform)>();
-        /// <summary>Twin ODM blades: the modelled prop (Resources/Props/Blade, pivot in the grip, +Z along the blade) in each fist.</summary>
+        public static float FistRollDeg = 0f;
+        /// <summary>Twin ODM blades (Resources/Props/Blade) in gloved fists (Resources/Props/Fist), aligned from the geometry.</summary>
         void AddBlades(float height)
         {
-            var prefab = Resources.Load<GameObject>("Props/Blade");
-            var pairs = new[] { (HumanBodyBones.RightHand, HumanBodyBones.RightLowerArm, "Blade_R"), (HumanBodyBones.LeftHand, HumanBodyBones.LeftLowerArm, "Blade_L") };
-            foreach (var (handB, armB, nm) in pairs)
+            var bladePrefab = Resources.Load<GameObject>("Props/Blade"); var fistPrefab = Resources.Load<GameObject>("Props/Fist");
+            float k = height / 1.7f;
+            var pairs = new[] { (HumanBodyBones.RightHand, HumanBodyBones.RightLowerArm, "Blade_R", 1f), (HumanBodyBones.LeftHand, HumanBodyBones.LeftLowerArm, "Blade_L", -1f) };
+            foreach (var (handB, armB, nm, side) in pairs)
             {
                 var hand = animator.GetBoneTransform(handB); var arm = animator.GetBoneTransform(armB);
                 if (hand == null || arm == null) continue;
-                var root = new GameObject(nm); root.transform.SetParent(transform.parent, true);
-                if (prefab != null)
+                var root = new GameObject(nm).transform; root.SetParent(transform.parent, true); root.position = Vector3.zero; root.rotation = Quaternion.identity;
+                if (bladePrefab != null)
                 {
-                    root.transform.rotation = Quaternion.identity; root.transform.position = Vector3.zero;
-                    var inst = Instantiate(prefab, root.transform); inst.name = "Blade";
+                    var bladeRoot = new GameObject("BladeMount").transform; bladeRoot.SetParent(root, false);
+                    var inst = Instantiate(bladePrefab, bladeRoot); inst.name = "Blade";
                     foreach (var c in inst.GetComponentsInChildren<Collider>()) Destroy(c);
-                    AlignPropToZ(inst.transform);
-                    inst.transform.localScale = Vector3.one * (height / 1.7f) * inst.transform.localScale.x;
-                    var mat = Shared.Mats.Lit(Color.white, 0.6f, 0.9f);
-                    var bc = Resources.Load<Texture2D>("Props/BladeTex/base_color"); if (bc != null) { mat.SetTexture("_BaseMap", bc); mat.mainTexture = bc; }
-                    var nr = Resources.Load<Texture2D>("Props/BladeTex/normal"); if (nr != null) { mat.EnableKeyword("_NORMALMAP"); mat.SetTexture("_BumpMap", nr); }
+                    Shared.PropAlign.Align(inst.transform, tipSmaller: true, length: 1.05f * k, pivotFrac: 0.12f);
+                    var mat = Shared.PropAlign.TexturedLit("Props/BladeTex", 0.6f, 0.9f);
                     foreach (var r in inst.GetComponentsInChildren<Renderer>()) r.sharedMaterial = mat;
                 }
-                else
+                if (fistPrefab != null)
                 {
-                    var blade = GameObject.CreatePrimitive(PrimitiveType.Cube); blade.name = "Edge"; Destroy(blade.GetComponent<Collider>());
-                    blade.transform.SetParent(root.transform, false); blade.transform.localScale = new Vector3(0.012f, 0.05f, 0.85f); blade.transform.localPosition = new Vector3(0, 0, 0.4f);
+                    var fistRoot = new GameObject("FistMount").transform; fistRoot.SetParent(root, false);
+                    fistRoot.localRotation = Quaternion.Euler(0f, 0f, FistRollDeg * side);
+                    var fist = Instantiate(fistPrefab, fistRoot); fist.name = "Fist";
+                    foreach (var c in fist.GetComponentsInChildren<Collider>()) Destroy(c);
+                    // knuckles forward (+Z), pivot mid-fist where the grip hole is
+                    Shared.PropAlign.Align(fist.transform, tipSmaller: false, length: 0.13f * k, pivotFrac: 0.5f);
+                    if (side < 0) fist.transform.localScale = new Vector3(-fist.transform.localScale.x, fist.transform.localScale.y, fist.transform.localScale.z); // mirror for the left hand
+                    var fm = Shared.PropAlign.TexturedLit("Props/FistTex", 0.25f, 0f);
+                    foreach (var r in fist.GetComponentsInChildren<Renderer>()) r.sharedMaterial = fm;
                 }
-                blades.Add((root.transform, hand, arm));
+                blades.Add((root, hand, arm));
             }
-        }
-
-        /// <summary>
-        /// The exported pivot landed near the tip. Rebuild the grip from the mesh itself: the grip is the far end of the
-        /// long axis from the current pivot; move the mesh so a point 12% in from that end sits at the root origin, and
-        /// rotate so the blade runs out along +Z.
-        /// </summary>
-        static void AlignPropToZ(Transform t)
-        {
-            var mf = t.GetComponentInChildren<MeshFilter>(); if (mf == null || mf.sharedMesh == null) return;
-            var b = mf.sharedMesh.bounds; var e = b.size; int axis = e.x >= e.y && e.x >= e.z ? 0 : (e.y >= e.z ? 1 : 2);
-            float farSign = b.center[axis] >= 0f ? 1f : -1f;
-            Vector3 axisDir = Vector3.zero; axisDir[axis] = 1f;
-            Vector3 gripEnd = b.center + axisDir * (farSign * e[axis] * 0.5f);
-            Vector3 gripPoint = gripEnd - axisDir * (farSign * e[axis] * 0.12f);   // mesh-local
-            Vector3 tipDirLocal = -axisDir * farSign;
-            // mesh local -> root: rotate tip to +Z, then shift so gripPoint is at the origin
-            var mt = mf.transform;
-            Vector3 tipWorld = mt.TransformDirection(tipDirLocal);
-            t.rotation = Quaternion.FromToRotation(tipWorld, t.parent != null ? t.parent.forward : Vector3.forward) * t.rotation;
-            Vector3 gripWorld = mt.TransformPoint(gripPoint);
-            t.position += (t.position - gripWorld);
         }
 
         void TrackBlades()
@@ -270,7 +254,7 @@ namespace Characters
                 Vector3 axis = hand.position - arm.position; if (axis.sqrMagnitude < 1e-6f) continue;
                 axis.Normalize();
                 Vector3 up = Vector3.Cross(axis, transform.parent.right); if (up.sqrMagnitude < 1e-4f) up = Vector3.up;
-                root.position = hand.position + axis * 0.02f;
+                root.position = hand.position + axis * 0.01f;
                 root.rotation = Quaternion.LookRotation(axis, up);
             }
         }

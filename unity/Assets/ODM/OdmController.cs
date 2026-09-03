@@ -528,6 +528,8 @@ namespace ODM
                 GUI.DrawTexture(new Rect(x0, 54, w * Mathf.Clamp01(brainHud.HP / brainHud.HPMax), 16), Texture2D.whiteTexture);
                 GUI.color = Color.white; GUI.Label(new Rect(x0, 30, w, 22), "<b>ATTACK TITAN</b>  " + brainHud.HP.ToString("0") + (brainHud.HamL ? "  L-ham cut" : "") + (brainHud.HamR ? "  R-ham cut" : "") + (brainHud.Current == Proxies.TitanBrain.State.Kneel ? "  <color=#ffcc33>NAPE OPEN</color>" : ""), hudStyle);
             }
+            var prompt = Ctx.Get<string>("cannonPrompt");
+            if (!string.IsNullOrEmpty(prompt)) { var ps = new GUIStyle(hudStyle) { fontSize = 22, alignment = TextAnchor.MiddleCenter }; GUI.Label(new Rect(0, cy + 70, Screen.width, 40), prompt, ps); Ctx.Set("cannonPrompt", ""); }
             // health bar
             GUI.color = new Color(0, 0, 0, 0.55f); GUI.DrawTexture(new Rect(16, Screen.height - 44, 304, 22), Texture2D.whiteTexture);
             GUI.color = hitFlash > 0f ? Color.white : new Color(0.85f, 0.15f, 0.12f); GUI.DrawTexture(new Rect(18, Screen.height - 42, 300f * Health / HealthMax, 18), Texture2D.whiteTexture);
