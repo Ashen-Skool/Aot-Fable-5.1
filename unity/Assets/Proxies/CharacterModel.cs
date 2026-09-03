@@ -209,6 +209,7 @@ namespace Characters
         /// finger), with a short grip behind the hand, so it reads as held rather than growing out of the wrist.
         /// </summary>
         readonly System.Collections.Generic.List<(Transform root, Transform hand, Transform arm)> blades = new System.Collections.Generic.List<(Transform, Transform, Transform)>();
+        readonly System.Collections.Generic.List<(Transform mount, float side)> fists = new System.Collections.Generic.List<(Transform, float)>();
         public static float FistRollDeg = 0f;
         /// <summary>Twin ODM blades (Resources/Props/Blade) in gloved fists (Resources/Props/Fist), aligned from the geometry.</summary>
         void AddBlades(float height)
@@ -234,7 +235,7 @@ namespace Characters
                 if (fistPrefab != null)
                 {
                     var fistRoot = new GameObject("FistMount").transform; fistRoot.SetParent(root, false);
-                    fistRoot.localRotation = Quaternion.Euler(0f, 0f, FistRollDeg * side);
+                    fistRoot.localRotation = Quaternion.Euler(0f, 0f, FistRollDeg * side); fists.Add((fistRoot, side));
                     var fist = Instantiate(fistPrefab, fistRoot); fist.name = "Fist";
                     foreach (var c in fist.GetComponentsInChildren<Collider>()) Destroy(c);
                     // knuckles forward (+Z), pivot mid-fist where the grip hole is
@@ -250,6 +251,7 @@ namespace Characters
 
         void TrackBlades()
         {
+            for (int i = 0; i < fists.Count; i++) fists[i].mount.localRotation = Quaternion.Euler(0f, 0f, FistRollDeg * fists[i].side);
             for (int i = 0; i < blades.Count; i++)
             {
                 var (root, hand, arm) = blades[i];

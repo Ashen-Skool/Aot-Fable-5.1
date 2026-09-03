@@ -460,6 +460,8 @@ namespace ODM
                 slashPoseSet = model != null; // the model already plays the clip; UpdatePose must not restart it
             }
             if (Health <= 0f) { deathTimer -= Time.deltaTime; if (deathTimer <= 0f) Respawn(); }
+            if (UnityEngine.Input.GetKeyDown(KeyCode.LeftBracket)) Characters.CharacterModel.FistRollDeg -= 15f;
+            if (UnityEngine.Input.GetKeyDown(KeyCode.RightBracket)) Characters.CharacterModel.FistRollDeg += 15f;
         }
         float slashTimer; bool slashAirborne; bool slashPoseSet; bool hookLatched, wantVirtual; float slashHitTimer;
         public float Health { get; private set; } = 100f; public float HealthMax = 100f; float deathTimer; float hitFlash;
@@ -518,7 +520,7 @@ namespace ODM
             GUI.Label(new Rect(16, 12, 720, 120),
                 "<b>WASD</b> move   <b>Mouse</b> aim   <b>Space</b> fire hooks at the crosshair and get pulled in (press again to release)\n" +
                 "<b>Shift</b> gas burst   <b>LMB</b> slash (air: blade spin)   <b>Esc</b> release mouse\n" +
-                "gas " + Gas.ToString("0") + "   speed " + Speed.ToString("0") + " m/s   " + (Hook != HookState.None ? "<color=#ff9933>HOOKED</color>" : (Grounded ? "grounded" : "airborne")), hudStyle);
+                "gas " + Gas.ToString("0") + "   speed " + Speed.ToString("0") + " m/s   fist roll [ ] " + Characters.CharacterModel.FistRollDeg.ToString("0") + "°   " + (Hook != HookState.None ? "<color=#ff9933>HOOKED</color>" : (Grounded ? "grounded" : "airborne")), hudStyle);
             var brainHud = Ctx.Get<Proxies.TitanBrain>("bossBrain");
             if (brainHud != null && brainHud.Current != Proxies.TitanBrain.State.Idle)
             {
