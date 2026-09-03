@@ -214,6 +214,7 @@ namespace Characters
         void AddBlades(float height)
         {
             var bladePrefab = Resources.Load<GameObject>("Props/Blade"); var fistPrefab = Resources.Load<GameObject>("Props/Fist");
+            Debug.Log("[Blades] blade prefab " + (bladePrefab != null) + " fist prefab " + (fistPrefab != null));
             float k = height / 1.7f;
             var pairs = new[] { (HumanBodyBones.RightHand, HumanBodyBones.RightLowerArm, "Blade_R", 1f), (HumanBodyBones.LeftHand, HumanBodyBones.LeftLowerArm, "Blade_L", -1f) };
             foreach (var (handB, armB, nm, side) in pairs)
@@ -238,6 +239,7 @@ namespace Characters
                     foreach (var c in fist.GetComponentsInChildren<Collider>()) Destroy(c);
                     // knuckles forward (+Z), pivot mid-fist where the grip hole is
                     Shared.PropAlign.Align(fist.transform, tipSmaller: false, length: 0.13f * k, pivotFrac: 0.5f);
+                    { var frs = fist.GetComponentsInChildren<Renderer>(); var fb = frs[0].bounds; foreach (var r in frs) fb.Encapsulate(r.bounds); Debug.Log("[Blades] fist " + nm + " size=" + fb.size.ToString("0.000") + " scale=" + fist.transform.localScale.ToString("0.000") + " renderers=" + frs.Length); }
                     if (side < 0) fist.transform.localScale = new Vector3(-fist.transform.localScale.x, fist.transform.localScale.y, fist.transform.localScale.z); // mirror for the left hand
                     var fm = Shared.PropAlign.TexturedLit("Props/FistTex", 0.25f, 0f);
                     foreach (var r in fist.GetComponentsInChildren<Renderer>()) r.sharedMaterial = fm;

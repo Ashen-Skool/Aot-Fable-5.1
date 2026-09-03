@@ -64,13 +64,26 @@ namespace Proxies
             var bossModel = Characters.CharacterModel.TryDress(boss.gameObject, "Characters/Titan", TitanProxy.BossHeight);
             if (bossModel != null) { Ctx.Set("bossPoser", (IPoser)bossModel); Ctx.Set("bossModel", bossModel); bossModel.SetPose(Pose.Idle); }
             Ctx.Set("bossBrain", TitanBrain.Attach(boss.gameObject, TitanProxy.BossHeight));
-            PlaceCannons();
+            CannonPlacer.Ensure(); // the town registers its rooftops after this runs; the placer waits for them
             var orbit = Ctx.Get<OrbitCamera>("orbit");
             if (orbit != null) orbit.target = mikasa.rig.Bone(BoneId.Chest);
         }
 
+        /// <summary>Waits for the town's rooftops, then places the cannons once.</summary>
+        class CannonPlacer : MonoBehaviour
+        {
+            public static void Ensure() { if (FindFirstObjectByType<CannonPlacer>() == null) new GameObject("CannonPlacer").AddComponent<CannonPlacer>(); }
+            float waited;
+            void Update()
+            {
+                waited += Time.deltaTime;
+                if (Ctx.Get<Vector3[]>("town.rooftops") != null) { PlaceCannons(); Destroy(gameObject); }
+                else if (waited > 5f) { Debug.Log("[Cannons] no town rooftops after 5 s; none placed"); Destroy(gameObject); }
+            }
+        }
+
         /// <summary>Cannons on the highest rooftops, spread across the district.</summary>
-        static void PlaceCannons()
+        public static void PlaceCannons()
         {
             var roofs = Ctx.Get<Vector3[]>("town.rooftops"); if (roofs == null || roofs.Length == 0) return;
             var picked = new System.Collections.Generic.List<Vector3>();
