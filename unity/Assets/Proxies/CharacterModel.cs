@@ -27,8 +27,8 @@ namespace Characters
         int active = -1, previous = -1; float fade; const float FadeTime = 0.15f; float phase;
         static readonly Dictionary<Pose, string> Map = new Dictionary<Pose, string>
         {
-            { Pose.Idle, "idle" }, { Pose.Run, "running_glb_url" }, { Pose.Sprint, "running_glb_url" }, { Pose.Fly, "jump" },
-            { Pose.Slash, "slash" }, { Pose.Land, "land" }, { Pose.Stagger, "hit" },
+            { Pose.Idle, "combatidle" }, { Pose.Run, "swordrun" }, { Pose.Sprint, "swordrun" }, { Pose.Fly, "spinjump" },
+            { Pose.Slash, "weaponcombo" }, { Pose.Land, "land" }, { Pose.Stagger, "hit" },
             { Pose.Kneel, "kneel" }, { Pose.Swipe, "swipe" }, { Pose.Grab, "grab" }, { Pose.Stomp, "stomp" },
         };
 
@@ -92,6 +92,7 @@ namespace Characters
         static readonly Dictionary<string, string[]> Alternates = new Dictionary<string, string[]>
         {
             { "hit", new[] { "stagger" } }, { "stagger", new[] { "hit" } }, { "running_glb_url", new[] { "walking_glb_url" } }, { "jump", new[] { "sprint", "running_glb_url" } },
+            { "combatidle", new[] { "idle" } }, { "swordrun", new[] { "running_glb_url", "sprint" } }, { "spinjump", new[] { "jump", "sprint" } }, { "weaponcombo", new[] { "slash", "swipe" } },
         };
         int Port(string clipName)
         {
@@ -119,7 +120,7 @@ namespace Characters
             previous = active; active = idx; fade = 0f; phase = 0f;
             ports[idx].SetTime(0); ports[idx].SetDone(false);
             Paused = pose == Pose.Fly; // Fly = jump clip frozen at its apex
-            if (pose == Pose.Fly) { phase = 0.55f; ApplyPhase(); }
+            if (pose == Pose.Fly) { phase = 0.45f; ApplyPhase(); }
             Speed = pose == Pose.Sprint ? 1.35f : 1f;
         }
 

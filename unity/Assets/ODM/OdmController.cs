@@ -441,7 +441,7 @@ namespace ODM
             liveInput.boost = UnityEngine.Input.GetKey(KeyCode.Space);
             liveInput.reel = UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift);
             liveInput.hasAim = false;
-            if (UnityEngine.Input.GetMouseButtonDown(0)) slashTimer = 0.7f;
+            if (UnityEngine.Input.GetMouseButtonDown(0)) slashTimer = 1.1f;
         }
         float slashTimer;
 

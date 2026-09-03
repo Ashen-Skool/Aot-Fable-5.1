@@ -5,7 +5,7 @@ using System.Collections.Generic;
 /// Import rule for character FBX under Assets/Resources/Characters: Humanoid, clips named after takes, loops for locomotion.
 public class CharacterImporter : AssetPostprocessor
 {
-    static readonly HashSet<string> Loops = new HashSet<string> { "idle", "walking_glb_url", "running_glb_url", "sprint" };
+    static readonly HashSet<string> Loops = new HashSet<string> { "idle", "walking_glb_url", "running_glb_url", "sprint", "combatidle", "swordrun" };
 
     void OnPreprocessModel()
     {
