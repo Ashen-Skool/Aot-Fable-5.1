@@ -441,13 +441,13 @@ namespace ODM
             liveInput.moveY = mv.y;
             // Space toggles the hooks: press = fire at the crosshair (a virtual anchor if nothing is there) and get pulled
             // in; press again = release and fall. Shift = gas burst. The pull is automatic while hooked.
-            if (Input.GetKeyDown(KeyCode.Space)) { if (Hook == HookState.Attached) hookLatched = false; else { hookLatched = true; wantVirtual = true; } }
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Space)) { if (Hook == HookState.Attached) hookLatched = false; else { hookLatched = true; wantVirtual = true; } }
             if (Hook == HookState.Attached && Vector3.Distance(rb.position, Anchor) < 3.5f) hookLatched = false; // arrived
             liveInput.hook = hookLatched;
             liveInput.reel = hookLatched && Hook == HookState.Attached;
-            liveInput.boost = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            liveInput.boost = UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift);
             liveInput.hasAim = false;
-            if (Input.GetMouseButtonDown(0)) { slashTimer = Grounded ? 1.1f : 0.8f; slashAirborne = !Grounded; slashHitTimer = 0.25f; }
+            if (UnityEngine.Input.GetMouseButtonDown(0)) { slashTimer = Grounded ? 1.1f : 0.8f; slashAirborne = !Grounded; slashHitTimer = 0.25f; }
             if (Health <= 0f) { deathTimer -= Time.deltaTime; if (deathTimer <= 0f) Respawn(); }
         }
         float slashTimer; bool slashAirborne; bool hookLatched, wantVirtual; float slashHitTimer;
