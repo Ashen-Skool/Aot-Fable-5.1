@@ -582,5 +582,37 @@
   ],
   "fov": 40,
   "timeSec": 0.6
+ },
+ {
+  "name": "boss_ground",
+  "piece": "boss",
+  "pos": [
+   14,
+   3,
+   44
+  ],
+  "lookAt": [
+   0,
+   5,
+   60
+  ],
+  "fov": 45,
+  "timeSec": 1.0
+ },
+ {
+  "name": "boss_feet",
+  "piece": "boss",
+  "pos": [
+   6,
+   1.2,
+   52
+  ],
+  "lookAt": [
+   0,
+   1.5,
+   60
+  ],
+  "fov": 40,
+  "timeSec": 1.0
  }
 ]

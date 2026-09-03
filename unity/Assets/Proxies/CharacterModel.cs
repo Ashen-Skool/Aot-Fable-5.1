@@ -94,6 +94,7 @@ namespace Characters
             { "hit", new[] { "stagger" } }, { "stagger", new[] { "hit" } }, { "running_glb_url", new[] { "walking_glb_url" } }, { "jump", new[] { "sprint", "running_glb_url" } },
             { "combatidle", new[] { "idle" } }, { "swordrun", new[] { "running_glb_url", "sprint" } }, { "spinjump", new[] { "jump", "sprint" } }, { "weaponcombo", new[] { "slash", "swipe" } },
             { "runfast", new[] { "running_glb_url", "sprint" } }, { "ropehang", new[] { "spinjump", "jump" } },
+            { "swipe", new[] { "bladespin", "weaponcombo", "slash" } },
         };
         int Port(string clipName)
         {

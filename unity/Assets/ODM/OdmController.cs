@@ -435,15 +435,17 @@ namespace ODM
         {
             if (cam == null) { cam = Ctx.Get<Camera>("camera"); if (cam == null) cam = Camera.main; }
             if (Scripted) return;
-            liveInput.moveX = UnityEngine.Input.GetAxisRaw("Horizontal");
-            liveInput.moveY = UnityEngine.Input.GetAxisRaw("Vertical");
-            liveInput.hook = UnityEngine.Input.GetMouseButton(1);
-            liveInput.boost = UnityEngine.Input.GetKey(KeyCode.Space);
-            liveInput.reel = UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift);
+            GameInput.UpdateCursor();
+            var mv = GameInput.Move;
+            liveInput.moveX = mv.x;
+            liveInput.moveY = mv.y;
+            liveInput.hook = GameInput.Hook;
+            liveInput.boost = GameInput.Boost;
+            liveInput.reel = GameInput.Reel;
             liveInput.hasAim = false;
-            if (UnityEngine.Input.GetMouseButtonDown(0)) slashTimer = 1.1f;
+            if (GameInput.SlashDown) { slashTimer = Grounded ? 1.1f : 0.8f; slashAirborne = !Grounded; }
         }
-        float slashTimer;
+        float slashTimer; bool slashAirborne;
 
         void LateUpdate() { UpdateCables(); UpdateSpeedFx(); UpdatePose(); }
 
@@ -461,9 +463,9 @@ namespace ODM
             GUI.color = Color.white;
             GUI.Label(new Rect(16, 12, 640, 220),
                 "<b>WASD</b> move   <b>Mouse</b> aim   <b>Hold RMB</b> fire hooks at the crosshair (buildings/titan within 60 m)\n" +
-                "<b>Hold Space</b> gas boost (in the air: along the cable)   <b>Shift</b> reel in   <b>LMB</b> slash   <b>Esc</b> quit\n" +
+                "<b>Hold Space</b> gas boost (in the air: along the cable)   <b>Shift</b> reel in   <b>LMB</b> slash (air: blade spin)\n<b>Pad:</b> Square hook · Cross boost · Circle reel · Triangle/R2 slash · right stick look\n" +
                 "gas " + Gas.ToString("0") + "   speed " + Speed.ToString("0") + " m/s   " + (Hook != HookState.None ? "<color=#ff9933>HOOKED</color>" : (Grounded ? "grounded" : "airborne")), hudStyle);
-            if (UnityEngine.Input.GetKey(KeyCode.Escape)) Application.Quit();
+            if (!GameInput.CursorCaptured) GUI.Label(new Rect(cx - 160, cy + 40, 320, 30), "<b>click to capture the mouse   ·   Esc releases it   ·   Cmd-Q quits</b>", hudStyle);
         }
 
         float landPoseTimer;
@@ -474,7 +476,7 @@ namespace ODM
             if (poser == null) return;
             landPoseTimer -= Time.deltaTime; slashTimer -= Time.deltaTime;
             Shared.Rigs.Pose want;
-            if (slashTimer > 0f) want = Shared.Rigs.Pose.Slash;
+            if (slashTimer > 0f) want = slashAirborne ? Shared.Rigs.Pose.Swipe : Shared.Rigs.Pose.Slash; // Swipe = aerial blade spin on Mikasa
             else if (landPoseTimer > 0f) want = Shared.Rigs.Pose.Land;
             else if (!Grounded) want = Hook != HookState.None ? Shared.Rigs.Pose.Swing : Shared.Rigs.Pose.Fly;
             else if (Speed > 7f) want = Shared.Rigs.Pose.Sprint;

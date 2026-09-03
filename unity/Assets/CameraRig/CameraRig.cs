@@ -506,8 +506,9 @@ namespace AotCamera
         void ReadMouse(float dt)
         {
             if (!Application.isFocused || Application.isBatchMode) return;
-            mouseYaw += Input.GetAxis("Mouse X") * 2.5f;
-            mousePitch = Mathf.Clamp(mousePitch + Input.GetAxis("Mouse Y") * 2.0f, -35f, 45f);
+            var look = Shared.GameInput.Look;
+            mouseYaw += look.x * 2.5f;
+            mousePitch = Mathf.Clamp(mousePitch + look.y * 2.0f, -35f, 45f);
             // drift back behind the character while moving fast
             float recenter = Mathf.Clamp01((Speed - 8f) / 20f) * 3f * dt;
             // Recentre only at speed: on the ground and in slow flight the mouse is the authority, otherwise the
