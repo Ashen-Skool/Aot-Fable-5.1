@@ -441,7 +441,12 @@ namespace ODM
             liveInput.moveY = mv.y;
             // Space toggles the hooks: press = fire at the crosshair (a virtual anchor if nothing is there) and get pulled
             // in; press again = release and fall. Shift = gas burst. The pull is automatic while hooked.
-            if (UnityEngine.Input.GetKeyDown(KeyCode.Space)) { if (Hook == HookState.Attached) hookLatched = false; else { hookLatched = true; wantVirtual = true; } }
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Space))
+            {
+                if (Hook == HookState.Attached) hookLatched = false;
+                else { hookLatched = true; wantVirtual = true; prevHook = false; hookRetry = 0.3f; } // fresh press every time, never a dead latch
+            }
+            if (hookLatched && Hook == HookState.None && hookRetry <= 0f) hookLatched = false; // self-heal: a latch with no hook is meaningless
             if (Hook == HookState.Attached && Vector3.Distance(rb.position, Anchor) < 3.5f) hookLatched = false; // arrived
             liveInput.hook = hookLatched;
             liveInput.reel = hookLatched && Hook == HookState.Attached;
@@ -462,12 +467,15 @@ namespace ODM
             if (slashHitTimer <= 0f) return;
             slashHitTimer -= dt; if (slashHitTimer > 0f) return;
             int n = Physics.OverlapSphereNonAlloc(rb.position + Vector3.up * 0.9f + AimDir * 1.6f, 3.2f, overlap, ~0, QueryTriggerInteraction.Collide);
+            Proxies.TitanBrain bodyHit = null;
             for (int i = 0; i < n; i++)
             {
-                var c = overlap[i]; if (c == null || !c.name.StartsWith("Zone_")) continue;
-                var brain = c.GetComponentInParent<Proxies.TitanBrain>();
-                if (brain != null) { brain.Hit(c.name, rb.position); break; }
+                var c = overlap[i]; if (c == null) continue;
+                var brain = c.GetComponentInParent<Proxies.TitanBrain>(); if (brain == null) continue;
+                if (c.name.StartsWith("Zone_")) { brain.Hit(c.name, rb.position); return; }
+                bodyHit = brain;
             }
+            if (bodyHit != null) bodyHit.Hit("body", rb.position);
         }
         public void Hit(Proxies.TitanBrain from, float damage) => TakeHit(from.transform.position, damage);
         public void TakeHit(Vector3 from, float damage)
@@ -505,6 +513,15 @@ namespace ODM
                 "<b>WASD</b> move   <b>Mouse</b> aim   <b>Space</b> fire hooks at the crosshair and get pulled in (press again to release)\n" +
                 "<b>Shift</b> gas burst   <b>LMB</b> slash (air: blade spin)   <b>Esc</b> release mouse\n" +
                 "gas " + Gas.ToString("0") + "   speed " + Speed.ToString("0") + " m/s   " + (Hook != HookState.None ? "<color=#ff9933>HOOKED</color>" : (Grounded ? "grounded" : "airborne")), hudStyle);
+            var brainHud = Ctx.Get<Proxies.TitanBrain>("bossBrain");
+            if (brainHud != null && brainHud.Current != Proxies.TitanBrain.State.Idle)
+            {
+                float w = Mathf.Min(520f, Screen.width * 0.4f); float x0 = (Screen.width - w) * 0.5f;
+                GUI.color = new Color(0, 0, 0, 0.55f); GUI.DrawTexture(new Rect(x0 - 2, 52, w + 4, 20), Texture2D.whiteTexture);
+                GUI.color = brainHud.Current == Proxies.TitanBrain.State.Dead ? Color.gray : new Color(0.75f, 0.2f, 0.6f);
+                GUI.DrawTexture(new Rect(x0, 54, w * Mathf.Clamp01(brainHud.HP / brainHud.HPMax), 16), Texture2D.whiteTexture);
+                GUI.color = Color.white; GUI.Label(new Rect(x0, 30, w, 22), "<b>ATTACK TITAN</b>  " + brainHud.HP.ToString("0") + (brainHud.HamL ? "  L-ham cut" : "") + (brainHud.HamR ? "  R-ham cut" : "") + (brainHud.Current == Proxies.TitanBrain.State.Kneel ? "  <color=#ffcc33>NAPE OPEN</color>" : ""), hudStyle);
+            }
             // health bar
             GUI.color = new Color(0, 0, 0, 0.55f); GUI.DrawTexture(new Rect(16, Screen.height - 44, 304, 22), Texture2D.whiteTexture);
             GUI.color = hitFlash > 0f ? Color.white : new Color(0.85f, 0.15f, 0.12f); GUI.DrawTexture(new Rect(18, Screen.height - 42, 300f * Health / HealthMax, 18), Texture2D.whiteTexture);

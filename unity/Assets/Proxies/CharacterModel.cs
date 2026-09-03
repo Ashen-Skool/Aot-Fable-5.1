@@ -229,6 +229,7 @@ namespace Characters
             var mf = t.GetComponentInChildren<MeshFilter>(); if (mf == null || mf.sharedMesh == null) return;
             var b = mf.sharedMesh.bounds; var e = b.size; int axis = e.x >= e.y && e.x >= e.z ? 0 : (e.y >= e.z ? 1 : 2);
             Vector3 dir = Vector3.zero; dir[axis] = b.center[axis] >= 0f ? 1f : -1f; // the tip is the far side of the pivot
+            dir = -dir; // measured in-game: the grip ended up outboard, so the far side of the pivot is the grip on this export
             dir = mf.transform.TransformDirection(dir);
             Vector3 upHint = Vector3.up;
             t.rotation = Quaternion.FromToRotation(dir, Vector3.forward) * t.rotation;

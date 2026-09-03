@@ -16,6 +16,7 @@ namespace Proxies
         public float height = 15f, walkSpeed = 6.5f, sprintSpeed = 11f, sightRange = 120f, attackRange = 16f, turnRate = 70f;
         public float swipeDamage = 35f, stompDamage = 45f;
         public bool HamL, HamR;
+        public float HP = 100f, HPMax = 100f;
         IPoser poser; Transform player; Component playerCtrl; float t, cooldown, kneelTimer, roarTimer;
         Vector3 spawnPos;
         public static TitanBrain Attach(GameObject host, float height)
@@ -104,7 +105,9 @@ namespace Proxies
         public void Hit(string zone, Vector3 from)
         {
             if (Current == State.Dead) return;
-            if (zone == "Zone_Nape" && (Current == State.Kneel || Current == State.Stagger || true))
+            float dmg = zone == "Zone_Nape" ? (Current == State.Kneel ? 100f : 40f) : zone.StartsWith("Zone_Hamstring") ? 18f : zone.StartsWith("Zone_") ? 12f : 6f;
+            HP = Mathf.Max(0f, HP - dmg);
+            if (HP <= 0f)
             {
                 Current = State.Dead; t = 0f; Set(Pose.Stagger); Invoke(nameof(DeathPose), 0.4f);
                 Ctx.Set("bossDead", true); return;
@@ -112,7 +115,7 @@ namespace Proxies
             if (zone == "Zone_HamstringL") HamL = true;
             if (zone == "Zone_HamstringR") HamR = true;
             if (HamL && HamR && Current != State.Kneel) { Current = State.Kneel; kneelTimer = 4f; t = 0f; Set(Pose.Kneel); return; }
-            if (Current != State.Kneel) { Current = State.Stagger; t = 0f; Set(Pose.Stagger); }
+            if (Current != State.Kneel && zone != "body") { Current = State.Stagger; t = 0f; Set(Pose.Stagger); }
         }
         void DeathPose() { var m = Ctx.Get<Characters.CharacterModel>("bossModel"); if (m != null) m.PlayClip("death"); }
     }
