@@ -79,7 +79,7 @@ public class CameraRigTests
         yield return Fly(0.8f);
         var pivot = target.Position + Vector3.up * rig.pivotHeight;
         var cam = rig.transform.position;
-        Assert.Greater(cam.x, 0.3f, "camera is offset to her right");
+        Assert.That(Mathf.Abs(cam.x), Is.LessThan(0.3f), "camera is centered behind her (user call)");
         Assert.Less(cam.z, target.Position.z - 2.4f, "camera is 3-4 m back");
         Assert.Greater(cam.z, target.Position.z - 4.6f, "camera is 3-4 m back");
         Assert.That(cam.y - pivot.y, Is.InRange(0.2f, 1.6f), "camera is roughly at shoulder height, not high above");
@@ -104,7 +104,7 @@ public class CameraRigTests
         var her = Viewport(target.Position + Vector3.up * rig.pivotHeight);
         var it = Viewport(lockGo.transform.position);
         Assert.Greater(her.z, 0f); Assert.Greater(it.z, 0f);
-        Assert.That(her.x, Is.InRange(0.05f, 0.5f), "she is on the left: " + her);
+        Assert.That(her.x, Is.InRange(0.05f, 0.6f), "she stays left of centre when locked: " + her);
         Assert.That(her.y, Is.InRange(0.05f, 0.5f), "she is low: " + her);
         Assert.That(it.x, Is.InRange(0.4f, 0.95f), "the target is framed to the right: " + it);
         Assert.That(it.y, Is.InRange(0.35f, 0.95f), "the target is framed high: " + it);
