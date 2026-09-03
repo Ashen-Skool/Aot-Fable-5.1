@@ -530,6 +530,24 @@ namespace ODM
                 GUI.DrawTexture(new Rect(x0, 54, w * Mathf.Clamp01(brainHud.HP / brainHud.HPMax), 16), Texture2D.whiteTexture);
                 GUI.color = Color.white; GUI.Label(new Rect(x0, 30, w, 22), "<b>ATTACK TITAN</b>  " + brainHud.HP.ToString("0") + (brainHud.HamL ? "  L-ham cut" : "") + (brainHud.HamR ? "  R-ham cut" : "") + (brainHud.Current == Proxies.TitanBrain.State.Kneel ? "  <color=#ffcc33>NAPE OPEN</color>" : ""), hudStyle);
             }
+            // cannon markers: label + distance where the cannon is on screen, clamped to the screen edge when behind you
+            var cannons = Ctx.Get<Proxies.Cannon[]>("cannons");
+            if (cannons != null && cam != null)
+            {
+                var ms = new GUIStyle(hudStyle) { fontSize = 15, alignment = TextAnchor.MiddleCenter };
+                foreach (var cn in cannons)
+                {
+                    if (cn == null) continue;
+                    Vector3 wp = cn.transform.position + Vector3.up * 2.5f; Vector3 sp = cam.WorldToScreenPoint(wp);
+                    bool behind = sp.z < 0f; if (behind) { sp.x = Screen.width - sp.x; sp.y = Screen.height - sp.y; }
+                    float sx = Mathf.Clamp(sp.x, 60f, Screen.width - 60f), sy = Mathf.Clamp(Screen.height - sp.y, 40f, Screen.height - 80f);
+                    float dist = Vector3.Distance(rb.position, cn.transform.position);
+                    GUI.color = new Color(1f, 0.8f, 0.3f, behind ? 0.6f : 1f);
+                    GUI.DrawTexture(new Rect(sx - 6, sy - 6, 12, 12), Texture2D.whiteTexture);
+                    GUI.Label(new Rect(sx - 70, sy + 6, 140, 22), "CANNON " + dist.ToString("0") + " m", ms);
+                }
+                GUI.color = Color.white;
+            }
             var prompt = Ctx.Get<string>("cannonPrompt");
             if (!string.IsNullOrEmpty(prompt)) { var ps = new GUIStyle(hudStyle) { fontSize = 22, alignment = TextAnchor.MiddleCenter }; GUI.Label(new Rect(0, cy + 70, Screen.width, 40), prompt, ps); Ctx.Set("cannonPrompt", ""); }
             // health bar
