@@ -37,9 +37,9 @@ namespace ODM
             Ctx.Set(Shared.Cam.ICameraTarget.CtxName, (Shared.Cam.ICameraTarget)camTarget);
             // The town now surrounds the origin with houses; spawn in the open square so the
             // player is never born inside a collider (grounded checks start inside otherwise).
-            if (!spawnPlaced && Ctx.Has("townCenter"))
+            if (!spawnPlaced && (Ctx.Has("town.spawn") || Ctx.Has("townCenter")))
             {
-                var c = Ctx.Get<Vector3>("townCenter");
+                var c = Ctx.Has("town.spawn") ? Ctx.Get<Vector3>("town.spawn") : Ctx.Get<Vector3>("townCenter");
                 Player.transform.position = new Vector3(c.x, 1.2f, c.z);
                 var rb = Player.GetComponent<Rigidbody>(); if (rb != null) rb.linearVelocity = Vector3.zero;
                 spawnPlaced = true;

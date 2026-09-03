@@ -378,11 +378,11 @@ namespace ODM
             var lr = go.AddComponent<LineRenderer>();
             lr.positionCount = 2;
             lr.useWorldSpace = true;
-            lr.startWidth = 0.06f; lr.endWidth = 0.035f;
+            lr.startWidth = 0.14f; lr.endWidth = 0.08f;
             lr.numCapVertices = 2;
             lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             lr.receiveShadows = false;
-            lr.sharedMaterial = Mats.Unlit(new Color(0.08f, 0.08f, 0.09f));
+            lr.sharedMaterial = Mats.Unlit(new Color(0.92f, 0.94f, 1.0f)); // bright steel so the cable reads against stone
             return lr;
         }
 
@@ -391,7 +391,7 @@ namespace ODM
             var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             go.name = name;
             Destroy(go.GetComponent<Collider>());
-            go.transform.localScale = Vector3.one * 0.22f;
+            go.transform.localScale = Vector3.one * 0.32f;
             go.GetComponent<Renderer>().sharedMaterial = Mats.Lit(new Color(0.75f, 0.72f, 0.65f), 0.6f, 0.9f);
             go.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             return go.transform;
@@ -444,6 +444,25 @@ namespace ODM
         }
 
         void LateUpdate() { UpdateCables(); UpdateSpeedFx(); UpdatePose(); }
+
+        // ---------- temporary on-screen help + reticle (the HUD piece replaces this) ----------
+        static GUIStyle hudStyle;
+        void OnGUI()
+        {
+            if (Scripted || Application.isBatchMode) return;
+            if (hudStyle == null) { hudStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, richText = true }; hudStyle.normal.textColor = Color.white; }
+            float cx = Screen.width * 0.5f, cy = Screen.height * 0.5f;
+            var col = Hook != HookState.None ? new Color(1f, 0.55f, 0.15f) : Color.white;
+            GUI.color = col;
+            GUI.DrawTexture(new Rect(cx - 1f, cy - 14f, 2f, 28f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(cx - 14f, cy - 1f, 28f, 2f), Texture2D.whiteTexture);
+            GUI.color = Color.white;
+            GUI.Label(new Rect(16, 12, 640, 220),
+                "<b>WASD</b> move   <b>Mouse</b> aim   <b>Hold RMB</b> fire hooks at the crosshair (buildings/titan within 60 m)\n" +
+                "<b>Hold Space</b> gas boost (in the air: along the cable)   <b>Shift</b> reel in   <b>Esc</b> quit\n" +
+                "gas " + Gas.ToString("0") + "   speed " + Speed.ToString("0") + " m/s   " + (Hook != HookState.None ? "<color=#ff9933>HOOKED</color>" : (Grounded ? "grounded" : "airborne")), hudStyle);
+            if (UnityEngine.Input.GetKey(KeyCode.Escape)) Application.Quit();
+        }
 
         float landPoseTimer;
         /// <summary>Drive whichever IPoser is registered for Mikasa (proxy or the real rig) from flight state.</summary>

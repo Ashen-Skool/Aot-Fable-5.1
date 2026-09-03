@@ -7,7 +7,7 @@ namespace ODM
     public class OdmCameraTarget : MonoBehaviour, ICameraTarget
     {
         OdmController c; Rigidbody rb; bool hitLatch;
-        public Vector3 Position => transform.position + Vector3.up * 1.1f;
+        public Vector3 Position => transform.position; // feet; the rig adds its own pivot height
         public Vector3 Velocity => rb != null ? rb.linearVelocity : Vector3.zero;
         public Vector3 Forward => Velocity.sqrMagnitude > 4f ? Velocity.normalized : transform.forward;
         public Transform Root => transform;
