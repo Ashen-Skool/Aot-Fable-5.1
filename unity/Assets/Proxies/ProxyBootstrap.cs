@@ -63,6 +63,7 @@ namespace Proxies
             if (mikasaModel != null) { Ctx.Set("mikasaPoser", (IPoser)mikasaModel); Ctx.Set("mikasaModel", mikasaModel); }
             var bossModel = Characters.CharacterModel.TryDress(boss.gameObject, "Characters/Titan", TitanProxy.BossHeight);
             if (bossModel != null) { Ctx.Set("bossPoser", (IPoser)bossModel); Ctx.Set("bossModel", bossModel); bossModel.SetPose(Pose.Idle); }
+            Ctx.Set("bossBrain", TitanBrain.Attach(boss.gameObject, TitanProxy.BossHeight));
             var orbit = Ctx.Get<OrbitCamera>("orbit");
             if (orbit != null) orbit.target = mikasa.rig.Bone(BoneId.Chest);
         }

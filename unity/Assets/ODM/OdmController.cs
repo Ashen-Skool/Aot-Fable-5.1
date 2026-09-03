@@ -13,7 +13,7 @@ namespace ODM
     /// pops you onto the anchor when you reach it. Release = free swing with momentum.
     /// Registered in Ctx as "player". Input comes from Input (live) or a FlightScript.
     /// </summary>
-    public class OdmController : MonoBehaviour
+    public class OdmController : MonoBehaviour, Proxies.ODMHit
     {
         // ---- tuning (feel) ----
         public float runSpeed = 8f, runAccel = 45f, groundFriction = 30f;
@@ -439,15 +439,55 @@ namespace ODM
             var mv = GameInput.Move;
             liveInput.moveX = mv.x;
             liveInput.moveY = mv.y;
-            liveInput.hook = GameInput.Hook;
-            liveInput.boost = GameInput.Boost;
-            liveInput.reel = GameInput.Reel;
+            // Space toggles the hooks: press = fire at the crosshair (a virtual anchor if nothing is there) and get pulled
+            // in; press again = release and fall. Shift = gas burst. The pull is automatic while hooked.
+            if (Input.GetKeyDown(KeyCode.Space)) { if (Hook == HookState.Attached) hookLatched = false; else { hookLatched = true; wantVirtual = true; } }
+            if (Hook == HookState.Attached && Vector3.Distance(rb.position, Anchor) < 3.5f) hookLatched = false; // arrived
+            liveInput.hook = hookLatched;
+            liveInput.reel = hookLatched && Hook == HookState.Attached;
+            liveInput.boost = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
             liveInput.hasAim = false;
-            if (GameInput.SlashDown) { slashTimer = Grounded ? 1.1f : 0.8f; slashAirborne = !Grounded; }
+            if (Input.GetMouseButtonDown(0)) { slashTimer = Grounded ? 1.1f : 0.8f; slashAirborne = !Grounded; slashHitTimer = 0.25f; }
+            if (Health <= 0f) { deathTimer -= Time.deltaTime; if (deathTimer <= 0f) Respawn(); }
         }
-        float slashTimer; bool slashAirborne;
+        float slashTimer; bool slashAirborne; bool hookLatched, wantVirtual; float slashHitTimer;
+        public float Health { get; private set; } = 100f; public float HealthMax = 100f; float deathTimer; float hitFlash;
 
-        void LateUpdate() { UpdateCables(); UpdateSpeedFx(); UpdatePose(); }
+        void LateUpdate() { UpdateCables(); UpdateSpeedFx(); SlashHitCheck(Time.deltaTime); UpdatePose(); }
+
+        // ---------- combat: blade hits on titan zones, taking hits ----------
+        static readonly Collider[] overlap = new Collider[32];
+        void SlashHitCheck(float dt)
+        {
+            if (slashHitTimer <= 0f) return;
+            slashHitTimer -= dt; if (slashHitTimer > 0f) return;
+            int n = Physics.OverlapSphereNonAlloc(rb.position + Vector3.up * 0.9f + AimDir * 1.6f, 3.2f, overlap, ~0, QueryTriggerInteraction.Collide);
+            for (int i = 0; i < n; i++)
+            {
+                var c = overlap[i]; if (c == null || !c.name.StartsWith("Zone_")) continue;
+                var brain = c.GetComponentInParent<Proxies.TitanBrain>();
+                if (brain != null) { brain.Hit(c.name, rb.position); break; }
+            }
+        }
+        public void Hit(Proxies.TitanBrain from, float damage) => TakeHit(from.transform.position, damage);
+        public void TakeHit(Vector3 from, float damage)
+        {
+            if (Health <= 0f) return;
+            Health = Mathf.Max(0f, Health - damage); hitFlash = 0.35f;
+            Vector3 away = (rb.position - from); away.y = 0f; away = away.sqrMagnitude > 0.01f ? away.normalized : -AimDir;
+            rb.linearVelocity = away * 22f + Vector3.up * 12f; Grounded = false;
+            if (Hook == HookState.Attached) { hookLatched = false; Detach(); }
+            landPoseTimer = 0f; slashTimer = 0f; staggerTimer = 0.9f;
+            var camT = GetComponent<OdmCameraTarget>(); if (camT != null) camT.Hit();
+            if (Health <= 0f) deathTimer = 2.5f;
+        }
+        float staggerTimer;
+        void Respawn()
+        {
+            Health = HealthMax;
+            var sp = Ctx.Has("town.spawn") ? Ctx.Get<Vector3>("town.spawn") : Vector3.zero;
+            rb.position = sp + Vector3.up * 1.2f; rb.linearVelocity = Vector3.zero; Gas = gasMax; hookLatched = false; Detach();
+        }
 
         // ---------- temporary on-screen help + reticle (the HUD piece replaces this) ----------
         static GUIStyle hudStyle;
@@ -461,10 +501,15 @@ namespace ODM
             GUI.DrawTexture(new Rect(cx - 1f, cy - 14f, 2f, 28f), Texture2D.whiteTexture);
             GUI.DrawTexture(new Rect(cx - 14f, cy - 1f, 28f, 2f), Texture2D.whiteTexture);
             GUI.color = Color.white;
-            GUI.Label(new Rect(16, 12, 640, 220),
-                "<b>WASD</b> move   <b>Mouse</b> aim   <b>Hold RMB</b> fire hooks at the crosshair (buildings/titan within 60 m)\n" +
-                "<b>Hold Space</b> gas boost (in the air: along the cable)   <b>Shift</b> reel in   <b>LMB</b> slash (air: blade spin)\n<b>Pad:</b> Square hook · Cross boost · Circle reel · Triangle/R2 slash · right stick look\n" +
+            GUI.Label(new Rect(16, 12, 720, 120),
+                "<b>WASD</b> move   <b>Mouse</b> aim   <b>Space</b> fire hooks at the crosshair and get pulled in (press again to release)\n" +
+                "<b>Shift</b> gas burst   <b>LMB</b> slash (air: blade spin)   <b>Esc</b> release mouse\n" +
                 "gas " + Gas.ToString("0") + "   speed " + Speed.ToString("0") + " m/s   " + (Hook != HookState.None ? "<color=#ff9933>HOOKED</color>" : (Grounded ? "grounded" : "airborne")), hudStyle);
+            // health bar
+            GUI.color = new Color(0, 0, 0, 0.55f); GUI.DrawTexture(new Rect(16, Screen.height - 44, 304, 22), Texture2D.whiteTexture);
+            GUI.color = hitFlash > 0f ? Color.white : new Color(0.85f, 0.15f, 0.12f); GUI.DrawTexture(new Rect(18, Screen.height - 42, 300f * Health / HealthMax, 18), Texture2D.whiteTexture);
+            GUI.color = Color.white; GUI.Label(new Rect(20, Screen.height - 66, 300, 22), Health <= 0f ? "<b>DOWN</b>" : "<b>HP</b> " + Health.ToString("0"), hudStyle);
+            if (hitFlash > 0f) { GUI.color = new Color(1f, 0f, 0f, hitFlash * 0.6f); GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture); GUI.color = Color.white; }
             if (!GameInput.CursorCaptured) GUI.Label(new Rect(cx - 160, cy + 40, 320, 30), "<b>click to capture the mouse   ·   Esc releases it   ·   Cmd-Q quits</b>", hudStyle);
         }
 
@@ -474,9 +519,10 @@ namespace ODM
         {
             var poser = Ctx.Get<Shared.Rigs.IPoser>("mikasaPoser");
             if (poser == null) return;
-            landPoseTimer -= Time.deltaTime; slashTimer -= Time.deltaTime;
+            landPoseTimer -= Time.deltaTime; slashTimer -= Time.deltaTime; staggerTimer -= Time.deltaTime; hitFlash -= Time.deltaTime;
             Shared.Rigs.Pose want;
-            if (slashTimer > 0f) want = slashAirborne ? Shared.Rigs.Pose.Swipe : Shared.Rigs.Pose.Slash; // Swipe = aerial blade spin on Mikasa
+            if (staggerTimer > 0f) want = Shared.Rigs.Pose.Stagger;
+            else if (slashTimer > 0f) want = slashAirborne ? Shared.Rigs.Pose.Swipe : Shared.Rigs.Pose.Slash; // Swipe = aerial blade spin on Mikasa
             else if (landPoseTimer > 0f) want = Shared.Rigs.Pose.Land;
             else if (!Grounded) want = Hook != HookState.None ? Shared.Rigs.Pose.Swing : Shared.Rigs.Pose.Fly;
             else if (Speed > 7f) want = Shared.Rigs.Pose.Sprint;
@@ -714,12 +760,14 @@ namespace ODM
 
         bool TryHook(Vector3 eye, Vector3 dir, Vector3 right, Vector3 v)
         {
-            if (!Physics.Raycast(eye, dir, out hit, hookRange, OdmLayers.HookMask, QueryTriggerInteraction.Ignore)) return false;
+            bool real = Physics.Raycast(eye, dir, out hit, hookRange, OdmLayers.HookMask, QueryTriggerInteraction.Ignore);
+            if (!real && !wantVirtual) return false;
             Hook = HookState.Attached;
-            Anchor = hit.point;
-            hookNormal = hit.normal;
+            Anchor = real ? hit.point : eye + dir * Mathf.Min(hookRange, 45f);   // nothing there: a virtual anchor in the sky still pulls you
+            hookNormal = real ? hit.normal : -dir;
+            wantVirtual = false;
             // two hooks land a little apart so the cables read as a pair
-            Vector3 spread = Vector3.Cross(hit.normal, Vector3.up);
+            Vector3 spread = Vector3.Cross(hookNormal, Vector3.up);
             if (spread.sqrMagnitude < 1e-3f) spread = right;
             spread.Normalize();
             AnchorL = Anchor - spread * 0.45f;

@@ -2,7 +2,8 @@
     "name": "AOT.ODM",
     "rootNamespace": "",
     "references": [
-        "AOT.Shared"
+        "AOT.Shared",
+        "AOT.Proxies"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

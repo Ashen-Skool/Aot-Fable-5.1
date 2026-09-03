@@ -116,7 +116,7 @@ namespace Characters
         public void SetPose(Pose pose)
         {
             if (pose == Current && active >= 0) return;
-            Current = pose;
+            Current = pose; holdEnd = false;
             int idx = Port(Map.TryGetValue(pose, out var n) ? n : "idle");
             if (idx < 0) return;
             previous = active; active = idx; fade = 0f; phase = 0f;
@@ -126,6 +126,16 @@ namespace Characters
             if (pose == Pose.Swing) { phase = 0.3f; ApplyPhase(); }
             Speed = pose == Pose.Sprint ? 1.35f : 1f;
         }
+
+        /// <summary>Play an arbitrary clip once (e.g. death) outside the pose set.</summary>
+        public void PlayClip(string clipName)
+        {
+            int idx = Port(clipName); if (idx < 0) return;
+            previous = active; active = idx; fade = 0f; phase = 0f; Paused = false; Speed = 1f; Current = Pose.Stagger;
+            ports[idx].SetTime(0); ports[idx].SetDone(false);
+            holdEnd = true;
+        }
+        bool holdEnd;
 
         public void Snap(Pose pose, float ph) { SetPose(pose); phase = ph; ApplyPhase(); Tick(0f); }
 
@@ -144,6 +154,7 @@ namespace Characters
                 var clip = ports[active].GetAnimationClip();
                 phase += dt * Speed / Mathf.Max(0.01f, clip.length);
                 if (clip.isLooping) phase %= 1f; else phase = Mathf.Min(1f, phase);
+                if (holdEnd && phase >= 1f) Paused = true;
                 ApplyPhase();
             }
             fade = Mathf.Min(1f, fade + (dt > 0f ? dt / FadeTime : 1f));
@@ -157,6 +168,7 @@ namespace Characters
         {
             if (!Paused || fade < 1f) Tick(Time.deltaTime);
             PlantFeet();
+            TrackBlades();
         }
 
         /// <summary>
@@ -180,6 +192,7 @@ namespace Characters
         /// Twin ODM blades gripped in the palms: the blade runs from the palm along the finger direction (hand -> middle
         /// finger), with a short grip behind the hand, so it reads as held rather than growing out of the wrist.
         /// </summary>
+        readonly System.Collections.Generic.List<(Transform root, Transform hand, Transform arm)> blades = new System.Collections.Generic.List<(Transform, Transform, Transform)>();
         void AddBlades(float height)
         {
             var pairs = new[] { (HumanBodyBones.RightHand, HumanBodyBones.RightLowerArm, "Blade_R"), (HumanBodyBones.LeftHand, HumanBodyBones.LeftLowerArm, "Blade_L") };
@@ -187,24 +200,39 @@ namespace Characters
             {
                 var hand = animator.GetBoneTransform(handB); var arm = animator.GetBoneTransform(armB);
                 if (hand == null || arm == null) continue;
-                // Blade axis = forearm axis (elbow -> hand), continuing out past the fist. Exists on every rig; finger bones do not.
-                Vector3 axisWorld = (hand.position - arm.position).normalized;
-                Vector3 dirLocal = hand.InverseTransformDirection(axisWorld);
-                var root = new GameObject(nm); root.transform.SetParent(hand, false);
-                root.transform.localPosition = hand.InverseTransformPoint(hand.position + axisWorld * (0.06f * height / 1.7f));
-                root.transform.localRotation = Quaternion.LookRotation(dirLocal, hand.InverseTransformDirection(Vector3.up));
-                float inv = 1f / Mathf.Max(0.0001f, transform.lossyScale.x);
+                // World-space blade root, re-aimed every frame along the forearm (elbow -> hand) so it never depends on the
+                // hand bone's orientation, which on generated rigs is arbitrary.
+                var root = new GameObject(nm); root.transform.SetParent(transform.parent, true);
                 float L = height * 0.5f;
                 var blade = GameObject.CreatePrimitive(PrimitiveType.Cube); blade.name = "Edge"; Destroy(blade.GetComponent<Collider>());
                 blade.transform.SetParent(root.transform, false);
-                blade.transform.localScale = new Vector3(0.010f, 0.045f, L) * inv;
-                blade.transform.localPosition = new Vector3(0f, 0f, L * 0.5f) * inv;
+                blade.transform.localScale = new Vector3(0.012f, 0.05f, L);
+                blade.transform.localPosition = new Vector3(0f, 0f, L * 0.5f + 0.02f);
                 blade.GetComponent<Renderer>().sharedMaterial = Shared.Mats.Lit(new Color(0.85f, 0.88f, 0.93f), 0.92f, 1f);
                 var grip = GameObject.CreatePrimitive(PrimitiveType.Cube); grip.name = "Grip"; Destroy(grip.GetComponent<Collider>());
                 grip.transform.SetParent(root.transform, false);
-                grip.transform.localScale = new Vector3(0.03f, 0.035f, 0.16f) * inv;
-                grip.transform.localPosition = new Vector3(0f, 0f, -0.09f) * inv;
+                grip.transform.localScale = new Vector3(0.035f, 0.04f, 0.18f);
+                grip.transform.localPosition = new Vector3(0f, 0f, -0.08f);
                 grip.GetComponent<Renderer>().sharedMaterial = Shared.Mats.Lit(new Color(0.2f, 0.18f, 0.16f), 0.3f, 0f);
+                var guard = GameObject.CreatePrimitive(PrimitiveType.Cube); guard.name = "Guard"; Destroy(guard.GetComponent<Collider>());
+                guard.transform.SetParent(root.transform, false);
+                guard.transform.localScale = new Vector3(0.02f, 0.09f, 0.02f);
+                guard.transform.localPosition = new Vector3(0f, 0f, 0.01f);
+                guard.GetComponent<Renderer>().sharedMaterial = Shared.Mats.Lit(new Color(0.5f, 0.5f, 0.52f), 0.7f, 1f);
+                blades.Add((root.transform, hand, arm));
+            }
+        }
+
+        void TrackBlades()
+        {
+            for (int i = 0; i < blades.Count; i++)
+            {
+                var (root, hand, arm) = blades[i];
+                Vector3 axis = hand.position - arm.position; if (axis.sqrMagnitude < 1e-6f) continue;
+                axis.Normalize();
+                Vector3 up = Vector3.Cross(axis, transform.parent.right); if (up.sqrMagnitude < 1e-4f) up = Vector3.up;
+                root.position = hand.position + axis * 0.05f;
+                root.rotation = Quaternion.LookRotation(axis, up);
             }
         }
         void OnDestroy() { if (graph.IsValid()) graph.Destroy(); }
