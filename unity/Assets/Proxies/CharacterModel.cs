@@ -205,6 +205,7 @@ namespace Characters
                 var root = new GameObject(nm); root.transform.SetParent(transform.parent, true);
                 if (prefab != null)
                 {
+                    root.transform.rotation = Quaternion.identity; root.transform.position = Vector3.zero;
                     var inst = Instantiate(prefab, root.transform); inst.name = "Blade";
                     foreach (var c in inst.GetComponentsInChildren<Collider>()) Destroy(c);
                     AlignPropToZ(inst.transform);
@@ -223,16 +224,26 @@ namespace Characters
             }
         }
 
-        /// <summary>The FBX axis mapping is not worth trusting: measure the mesh, put its long axis on +Z (tip forward, pivot stays).</summary>
+        /// <summary>
+        /// The exported pivot landed near the tip. Rebuild the grip from the mesh itself: the grip is the far end of the
+        /// long axis from the current pivot; move the mesh so a point 12% in from that end sits at the root origin, and
+        /// rotate so the blade runs out along +Z.
+        /// </summary>
         static void AlignPropToZ(Transform t)
         {
             var mf = t.GetComponentInChildren<MeshFilter>(); if (mf == null || mf.sharedMesh == null) return;
             var b = mf.sharedMesh.bounds; var e = b.size; int axis = e.x >= e.y && e.x >= e.z ? 0 : (e.y >= e.z ? 1 : 2);
-            Vector3 dir = Vector3.zero; dir[axis] = b.center[axis] >= 0f ? 1f : -1f; // the tip is the far side of the pivot
-            dir = -dir; // measured in-game: the grip ended up outboard, so the far side of the pivot is the grip on this export
-            dir = mf.transform.TransformDirection(dir);
-            Vector3 upHint = Vector3.up;
-            t.rotation = Quaternion.FromToRotation(dir, Vector3.forward) * t.rotation;
+            float farSign = b.center[axis] >= 0f ? 1f : -1f;
+            Vector3 axisDir = Vector3.zero; axisDir[axis] = 1f;
+            Vector3 gripEnd = b.center + axisDir * (farSign * e[axis] * 0.5f);
+            Vector3 gripPoint = gripEnd - axisDir * (farSign * e[axis] * 0.12f);   // mesh-local
+            Vector3 tipDirLocal = -axisDir * farSign;
+            // mesh local -> root: rotate tip to +Z, then shift so gripPoint is at the origin
+            var mt = mf.transform;
+            Vector3 tipWorld = mt.TransformDirection(tipDirLocal);
+            t.rotation = Quaternion.FromToRotation(tipWorld, t.parent != null ? t.parent.forward : Vector3.forward) * t.rotation;
+            Vector3 gripWorld = mt.TransformPoint(gripPoint);
+            t.position += (t.position - gripWorld);
         }
 
         void TrackBlades()
