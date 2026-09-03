@@ -630,5 +630,37 @@
   ],
   "fov": 32,
   "timeSec": 0.2
+ },
+ {
+  "name": "cannons_over",
+  "piece": "cannons",
+  "pos": [
+   0,
+   70,
+   -60
+  ],
+  "lookAt": [
+   0,
+   15,
+   40
+  ],
+  "fov": 60,
+  "timeSec": 1.5
+ },
+ {
+  "name": "cannons_wall",
+  "piece": "cannons",
+  "pos": [
+   40,
+   60,
+   80
+  ],
+  "lookAt": [
+   76,
+   50,
+   123
+  ],
+  "fov": 50,
+  "timeSec": 1.5
  }
 ]
