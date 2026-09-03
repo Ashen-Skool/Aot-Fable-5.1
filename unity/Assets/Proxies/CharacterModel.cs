@@ -182,27 +182,28 @@ namespace Characters
         /// </summary>
         void AddBlades(float height)
         {
-            var pairs = new[] { (HumanBodyBones.RightHand, HumanBodyBones.RightMiddleProximal, "Blade_R"), (HumanBodyBones.LeftHand, HumanBodyBones.LeftMiddleProximal, "Blade_L") };
-            foreach (var (handB, fingerB, nm) in pairs)
+            var pairs = new[] { (HumanBodyBones.RightHand, HumanBodyBones.RightLowerArm, "Blade_R"), (HumanBodyBones.LeftHand, HumanBodyBones.LeftLowerArm, "Blade_L") };
+            foreach (var (handB, armB, nm) in pairs)
             {
-                var hand = animator.GetBoneTransform(handB); if (hand == null) continue;
-                var finger = animator.GetBoneTransform(fingerB);
+                var hand = animator.GetBoneTransform(handB); var arm = animator.GetBoneTransform(armB);
+                if (hand == null || arm == null) continue;
+                // Blade axis = forearm axis (elbow -> hand), continuing out past the fist. Exists on every rig; finger bones do not.
+                Vector3 axisWorld = (hand.position - arm.position).normalized;
+                Vector3 dirLocal = hand.InverseTransformDirection(axisWorld);
                 var root = new GameObject(nm); root.transform.SetParent(hand, false);
-                Vector3 dirLocal = finger != null ? hand.InverseTransformDirection((finger.position - hand.position).normalized) : Vector3.forward;
-                Vector3 palmLocal = finger != null ? hand.InverseTransformPoint(Vector3.Lerp(hand.position, finger.position, 0.55f)) : Vector3.zero;
-                root.transform.localPosition = palmLocal;
+                root.transform.localPosition = hand.InverseTransformPoint(hand.position + axisWorld * (0.06f * height / 1.7f));
                 root.transform.localRotation = Quaternion.LookRotation(dirLocal, hand.InverseTransformDirection(Vector3.up));
                 float inv = 1f / Mathf.Max(0.0001f, transform.lossyScale.x);
                 float L = height * 0.5f;
                 var blade = GameObject.CreatePrimitive(PrimitiveType.Cube); blade.name = "Edge"; Destroy(blade.GetComponent<Collider>());
                 blade.transform.SetParent(root.transform, false);
                 blade.transform.localScale = new Vector3(0.010f, 0.045f, L) * inv;
-                blade.transform.localPosition = new Vector3(0f, 0f, L * 0.5f + 0.06f) * inv;
+                blade.transform.localPosition = new Vector3(0f, 0f, L * 0.5f) * inv;
                 blade.GetComponent<Renderer>().sharedMaterial = Shared.Mats.Lit(new Color(0.85f, 0.88f, 0.93f), 0.92f, 1f);
                 var grip = GameObject.CreatePrimitive(PrimitiveType.Cube); grip.name = "Grip"; Destroy(grip.GetComponent<Collider>());
                 grip.transform.SetParent(root.transform, false);
-                grip.transform.localScale = new Vector3(0.03f, 0.035f, 0.22f) * inv;
-                grip.transform.localPosition = new Vector3(0f, 0f, -0.05f) * inv;
+                grip.transform.localScale = new Vector3(0.03f, 0.035f, 0.16f) * inv;
+                grip.transform.localPosition = new Vector3(0f, 0f, -0.09f) * inv;
                 grip.GetComponent<Renderer>().sharedMaterial = Shared.Mats.Lit(new Color(0.2f, 0.18f, 0.16f), 0.3f, 0f);
             }
         }
