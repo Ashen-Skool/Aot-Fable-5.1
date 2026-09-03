@@ -85,7 +85,7 @@ public class CameraRigTests
         Assert.That(cam.y - pivot.y, Is.InRange(0.2f, 1.6f), "camera is roughly at shoulder height, not high above");
         var vp = Viewport(pivot);
         Assert.Greater(vp.z, 0f, "she is in front of the camera");
-        Assert.That(vp.x, Is.InRange(0.2f, 0.47f), "she sits in the left third: " + vp);
+        Assert.That(vp.x, Is.InRange(0.42f, 0.58f), "she is centered under the crosshair: " + vp);
         Assert.That(vp.y, Is.InRange(0.18f, 0.47f), "she sits in the lower third: " + vp);
         var horizon = Viewport(cam + new Vector3(0, 0, 1000f));
         Assert.Greater(horizon.y, 0.5f, "the horizon is in the upper half of the frame: " + horizon);
