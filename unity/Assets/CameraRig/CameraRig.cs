@@ -343,8 +343,10 @@ namespace AotCamera
         Vector3 ChaseDesired(Vector3 pivot, Vector3 v, float dt, out float speed01, out Vector3 right)
         {
             speed01 = Mathf.Clamp01(Speed / speedRef);
-            var want = Target.Forward;
-            if (Speed > 2f) want = Vector3.Slerp(want, v / Speed, Mathf.Clamp01((Speed - 2f) / 8f));
+            // Slow and unlocked: the heading is frozen and the mouse offset is absolute. Following the body here is a
+            // feedback loop (the body faces the camera), and following the camera integrates the mouse offset every frame.
+            var want = (Speed < 10f && Lock == null) ? headingDir : Target.Forward;
+            if (Speed > 2f) want = Vector3.Slerp(want, v / Speed, Mathf.Clamp01((Speed - 2f) / 8f) * Mathf.Clamp01((Speed - 6f) / 6f));
             if (want.sqrMagnitude < 1e-4f) want = headingDir;
             want.Normalize();
             if ((Target.State & CameraTargetState.Grounded) != 0) { want.y = 0f; if (want.sqrMagnitude < 1e-4f) want = headingDir; want.Normalize(); }
