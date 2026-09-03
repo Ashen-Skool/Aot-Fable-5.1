@@ -6,11 +6,33 @@ A ten-minute playable Attack on Titan homage in Unity 6, built through the CLI
 on the Mac Studio by a gauntlet loop of builder and critic sub-agents. Started
 2026-09-01. **Read this whole file before doing anything.**
 
-## SCOPE CHANGE 2026-09-02
+## STATE (2026-09-03, read this, the rest of this file is history)
 
-**Characters (2026-09-02 evening):** both real models are in the game. Mikasa and the Titan were Meshy image-to-3D → Meshy auto-rig + library clips (`docs/CLIPS.md`) → `tools/merge_clips.py` → `unity/Assets/Resources/Characters/<Name>.fbx` (Humanoid). `Proxies/CharacterModel.cs` dresses the proxy host at runtime (keeps its collider and sockets, hides the primitive geo, IPoser via Playables, URP material from `Resources/Characters/<Name>Tex`). Camera follows the player through `ODM/OdmCameraTarget`. The 7 m titan is still a proxy and is out of scope. User has approved concept, mesh, and rig for both; in-game look pending his check.
+Scope is v2: one district, one 15 m Titan, Mikasa, three-minute loop. No agent loops; the director builds by hand
+and the user is the critic (he plays the mac build on his laptop; never screenshot or drive his machine).
 
-The project was scaled down to a three-minute single-scene build with no agent loops, because the gauntlet burned half a week's plan budget in one wave. See the SCOPE v2 block at the top of `docs/BRIEF.md`. Landed so far: proxies (done, merged), ODM (lane/odm, ~5/10, round 3 in flight), town (lane/town, round 2 in flight), camera (lane/camera, 2/10, kill cam orbit broken, live-capture mode works). Next: merge odm+town when their rounds land, fix camera orbit by hand, combat, titan AI, HUD, then the character finish pass with the user.
+**In the build, all on main:**
+- Mikasa: Meshy mesh + auto-rig, 23 library clips (`docs/CLIPS.md`), random attack per click (ground set / air set),
+  real ODM blade prop in gloved fists (`Resources/Props/Blade`, `Fist`), fist roll tunable live with `[` `]`
+  (`CharacterModel.FistRollDeg`, user still has to give the number to bake in).
+- Titan (boss): Meshy mesh + rig, `Proxies/TitanBrain.cs` chase / swipe / stomp (~9 m reach), 100 HP bar, zone damage
+  (nape 40, or kill when kneeling after both hamstrings), death stays on the ground and shows the ending screen (R restarts).
+- Player: `ODM/OdmController.cs`. Space toggles hooks (virtual anchor 45 m out if nothing is aimed at, auto pull, press again
+  to release), Shift gas, WASD air steer, LMB attack, Esc frees the mouse, click captures it. 100 HP, knockback, respawn.
+- Camera: `CameraRig/CameraRig.cs`, centered on her, free look at any speed, heading re-based (not eased) when steering on foot.
+- Cannons: `Proxies/Cannon.cs`, placed by `ProxyBootstrap.CannonPlacer` on the 3 tallest flight-test towers (now permanent,
+  stone-dressed) + the wall walkway. E to fire within 5 m, 40 dmg, HUD markers with distance. **Tower placement in play not
+  yet verified by eye** (the town capture only shows the wall cannon because the towers only build when `-piece` is absent).
+- World: ground trimmed to the town bounds with invisible boundary walls; fall below -25 m respawns.
+- Props pipeline: concept (Higgsfield) → `tools/meshy.py` → `tools/prop_finish.py` → `Resources/Props/<Name>.fbx` →
+  `Shared/PropAlign.Align` orients from geometry at runtime (exporter axes are not trusted).
+
+**Open items:** fist roll number from the user; verify tower cannons; audio (Kenney clips staged under
+`assets/staged/audio`, nothing wired); title screen; draw/sheathe pose; the 7 m titan is a grey proxy on purpose.
+
+**Process notes:** keep `tools/test.sh` green (36 tests incl. `CharactersWiredTests`, `GroundSnapProbe`); build with
+`tools/build.sh mac`, then rsync the app to `~/Desktop/AOT-build/` on the laptop and `open` it for him. Unity batch runs
+sometimes leave a stale editor holding the project lock after an interrupted command: `pkill -f lanes/director`.
 
 ## Read in this order
 
