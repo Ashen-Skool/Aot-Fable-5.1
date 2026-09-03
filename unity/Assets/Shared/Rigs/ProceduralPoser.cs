@@ -101,7 +101,7 @@ namespace Shared.Rigs
                 case Pose.Run: Run(u, 1f); break;
                 case Pose.Sprint: Run(u, 1.55f); break;
                 case Pose.Fly: Fly(u); break;
-                case Pose.Swing: Fly(u); break;
+                case Pose.Swing: Swing(u); break;
                 case Pose.Slash: Slash(u); break;
                 case Pose.Land: Land(u); break;
                 case Pose.Stagger: Stagger(u); break;
@@ -160,6 +160,21 @@ namespace Shared.Rigs
             Limb(BoneId.RightUpperArm, -48f, 14f); Elbow(BoneId.RightLowerArm, 12f);
             Limb(BoneId.LeftUpperLeg, -12f, 2f + 2f * wob); Knee(BoneId.LeftLowerLeg, 14f); Foot(BoneId.LeftFoot, 30f);
             Limb(BoneId.RightUpperLeg, -14f, 2f - 2f * wob); Knee(BoneId.RightLowerLeg, 12f); Foot(BoneId.RightFoot, 30f);
+        }
+
+        /// <summary>Hanging from both cables mid-swing: body near upright, arms raised to the anchors, legs trailing back.</summary>
+        void Swing(float u)
+        {
+            float wob = Mathf.Sin(u * 2.6f);
+            Hips(22f, 0.06f, 0, 0, 0, 4f * wob);
+            Torso(BoneId.Spine, 6f, 0, 0);
+            Torso(BoneId.Chest, 8f, 0, 0);
+            Torso(BoneId.Neck, -6f, 0, 0);
+            Torso(BoneId.Head, -14f, 4f * wob, 0);
+            Limb(BoneId.LeftUpperArm, 150f, 22f); Elbow(BoneId.LeftLowerArm, 18f);
+            Limb(BoneId.RightUpperArm, 150f, 22f); Elbow(BoneId.RightLowerArm, 18f);
+            Limb(BoneId.LeftUpperLeg, 26f, 4f + 3f * wob); Knee(BoneId.LeftLowerLeg, 48f); Foot(BoneId.LeftFoot, 20f);
+            Limb(BoneId.RightUpperLeg, 34f, 4f - 3f * wob); Knee(BoneId.RightLowerLeg, 56f); Foot(BoneId.RightFoot, 20f);
         }
 
         void Slash(float u)
