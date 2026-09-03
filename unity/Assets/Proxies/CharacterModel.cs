@@ -127,6 +127,22 @@ namespace Characters
             Speed = pose == Pose.Sprint ? 1.35f : 1f;
         }
 
+        static readonly string[] GroundAttacks = { "chargedslash", "thrustslash", "leftslash", "upslash", "weaponcombo2", "weaponcombo", "slash" };
+        static readonly string[] AirAttacks = { "axespin", "bladespin", "weaponcombo2" };
+        int lastAttack = -1;
+        /// <summary>A random attack from the set (never the same one twice in a row). Returns the clip length in seconds.</summary>
+        public float Attack(bool airborne)
+        {
+            var set = airborne ? AirAttacks : GroundAttacks;
+            var avail = new System.Collections.Generic.List<string>(); foreach (var n in set) if (clips.ContainsKey(n)) avail.Add(n);
+            if (avail.Count == 0) { SetPose(Pose.Slash); return 0.9f; }
+            int pick = Random.Range(0, avail.Count); if (avail.Count > 1 && pick == lastAttack) pick = (pick + 1) % avail.Count; lastAttack = pick;
+            int idx = Port(avail[pick]); if (idx < 0) return 0.9f;
+            previous = active; active = idx; fade = 0f; phase = 0f; Paused = false; Speed = 1.15f; Current = Pose.Slash; holdEnd = false;
+            ports[idx].SetTime(0); ports[idx].SetDone(false);
+            return ports[idx].GetAnimationClip().length / Speed;
+        }
+
         /// <summary>Play an arbitrary clip once (e.g. death) outside the pose set.</summary>
         public void PlayClip(string clipName)
         {

@@ -452,10 +452,16 @@ namespace ODM
             liveInput.reel = hookLatched && Hook == HookState.Attached;
             liveInput.boost = UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift);
             liveInput.hasAim = false;
-            if (UnityEngine.Input.GetMouseButtonDown(0)) { slashTimer = Grounded ? 1.1f : 0.8f; slashAirborne = !Grounded; slashHitTimer = 0.25f; }
+            if (UnityEngine.Input.GetMouseButtonDown(0) && slashTimer <= 0.15f)
+            {
+                slashAirborne = !Grounded; slashHitTimer = 0.25f;
+                var model = Ctx.Get<Characters.CharacterModel>("mikasaModel");
+                slashTimer = model != null ? Mathf.Min(1.6f, model.Attack(slashAirborne)) : (Grounded ? 1.1f : 0.8f);
+                slashPoseSet = model != null; // the model already plays the clip; UpdatePose must not restart it
+            }
             if (Health <= 0f) { deathTimer -= Time.deltaTime; if (deathTimer <= 0f) Respawn(); }
         }
-        float slashTimer; bool slashAirborne; bool hookLatched, wantVirtual; float slashHitTimer;
+        float slashTimer; bool slashAirborne; bool slashPoseSet; bool hookLatched, wantVirtual; float slashHitTimer;
         public float Health { get; private set; } = 100f; public float HealthMax = 100f; float deathTimer; float hitFlash;
 
         void LateUpdate() { UpdateCables(); UpdateSpeedFx(); SlashHitCheck(Time.deltaTime); UpdatePose(); }
@@ -550,12 +556,13 @@ namespace ODM
             landPoseTimer -= Time.deltaTime; slashTimer -= Time.deltaTime; staggerTimer -= Time.deltaTime; hitFlash -= Time.deltaTime;
             Shared.Rigs.Pose want;
             if (staggerTimer > 0f) want = Shared.Rigs.Pose.Stagger;
-            else if (slashTimer > 0f) want = slashAirborne ? Shared.Rigs.Pose.Swipe : Shared.Rigs.Pose.Slash; // Swipe = aerial blade spin on Mikasa
+            else if (slashTimer > 0f) want = Shared.Rigs.Pose.Slash; // Swipe = aerial blade spin on Mikasa
             else if (landPoseTimer > 0f) want = Shared.Rigs.Pose.Land;
             else if (!Grounded) want = Hook != HookState.None ? Shared.Rigs.Pose.Swing : Shared.Rigs.Pose.Fly;
             else if (Speed > 7f) want = Shared.Rigs.Pose.Sprint;
             else if (Speed > 0.6f) want = Shared.Rigs.Pose.Run;
             else want = Shared.Rigs.Pose.Idle;
+            if (want == Shared.Rigs.Pose.Slash && slashPoseSet) return; // random attack clip already running on the model
             if (poser.Current != want) poser.SetPose(want);
         }
 
