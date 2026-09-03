@@ -55,7 +55,8 @@ namespace AotCamera
         public Vector2 lockScreen = new Vector2(0.62f, 0.60f);
         public float lockBlend = 0.5f;               // 0 = frame only Mikasa, 1 = frame only the target
         public float lockHeadingBlend = 0.55f;       // heading pulled toward the target
-        public float lockShoulderMul = 1.35f;        // wider shoulder so the target is not hidden behind her
+        public float lockShoulderMul = 1.35f;        // (legacy) kept for tuning files
+        public float lockShoulder = 1.15f;           // shoulder offset while locked so the target is not hidden behind her
         public Vector2 lockSafe = new Vector2(0.16f, 0.16f);   // the lock blend backs off before it pushes her out of the frame
 
         [Header("FOV")]
@@ -367,7 +368,7 @@ namespace AotCamera
             // when the heading already pitches down the orbit is above the target: drop the extra height so the view stays shallow
             float downFrac = Mathf.Clamp01(-orbit.y / Mathf.Sin(maxHeadingDiveDeg * Mathf.Deg2Rad));
             height *= 1f - 0.6f * downFrac;
-            float shoulder = shoulderRight * (Lock != null ? lockShoulderMul : 1f);
+            float shoulder = Lock != null ? lockShoulder : shoulderRight;   // centered in free flight, over-the-shoulder only when locked on a titan
             return pivot - orbit * dist + right * shoulder + Vector3.up * height;
         }
 
