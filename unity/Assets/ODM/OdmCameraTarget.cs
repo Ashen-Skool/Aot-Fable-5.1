@@ -9,7 +9,18 @@ namespace ODM
         OdmController c; Rigidbody rb; bool hitLatch;
         public Vector3 Position => transform.position; // feet; the rig adds its own pivot height
         public Vector3 Velocity => rb != null ? rb.linearVelocity : Vector3.zero;
-        public Vector3 Forward => Velocity.sqrMagnitude > 4f ? Velocity.normalized : transform.forward;
+        /// <summary>Heading for the rig: the flight direction at speed; otherwise the camera's own flat forward so the
+        /// rig never follows the body (the body faces the camera, which would make the view spin on its own).</summary>
+        public Vector3 Forward
+        {
+            get
+            {
+                if (Velocity.sqrMagnitude > 25f) return Velocity.normalized;
+                var cam = Camera.main; if (cam == null) return transform.forward;
+                var f = cam.transform.forward; f.y = 0f;
+                return f.sqrMagnitude > 1e-4f ? f.normalized : transform.forward;
+            }
+        }
         public Transform Root => transform;
         public CameraTargetState State
         {

@@ -508,8 +508,9 @@ namespace AotCamera
             mousePitch = Mathf.Clamp(mousePitch + Input.GetAxis("Mouse Y") * 2.0f, -35f, 45f);
             // drift back behind the character while moving fast
             float recenter = Mathf.Clamp01((Speed - 8f) / 20f) * 3f * dt;
-            mouseYaw = Mathf.Lerp(mouseYaw, 0f, recenter);
-            mousePitch = Mathf.Lerp(mousePitch, 0f, recenter);
+            // Recentre only at speed: on the ground and in slow flight the mouse is the authority, otherwise the
+            // heading (which follows the player, who faces the camera) and the recentre chase each other and the view drifts.
+            if (Speed > 10f) { mouseYaw = Mathf.Lerp(mouseYaw, 0f, recenter); mousePitch = Mathf.Lerp(mousePitch, 0f, recenter); }
         }
 
         static Vector3 ClampPitch(Vector3 d, float maxDeg)
