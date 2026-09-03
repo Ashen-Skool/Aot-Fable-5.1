@@ -193,34 +193,45 @@ namespace Characters
         /// finger), with a short grip behind the hand, so it reads as held rather than growing out of the wrist.
         /// </summary>
         readonly System.Collections.Generic.List<(Transform root, Transform hand, Transform arm)> blades = new System.Collections.Generic.List<(Transform, Transform, Transform)>();
+        /// <summary>Twin ODM blades: the modelled prop (Resources/Props/Blade, pivot in the grip, +Z along the blade) in each fist.</summary>
         void AddBlades(float height)
         {
+            var prefab = Resources.Load<GameObject>("Props/Blade");
             var pairs = new[] { (HumanBodyBones.RightHand, HumanBodyBones.RightLowerArm, "Blade_R"), (HumanBodyBones.LeftHand, HumanBodyBones.LeftLowerArm, "Blade_L") };
             foreach (var (handB, armB, nm) in pairs)
             {
                 var hand = animator.GetBoneTransform(handB); var arm = animator.GetBoneTransform(armB);
                 if (hand == null || arm == null) continue;
-                // World-space blade root, re-aimed every frame along the forearm (elbow -> hand) so it never depends on the
-                // hand bone's orientation, which on generated rigs is arbitrary.
                 var root = new GameObject(nm); root.transform.SetParent(transform.parent, true);
-                float L = height * 0.5f;
-                var blade = GameObject.CreatePrimitive(PrimitiveType.Cube); blade.name = "Edge"; Destroy(blade.GetComponent<Collider>());
-                blade.transform.SetParent(root.transform, false);
-                blade.transform.localScale = new Vector3(0.012f, 0.05f, L);
-                blade.transform.localPosition = new Vector3(0f, 0f, L * 0.5f + 0.02f);
-                blade.GetComponent<Renderer>().sharedMaterial = Shared.Mats.Lit(new Color(0.85f, 0.88f, 0.93f), 0.92f, 1f);
-                var grip = GameObject.CreatePrimitive(PrimitiveType.Cube); grip.name = "Grip"; Destroy(grip.GetComponent<Collider>());
-                grip.transform.SetParent(root.transform, false);
-                grip.transform.localScale = new Vector3(0.035f, 0.04f, 0.18f);
-                grip.transform.localPosition = new Vector3(0f, 0f, -0.08f);
-                grip.GetComponent<Renderer>().sharedMaterial = Shared.Mats.Lit(new Color(0.2f, 0.18f, 0.16f), 0.3f, 0f);
-                var guard = GameObject.CreatePrimitive(PrimitiveType.Cube); guard.name = "Guard"; Destroy(guard.GetComponent<Collider>());
-                guard.transform.SetParent(root.transform, false);
-                guard.transform.localScale = new Vector3(0.02f, 0.09f, 0.02f);
-                guard.transform.localPosition = new Vector3(0f, 0f, 0.01f);
-                guard.GetComponent<Renderer>().sharedMaterial = Shared.Mats.Lit(new Color(0.5f, 0.5f, 0.52f), 0.7f, 1f);
+                if (prefab != null)
+                {
+                    var inst = Instantiate(prefab, root.transform); inst.name = "Blade";
+                    foreach (var c in inst.GetComponentsInChildren<Collider>()) Destroy(c);
+                    AlignPropToZ(inst.transform);
+                    inst.transform.localScale = Vector3.one * (height / 1.7f) * inst.transform.localScale.x;
+                    var mat = Shared.Mats.Lit(Color.white, 0.6f, 0.9f);
+                    var bc = Resources.Load<Texture2D>("Props/BladeTex/base_color"); if (bc != null) { mat.SetTexture("_BaseMap", bc); mat.mainTexture = bc; }
+                    var nr = Resources.Load<Texture2D>("Props/BladeTex/normal"); if (nr != null) { mat.EnableKeyword("_NORMALMAP"); mat.SetTexture("_BumpMap", nr); }
+                    foreach (var r in inst.GetComponentsInChildren<Renderer>()) r.sharedMaterial = mat;
+                }
+                else
+                {
+                    var blade = GameObject.CreatePrimitive(PrimitiveType.Cube); blade.name = "Edge"; Destroy(blade.GetComponent<Collider>());
+                    blade.transform.SetParent(root.transform, false); blade.transform.localScale = new Vector3(0.012f, 0.05f, 0.85f); blade.transform.localPosition = new Vector3(0, 0, 0.4f);
+                }
                 blades.Add((root.transform, hand, arm));
             }
+        }
+
+        /// <summary>The FBX axis mapping is not worth trusting: measure the mesh, put its long axis on +Z (tip forward, pivot stays).</summary>
+        static void AlignPropToZ(Transform t)
+        {
+            var mf = t.GetComponentInChildren<MeshFilter>(); if (mf == null || mf.sharedMesh == null) return;
+            var b = mf.sharedMesh.bounds; var e = b.size; int axis = e.x >= e.y && e.x >= e.z ? 0 : (e.y >= e.z ? 1 : 2);
+            Vector3 dir = Vector3.zero; dir[axis] = b.center[axis] >= 0f ? 1f : -1f; // the tip is the far side of the pivot
+            dir = mf.transform.TransformDirection(dir);
+            Vector3 upHint = Vector3.up;
+            t.rotation = Quaternion.FromToRotation(dir, Vector3.forward) * t.rotation;
         }
 
         void TrackBlades()
@@ -231,7 +242,7 @@ namespace Characters
                 Vector3 axis = hand.position - arm.position; if (axis.sqrMagnitude < 1e-6f) continue;
                 axis.Normalize();
                 Vector3 up = Vector3.Cross(axis, transform.parent.right); if (up.sqrMagnitude < 1e-4f) up = Vector3.up;
-                root.position = hand.position + axis * 0.05f;
+                root.position = hand.position + axis * 0.02f;
                 root.rotation = Quaternion.LookRotation(axis, up);
             }
         }

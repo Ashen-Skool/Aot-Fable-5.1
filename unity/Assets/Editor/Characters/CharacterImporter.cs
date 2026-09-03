@@ -9,6 +9,7 @@ public class CharacterImporter : AssetPostprocessor
 
     void OnPreprocessModel()
     {
+        if (assetPath.Contains("/Resources/Props/")) { var pi = (ModelImporter)assetImporter; pi.animationType = ModelImporterAnimationType.None; pi.importAnimation = false; pi.useFileScale = true; pi.isReadable = true; return; }
         if (!assetPath.Contains("/Resources/Characters/")) return;
         var imp = (ModelImporter)assetImporter;
         imp.animationType = ModelImporterAnimationType.Human;
@@ -22,7 +23,7 @@ public class CharacterImporter : AssetPostprocessor
 
     void OnPreprocessTexture()
     {
-        if (!assetPath.Contains("/Resources/Characters/")) return;
+        if (!assetPath.Contains("/Resources/Characters/") && !assetPath.Contains("/Resources/Props/")) return;
         var t = (TextureImporter)assetImporter;
         if (assetPath.EndsWith("normal.png")) t.textureType = TextureImporterType.NormalMap;
         t.sRGBTexture = assetPath.EndsWith("base_color.png");
