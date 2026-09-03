@@ -66,7 +66,7 @@ namespace Proxies
 
         void Fire(GameObject boss)
         {
-            cooldown = reload; recoil = 1f; flash.intensity = 60f;
+            cooldown = reload; recoil = 1f; flash.intensity = 60f; Sfx.Play("cannon", transform.position, 0.45f, 1f, 400f);
             Vector3 muzzle = transform.position + transform.forward * 3.0f + Vector3.up * 1.6f;
             Vector3 target = boss.transform.position + Vector3.up * 8f;
             shell.gameObject.SetActive(true); shell.position = muzzle; shellVel = (target - muzzle).normalized * shellSpeed; shellLive = true; shellT = 0f;
@@ -76,7 +76,7 @@ namespace Proxies
 
         void Impact(Vector3 at)
         {
-            shellLive = false; shell.gameObject.SetActive(false);
+            shellLive = false; shell.gameObject.SetActive(false); Sfx.Play("cannon", at, 0.7f, 1f, 300f);
             var burst = GameObject.CreatePrimitive(PrimitiveType.Sphere); burst.transform.position = at; burst.transform.localScale = Vector3.one * 4f; Destroy(burst.GetComponent<Collider>());
             burst.GetComponent<Renderer>().sharedMaterial = Mats.Unlit(new Color(1f, 0.85f, 0.6f)); Destroy(burst, 0.18f);
         }

@@ -57,7 +57,7 @@ namespace Proxies
                     Face(toP, dt * 0.5f);
                     if (!hitDone && t > 0.55f)
                     {
-                        hitDone = true;
+                        hitDone = true; Sfx.Play("titan_step", transform.position + transform.forward * height * 0.4f, attackKind == Pose.Stomp ? 0.35f : 0.6f, 1f, 260f);
                         Vector3 hitCenter = transform.position + transform.forward * height * 0.38f + Vector3.up * (attackKind == Pose.Stomp ? height * 0.06f : height * 0.45f);
                         float r = attackKind == Pose.Stomp ? height * 0.24f : height * 0.3f;   // stomp reaches ~3.6 m around the foot, swipe ~4.5 m around the hand
                         if (Vector3.Distance(pl.position, hitCenter) < r) (playerCtrl as ODMHit)?.Hit(this, attackKind == Pose.Stomp ? stompDamage : swipeDamage);
@@ -101,13 +101,20 @@ namespace Proxies
             transform.rotation = Quaternion.RotateTowards(transform.rotation, want, turnRate * dt);
         }
         void Set(Pose p) { if (Poser != null && Poser.Current != p) Poser.SetPose(p); }
+        float stepTimer;
+        void LateUpdate()
+        {
+            if (Current != State.Chase) return;
+            stepTimer -= Time.deltaTime;
+            if (stepTimer <= 0f) { stepTimer = Poser != null && Poser.Current == Pose.Sprint ? 0.42f : 0.62f; Sfx.Play("titan_step", transform.position, 0.45f, 1f, 220f); }
+        }
 
         /// <summary>A blade hit on one of the named zones.</summary>
         public void Hit(string zone, Vector3 from)
         {
             if (Current == State.Dead) return;
             float dmg = zone == "cannon" ? 40f : zone == "Zone_Nape" ? (Current == State.Kneel ? 100f : 40f) : zone.StartsWith("Zone_Hamstring") ? 18f : zone.StartsWith("Zone_") ? 12f : 6f;
-            HP = Mathf.Max(0f, HP - dmg);
+            HP = Mathf.Max(0f, HP - dmg); Sfx.Play("titan_hit", transform.position + Vector3.up * height * 0.5f, 0.5f, 1f, 200f);
             if (HP <= 0f)
             {
                 Current = State.Dead; t = 0f; Set(Pose.Stagger); Invoke(nameof(DeathPose), 0.4f);

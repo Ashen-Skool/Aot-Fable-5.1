@@ -339,7 +339,7 @@ namespace ODM
 
         void OnLanded(Vector3 pos, float impactSpeed)
         {
-            landPoseTimer = 0.35f;
+            landPoseTimer = 0.35f; Shared.Sfx.Play("land", pos, 0.9f, Mathf.Clamp01(impactSpeed / 20f));
             LandTime = Time.fixedTime; LandSpot = pos;
             crouchT = crouchTime;
             if (dust != null)
@@ -454,7 +454,7 @@ namespace ODM
             liveInput.hasAim = false;
             if (UnityEngine.Input.GetMouseButtonDown(0) && slashTimer <= 0.15f)
             {
-                slashAirborne = !Grounded; slashHitTimer = 0.25f;
+                slashAirborne = !Grounded; slashHitTimer = 0.25f; Shared.Sfx.Play("slash", rb.position, Random.Range(1.5f, 1.9f), 0.7f);
                 var model = Ctx.Get<Characters.CharacterModel>("mikasaModel");
                 slashTimer = model != null ? Mathf.Min(1.6f, model.Attack(slashAirborne)) : (Grounded ? 1.1f : 0.8f);
                 slashPoseSet = model != null; // the model already plays the clip; UpdatePose must not restart it
@@ -481,16 +481,16 @@ namespace ODM
             {
                 var c = overlap[i]; if (c == null) continue;
                 var brain = c.GetComponentInParent<Proxies.TitanBrain>(); if (brain == null) continue;
-                if (c.name.StartsWith("Zone_")) { brain.Hit(c.name, rb.position); return; }
+                if (c.name.StartsWith("Zone_")) { brain.Hit(c.name, rb.position); Shared.Sfx.Play("titan_hit", rb.position, 0.7f, 1f); return; }
                 bodyHit = brain;
             }
-            if (bodyHit != null) bodyHit.Hit("body", rb.position);
+            if (bodyHit != null) { bodyHit.Hit("body", rb.position); Shared.Sfx.Play("titan_hit", rb.position, 0.9f, 0.7f); }
         }
         public void Hit(Proxies.TitanBrain from, float damage) => TakeHit(from.transform.position, damage);
         public void TakeHit(Vector3 from, float damage)
         {
             if (Health <= 0f) return;
-            Health = Mathf.Max(0f, Health - damage); hitFlash = 0.35f;
+            Health = Mathf.Max(0f, Health - damage); hitFlash = 0.35f; Shared.Sfx.Play("player_hit", rb.position, 0.8f, 1f);
             Vector3 away = (rb.position - from); away.y = 0f; away = away.sqrMagnitude > 0.01f ? away.normalized : -AimDir;
             rb.linearVelocity = away * 22f + Vector3.up * 12f; Grounded = false;
             if (Hook == HookState.Attached) { hookLatched = false; Detach(); }
@@ -508,9 +508,23 @@ namespace ODM
 
         // ---------- temporary on-screen help + reticle (the HUD piece replaces this) ----------
         static GUIStyle hudStyle;
+        static bool titleDone;
         void OnGUI()
         {
             if (Scripted || Application.isBatchMode) return;
+            if (!titleDone)
+            {
+                if (hudStyle == null) { hudStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, richText = true }; hudStyle.normal.textColor = Color.white; }
+                Time.timeScale = 0f;
+                GUI.color = new Color(0.02f, 0.02f, 0.03f, 0.82f); GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture); GUI.color = Color.white;
+                var big = new GUIStyle(hudStyle) { fontSize = 64, alignment = TextAnchor.MiddleCenter }; var mid = new GUIStyle(hudStyle) { fontSize = 20, alignment = TextAnchor.MiddleCenter };
+                GUI.Label(new Rect(0, Screen.height * 0.30f, Screen.width, 90), "<b>AOT FABLE 5.1</b>", big);
+                GUI.Label(new Rect(0, Screen.height * 0.30f + 90, Screen.width, 30), "Shiganshina District   ·   one Titan   ·   cut the nape", mid);
+                GUI.Label(new Rect(0, Screen.height * 0.30f + 150, Screen.width, 120),
+                    "WASD move   Mouse aim   Space hook / release   Shift gas   LMB slash   E fire a cannon\nHook a tower, get above him, cut both hamstrings, then the nape.\n\n<b>Click to begin</b>", mid);
+                if (UnityEngine.Input.GetMouseButtonDown(0) || UnityEngine.Input.GetKeyDown(KeyCode.Space) || UnityEngine.Input.GetKeyDown(KeyCode.Return)) { titleDone = true; Time.timeScale = 1f; Shared.Sfx.Play("ui", rb.position, 1f, 0.6f); }
+                return;
+            }
             if (hudStyle == null) { hudStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, richText = true }; hudStyle.normal.textColor = Color.white; }
             float cx = Screen.width * 0.5f, cy = Screen.height * 0.5f;
             var col = Hook != HookState.None ? new Color(1f, 0.55f, 0.15f) : Color.white;
@@ -821,6 +835,7 @@ namespace ODM
             bool real = Physics.Raycast(eye, dir, out hit, hookRange, OdmLayers.HookMask, QueryTriggerInteraction.Ignore);
             if (!real && !wantVirtual) return false;
             Hook = HookState.Attached;
+            Shared.Sfx.Play("hook_fire", rb.position, 1.4f, 0.8f); Shared.Sfx.Play("hook_attach", real ? hit.point : rb.position, 0.9f, 0.9f, 90f);
             Anchor = real ? hit.point : eye + dir * Mathf.Min(hookRange, 45f);   // nothing there: a virtual anchor in the sky still pulls you
             hookNormal = real ? hit.normal : -dir;
             wantVirtual = false;

@@ -94,8 +94,15 @@ namespace Proxies
             var root = GridRoot(); if (root == null) return;
             var stone = Ctx.Get<Material>("town.stoneMat"); var top = Ctx.Get<Material>("town.roofMat");
             if (stone == null) return;
+            var mpb = new MaterialPropertyBlock();
             foreach (var r in root.GetComponentsInChildren<MeshRenderer>())
-                r.sharedMaterial = r.transform.localScale.y < 1.5f && r.transform.parent != root ? top : stone;
+            {
+                bool isTop = r.transform.localScale.y < 1.5f && r.transform.parent != root;
+                r.sharedMaterial = isTop ? top : stone;
+                // a unit cube's UVs span 0..1 per face: tile the stone per 3 m so a 30 m tower is not one stretched brick
+                var sc = r.transform.lossyScale; float tx = Mathf.Max(sc.x, sc.z) / 3f, ty = (isTop ? Mathf.Max(sc.x, sc.z) : sc.y) / 3f;
+                r.GetPropertyBlock(mpb); mpb.SetVector("_BaseMap_ST", new Vector4(tx, ty, 0f, 0f)); mpb.SetVector("_BumpMap_ST", new Vector4(tx, ty, 0f, 0f)); r.SetPropertyBlock(mpb);
+            }
         }
 
         /// <summary>Flat tops of the tallest towers, then a point on top of each.</summary>
