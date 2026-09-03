@@ -476,7 +476,7 @@ namespace ODM
             Shared.Rigs.Pose want;
             if (slashTimer > 0f) want = Shared.Rigs.Pose.Slash;
             else if (landPoseTimer > 0f) want = Shared.Rigs.Pose.Land;
-            else if (!Grounded) want = Shared.Rigs.Pose.Fly;
+            else if (!Grounded) want = Hook != HookState.None ? Shared.Rigs.Pose.Swing : Shared.Rigs.Pose.Fly;
             else if (Speed > 7f) want = Shared.Rigs.Pose.Sprint;
             else if (Speed > 0.6f) want = Shared.Rigs.Pose.Run;
             else want = Shared.Rigs.Pose.Idle;

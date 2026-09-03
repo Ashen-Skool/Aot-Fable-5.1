@@ -101,6 +101,7 @@ namespace Shared.Rigs
                 case Pose.Run: Run(u, 1f); break;
                 case Pose.Sprint: Run(u, 1.55f); break;
                 case Pose.Fly: Fly(u); break;
+                case Pose.Swing: Fly(u); break;
                 case Pose.Slash: Slash(u); break;
                 case Pose.Land: Land(u); break;
                 case Pose.Stagger: Stagger(u); break;

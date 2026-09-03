@@ -7,7 +7,7 @@ namespace Shared.Rigs
     /// </summary>
     public enum Pose
     {
-        Idle, Run, Fly, Slash, Land, Stagger, Kneel, Swipe, Grab, Stomp, Sprint
+        Idle, Run, Fly, Slash, Land, Stagger, Kneel, Swipe, Grab, Stomp, Sprint, Swing
     }
 
     public interface IPoser

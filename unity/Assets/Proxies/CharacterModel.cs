@@ -27,7 +27,7 @@ namespace Characters
         int active = -1, previous = -1; float fade; const float FadeTime = 0.15f; float phase;
         static readonly Dictionary<Pose, string> Map = new Dictionary<Pose, string>
         {
-            { Pose.Idle, "combatidle" }, { Pose.Run, "swordrun" }, { Pose.Sprint, "swordrun" }, { Pose.Fly, "spinjump" },
+            { Pose.Idle, "combatidle" }, { Pose.Run, "runfast" }, { Pose.Sprint, "runfast" }, { Pose.Fly, "jump" }, { Pose.Swing, "ropehang" },
             { Pose.Slash, "weaponcombo" }, { Pose.Land, "land" }, { Pose.Stagger, "hit" },
             { Pose.Kneel, "kneel" }, { Pose.Swipe, "swipe" }, { Pose.Grab, "grab" }, { Pose.Stomp, "stomp" },
         };
@@ -93,6 +93,7 @@ namespace Characters
         {
             { "hit", new[] { "stagger" } }, { "stagger", new[] { "hit" } }, { "running_glb_url", new[] { "walking_glb_url" } }, { "jump", new[] { "sprint", "running_glb_url" } },
             { "combatidle", new[] { "idle" } }, { "swordrun", new[] { "running_glb_url", "sprint" } }, { "spinjump", new[] { "jump", "sprint" } }, { "weaponcombo", new[] { "slash", "swipe" } },
+            { "runfast", new[] { "running_glb_url", "sprint" } }, { "ropehang", new[] { "spinjump", "jump" } },
         };
         int Port(string clipName)
         {
@@ -119,8 +120,9 @@ namespace Characters
             if (idx < 0) return;
             previous = active; active = idx; fade = 0f; phase = 0f;
             ports[idx].SetTime(0); ports[idx].SetDone(false);
-            Paused = pose == Pose.Fly; // Fly = jump clip frozen at its apex
-            if (pose == Pose.Fly) { phase = 0.45f; ApplyPhase(); }
+            Paused = pose == Pose.Fly || pose == Pose.Swing; // airborne poses hold a frame: jump apex, or the hang
+            if (pose == Pose.Fly) { phase = 0.5f; ApplyPhase(); }
+            if (pose == Pose.Swing) { phase = 0.3f; ApplyPhase(); }
             Speed = pose == Pose.Sprint ? 1.35f : 1f;
         }
 
@@ -157,10 +159,15 @@ namespace Characters
             // dress time come from an unevaluated skinned mesh and can float the model).
             if (groundFixFrames > 0 && --groundFixFrames == 0)
             {
-                var rs = GetComponentsInChildren<SkinnedMeshRenderer>(); if (rs.Length == 0) return;
-                var b = rs[0].bounds; foreach (var r in rs) b.Encapsulate(r.bounds);
-                float delta = b.min.y - transform.parent.position.y;
-                if (Mathf.Abs(delta) > 0.02f) transform.position += Vector3.down * delta;
+                // Feet from the humanoid bones (skinned bounds are unreliable on rescaled rigs).
+                float feet = float.MaxValue;
+                foreach (var b in new[] { HumanBodyBones.LeftFoot, HumanBodyBones.RightFoot, HumanBodyBones.LeftToes, HumanBodyBones.RightToes })
+                { var t = animator.GetBoneTransform(b); if (t != null) feet = Mathf.Min(feet, t.position.y); }
+                if (feet == float.MaxValue) return;
+                float sole = 0.03f * transform.lossyScale.x; // toe bone sits a little above the sole
+                float delta = feet - sole - transform.parent.position.y;
+                if (Mathf.Abs(delta) > 0.01f) transform.position += Vector3.down * delta;
+                Debug.Log("[CharacterModel] " + transform.parent.name + " ground snap " + delta.ToString("0.00") + " m");
             }
         }
 
