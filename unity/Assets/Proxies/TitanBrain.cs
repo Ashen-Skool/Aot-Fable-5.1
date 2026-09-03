@@ -48,8 +48,8 @@ namespace Proxies
                         bool sprint = distFlat > attackRange * 3f;
                         Set(sprint ? Pose.Sprint : Pose.Run);
                         float sp = sprint ? sprintSpeed : walkSpeed;
-                        var f = transform.forward; f.y = 0f;
-                        if (distFlat > attackRange * 0.8f) transform.position += f.normalized * sp * dt;
+                        var f = transform.forward; f.y = 0f; f.Normalize();
+                        if (distFlat > attackRange * 0.8f) transform.position += Steer(f, sp * dt) * sp * dt;
                     }
                     break;
                 case State.Attack:
@@ -77,6 +77,21 @@ namespace Proxies
             }
         }
         Pose attackKind; bool hitDone;
+        static readonly float[] probeAngles = { 0f, -35f, 35f, -70f, 70f, -110f, 110f };
+        /// <summary>Obstacle avoidance: a fat sphere cast at chest height; the first clear direction wins, else stay put.</summary>
+        Vector3 Steer(Vector3 want, float step)
+        {
+            float r = height * 0.16f; Vector3 origin = transform.position + Vector3.up * height * 0.45f;
+            float look = Mathf.Max(step * 8f, height * 0.5f);
+            int mask = ~(1 << gameObject.layer);
+            for (int i = 0; i < probeAngles.Length; i++)
+            {
+                var d = Quaternion.AngleAxis(probeAngles[i], Vector3.up) * want;
+                if (!Physics.SphereCast(origin, r, d, out var h, look, mask, QueryTriggerInteraction.Ignore) || h.collider.transform.root == transform.root || h.collider.GetComponentInParent<Rigidbody>() != null)
+                    return d;
+            }
+            return Vector3.zero;
+        }
         void Face(Vector3 to, float dt)
         {
             to.y = 0f; if (to.sqrMagnitude < 0.01f) return;

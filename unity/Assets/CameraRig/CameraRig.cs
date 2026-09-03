@@ -346,6 +346,7 @@ namespace AotCamera
             // Slow and unlocked: the heading is frozen and the mouse offset is absolute. Following the body here is a
             // feedback loop (the body faces the camera), and following the camera integrates the mouse offset every frame.
             var want = (Speed < 10f && Lock == null) ? headingDir : Target.Forward;
+            if (Mathf.Abs(mouseYaw) > 90f && Lock == null) want = headingDir; // looking behind: do not drag the heading around under the offset
             if (Speed > 2f) want = Vector3.Slerp(want, v / Speed, Mathf.Clamp01((Speed - 2f) / 8f) * Mathf.Clamp01((Speed - 6f) / 6f));
             if (want.sqrMagnitude < 1e-4f) want = headingDir;
             want.Normalize();
@@ -513,7 +514,11 @@ namespace AotCamera
             float recenter = Mathf.Clamp01((Speed - 8f) / 20f) * 3f * dt;
             // Recentre only at speed: on the ground and in slow flight the mouse is the authority, otherwise the
             // heading (which follows the player, who faces the camera) and the recentre chase each other and the view drifts.
-            if (Speed > 10f) { mouseYaw = Mathf.Lerp(mouseYaw, 0f, recenter); mousePitch = Mathf.Lerp(mousePitch, 0f, recenter); }
+            // Free look everywhere: the mouse offset is absolute. It only eases back toward straight-ahead while the player
+            // is actively steering with WASD on the ground, so a run looks where it goes but flight lets you look around.
+            var mv = Shared.GameInput.Move;
+            bool steering = (Target.State & CameraTargetState.Grounded) != 0 && mv.sqrMagnitude > 0.1f && Speed > 2f;
+            if (steering) { float k = 1f - Mathf.Exp(-2.5f * dt); mouseYaw = Mathf.Lerp(mouseYaw, 0f, k); mousePitch = Mathf.Lerp(mousePitch, 0f, k); }
         }
 
         static Vector3 ClampPitch(Vector3 d, float maxDeg)
