@@ -152,24 +152,28 @@ namespace Characters
             graph.Evaluate(0f);
         }
 
-        int groundFixFrames = 3;
+        float plantY; bool plantInit;
         void LateUpdate()
         {
             if (!Paused || fade < 1f) Tick(Time.deltaTime);
-            // After the rig has evaluated, put the rendered feet exactly on the host origin (the bounds used at
-            // dress time come from an unevaluated skinned mesh and can float the model).
-            if (groundFixFrames > 0 && --groundFixFrames == 0)
-            {
-                // Feet from the humanoid bones (skinned bounds are unreliable on rescaled rigs).
-                float feet = float.MaxValue;
-                foreach (var b in new[] { HumanBodyBones.LeftFoot, HumanBodyBones.RightFoot, HumanBodyBones.LeftToes, HumanBodyBones.RightToes })
-                { var t = animator.GetBoneTransform(b); if (t != null) feet = Mathf.Min(feet, t.position.y); }
-                if (feet == float.MaxValue) return;
-                float sole = 0.03f * transform.lossyScale.x; // toe bone sits a little above the sole
-                float delta = feet - sole - transform.parent.position.y;
-                if (Mathf.Abs(delta) > 0.01f) transform.position += Vector3.down * delta;
-                Debug.Log("[CharacterModel] " + transform.parent.name + " ground snap " + delta.ToString("0.00") + " m");
-            }
+            PlantFeet();
+        }
+
+        /// <summary>
+        /// Keep the rendered feet on the host origin every frame. The Meshy clips carry a hip height that does not match
+        /// the rescaled rig, so the body would otherwise ride up to 5 m above the ground. Airborne poses are left alone.
+        /// </summary>
+        void PlantFeet()
+        {
+            if (Current == Pose.Fly || Current == Pose.Swing) return;
+            float feet = float.MaxValue;
+            foreach (var b in new[] { HumanBodyBones.LeftFoot, HumanBodyBones.RightFoot, HumanBodyBones.LeftToes, HumanBodyBones.RightToes })
+            { var t = animator.GetBoneTransform(b); if (t != null) feet = Mathf.Min(feet, t.position.y); }
+            if (feet == float.MaxValue) return;
+            float sole = 0.03f * transform.lossyScale.x * 100f; // toe bone sits a little above the sole (FBX unit scale ~0.01)
+            float wantLocalY = transform.localPosition.y - (feet - sole - transform.parent.position.y);
+            plantY = plantInit ? Mathf.Lerp(plantY, wantLocalY, 0.5f) : wantLocalY; plantInit = true;
+            var lp = transform.localPosition; lp.y = plantY; transform.localPosition = lp;
         }
 
         /// <summary>
