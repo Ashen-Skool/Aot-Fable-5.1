@@ -22,7 +22,7 @@ namespace Proxies
         public static TitanBrain Attach(GameObject host, float height)
         {
             var b = host.GetComponent<TitanBrain>() ?? host.AddComponent<TitanBrain>();
-            b.height = height; b.walkSpeed = height * 0.45f; b.sprintSpeed = height * 0.8f; b.attackRange = height * 1.1f;
+            b.height = height; b.walkSpeed = height * 0.45f; b.sprintSpeed = height * 0.8f; b.attackRange = height * 0.62f;   // ~9 m for the 15 m boss: he has to actually reach you
             b.spawnPos = host.transform.position;
             return b;
         }
@@ -58,8 +58,8 @@ namespace Proxies
                     if (!hitDone && t > 0.55f)
                     {
                         hitDone = true;
-                        Vector3 hitCenter = transform.position + transform.forward * height * 0.45f + Vector3.up * (attackKind == Pose.Stomp ? height * 0.08f : height * 0.5f);
-                        float r = attackKind == Pose.Stomp ? height * 0.42f : height * 0.5f;
+                        Vector3 hitCenter = transform.position + transform.forward * height * 0.38f + Vector3.up * (attackKind == Pose.Stomp ? height * 0.06f : height * 0.45f);
+                        float r = attackKind == Pose.Stomp ? height * 0.24f : height * 0.3f;   // stomp reaches ~3.6 m around the foot, swipe ~4.5 m around the hand
                         if (Vector3.Distance(pl.position, hitCenter) < r) (playerCtrl as ODMHit)?.Hit(this, attackKind == Pose.Stomp ? stompDamage : swipeDamage);
                         else playerCtrl.SendMessage("TakeHitIfInside", new object[] { hitCenter, r, attackKind == Pose.Stomp ? stompDamage : swipeDamage }, SendMessageOptions.DontRequireReceiver);
                     }
@@ -73,11 +73,12 @@ namespace Proxies
                     if (kneelTimer <= 0f) { HamL = HamR = false; Current = State.Chase; walkSpeed *= 1.15f; sprintSpeed *= 1.15f; cooldown = 0.5f; }
                     break;
                 case State.Dead:
-                    if (t > 6f && transform.position.y > -height * 1.2f) transform.position += Vector3.down * dt * 2f; // sink away
+                    // He stays down where he fell; the ending screen takes over.
+                    if (!endShown && t > 2.5f) { endShown = true; Ctx.Set("gameOver", "TITAN SLAIN"); }
                     break;
             }
         }
-        Pose attackKind; bool hitDone;
+        Pose attackKind; bool hitDone; bool endShown;
         static readonly float[] probeAngles = { 0f, -35f, 35f, -70f, 70f, -110f, 110f };
         /// <summary>Obstacle avoidance: a fat sphere cast at chest height; the first clear direction wins, else stay put.</summary>
         Vector3 Steer(Vector3 want, float step)

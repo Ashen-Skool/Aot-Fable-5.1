@@ -527,6 +527,17 @@ namespace ODM
             GUI.color = hitFlash > 0f ? Color.white : new Color(0.85f, 0.15f, 0.12f); GUI.DrawTexture(new Rect(18, Screen.height - 42, 300f * Health / HealthMax, 18), Texture2D.whiteTexture);
             GUI.color = Color.white; GUI.Label(new Rect(20, Screen.height - 66, 300, 22), Health <= 0f ? "<b>DOWN</b>" : "<b>HP</b> " + Health.ToString("0"), hudStyle);
             if (hitFlash > 0f) { GUI.color = new Color(1f, 0f, 0f, hitFlash * 0.6f); GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture); GUI.color = Color.white; }
+            var over = Ctx.Get<string>("gameOver");
+            if (!string.IsNullOrEmpty(over))
+            {
+                GUI.color = new Color(0, 0, 0, 0.72f); GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture); GUI.color = Color.white;
+                var big = new GUIStyle(hudStyle) { fontSize = 56, alignment = TextAnchor.MiddleCenter }; var mid = new GUIStyle(hudStyle) { fontSize = 22, alignment = TextAnchor.MiddleCenter };
+                GUI.Label(new Rect(0, cy - 90, Screen.width, 80), "<b>" + over + "</b>", big);
+                GUI.Label(new Rect(0, cy + 0, Screen.width, 40), "The district is clear.   Time " + Time.timeSinceLevelLoad.ToString("0") + " s   ·   HP left " + Health.ToString("0"), mid);
+                GUI.Label(new Rect(0, cy + 44, Screen.width, 40), "<b>R</b> to play again   ·   <b>Cmd-Q</b> to quit", mid);
+                if (UnityEngine.Input.GetKeyDown(KeyCode.R)) UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+                return;
+            }
             if (!GameInput.CursorCaptured) GUI.Label(new Rect(cx - 160, cy + 40, 320, 30), "<b>click to capture the mouse   ·   Esc releases it   ·   Cmd-Q quits</b>", hudStyle);
         }
 
