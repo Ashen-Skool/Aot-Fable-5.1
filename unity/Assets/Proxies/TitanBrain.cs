@@ -40,6 +40,9 @@ namespace Proxies
             float dt = Time.deltaTime; t += dt; cooldown -= dt;
             var pl = Player; if (pl == null || Poser == null) return;
             Vector3 toP = pl.position - transform.position; float distFlat = new Vector2(toP.x, toP.z).magnitude;
+            // soft camera lock: once he is close and alive the chase camera keeps him in frame (the rig blends, the mouse still steers)
+            bool wantLock = Current != State.Idle && Current != State.Dead && distFlat < 80f;
+            if (wantLock != locked) { locked = wantLock; if (locked) Ctx.Set("cameraLockTarget", LockPoint()); else Ctx.Remove("cameraLockTarget"); }
             switch (Current)
             {
                 case State.Idle:
@@ -95,7 +98,12 @@ namespace Proxies
                     break;
             }
         }
-        Pose attackKind; bool hitDone; bool endShown;
+        Pose attackKind; bool hitDone; bool endShown; bool locked; Transform lockPoint;
+        Transform LockPoint()
+        {
+            if (lockPoint == null) { var go = new GameObject("TitanLockPoint"); go.transform.SetParent(transform, false); go.transform.localPosition = Vector3.up * height * 0.55f; lockPoint = go.transform; }
+            return lockPoint;
+        }
         void SwipeWhoosh() { if (Current == State.Attack) Sfx.PlayClip(Synth.Whoosh(), transform.position + transform.forward * height * 0.35f + Vector3.up * height * 0.45f, 0.55f, 1f, 220f); }
         void Roar() { Sfx.PlayClip(Synth.Roar(), transform.position + Vector3.up * height * 0.9f, 1f, 1f, 400f); Fx?.Step(0f); Ctx.Set("roarAt", Time.unscaledTime); }
         bool InFront(Vector3 toP, float minDot) { var f = transform.forward; f.y = 0f; toP.y = 0f; if (toP.sqrMagnitude < 0.01f) return true; return Vector3.Dot(f.normalized, toP.normalized) > minDot; }
