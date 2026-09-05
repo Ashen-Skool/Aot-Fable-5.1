@@ -87,9 +87,9 @@ namespace Town
             // treeline: dark cones on the first hill rings, merged into one mesh
             var kTree = new MeshKit(); var kTrunk = new MeshKit();
             int placed = 0;
-            for (int n = 0; n < 4000 && placed < 1500; n++)
+            for (int n = 0; n < 6000 && placed < 2200; n++)
             {
-                float a = (float)rng.NextDouble() * Mathf.PI * 2f; float r = r0 + 3f + Mathf.Pow((float)rng.NextDouble(), 0.7f) * 240f;
+                float a = (float)rng.NextDouble() * Mathf.PI * 2f; float r = r0 - 14f + Mathf.Pow((float)rng.NextDouble(), 1.3f) * 250f;   // from the boundary fence outward, dense first
                 float x = b.center.x + Mathf.Cos(a) * r, z = b.center.z + Mathf.Sin(a) * r;
                 if (z > L.wallZ0 - 8f) continue;
                 float y = SampleHills(mesh, b.center, r0, r1, rings, segs, x, z);
@@ -99,6 +99,20 @@ namespace Town
                 kTrunk.Cylinder(new Vector3(x, y - 0.5f, z), w * 0.12f, h * 0.25f, 5);
                 placed++;
             }
+            // undergrowth: low dark mounds between the trunks so the meadow floor is not a flat sheet from the rooftops
+            var kBush = new MeshKit(); int bushes = 0;
+            for (int n = 0; n < 4000 && bushes < 1400; n++)
+            {
+                float a = (float)rng.NextDouble() * Mathf.PI * 2f; float r = r0 - 14f + Mathf.Pow((float)rng.NextDouble(), 1.2f) * 200f;
+                float x = b.center.x + Mathf.Cos(a) * r, z = b.center.z + Mathf.Sin(a) * r;
+                if (z > L.wallZ0 - 8f) continue;
+                float y = SampleHills(mesh, b.center, r0, r1, rings, segs, x, z);
+                float w = R(rng, 1.6f, 3.4f);
+                kBush.Cylinder(new Vector3(x, y - 0.3f, z), w, R(rng, 1.2f, 2.2f), 7, Quaternion.Euler(0f, R(rng, 0f, 360f), 0f), true, w * 0.45f);
+                bushes++;
+            }
+            var bgo = new GameObject("Undergrowth"); bgo.transform.SetParent(root, false);
+            bgo.AddComponent<MeshFilter>().sharedMesh = kBush.Build("Undergrowth"); var br = bgo.AddComponent<MeshRenderer>(); br.sharedMaterial = mats.Plain("bush", new Color(0.07f, 0.12f, 0.07f), 0.02f); br.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             var tgo = new GameObject("Treeline"); tgo.transform.SetParent(root, false);
             tgo.AddComponent<MeshFilter>().sharedMesh = kTree.Build("Treeline"); var tr = tgo.AddComponent<MeshRenderer>(); tr.sharedMaterial = mats.Plain("treeDark", new Color(0.06f, 0.11f, 0.08f), 0.02f); tr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             var trgo = new GameObject("Trunks"); trgo.transform.SetParent(root, false);
