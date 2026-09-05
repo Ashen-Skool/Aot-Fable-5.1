@@ -54,7 +54,7 @@ namespace Shared
                 if (brain != null)
                 {
                     var ty = brain.GetType(); ty.GetField("HP")?.SetValue(brain, 1f);
-                    ty.GetMethod("Hit")?.Invoke(brain, new object[] { "Zone_Nape", brain.transform.position + Vector3.up * 12f });
+                    ty.GetMethod("NapeKill")?.Invoke(brain, new object[] { brain.transform.position + Vector3.up * 12f });
                     Debug.Log("[Harness] autoKill: nape hit sent at t=" + t.ToString("0.0"));
                 }
             }

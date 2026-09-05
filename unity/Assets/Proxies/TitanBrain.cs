@@ -101,7 +101,7 @@ namespace Proxies
                     break;
                 case State.Dead:
                     // He stays down where he fell; the ending screen takes over.
-                    if (!endShown && t > 2.5f) { endShown = true; Ctx.Set("gameOver", "TITAN SLAIN"); }
+                    if (!endShown && t > 2.5f) { endShown = true; var ttl = Ctx.Get<string>("gameOverTitle"); Ctx.Set("gameOver", string.IsNullOrEmpty(ttl) ? "TITAN SLAIN" : ttl); }
                     break;
             }
         }
@@ -155,11 +155,56 @@ namespace Proxies
         }
 
         /// <summary>A blade hit on one of the named zones.</summary>
+        /// <summary>Below 25% HP only the nape kills: ODM onto his upper half and slash. Everything else bounces off.</summary>
+        public bool NapePhase => Current != State.Dead && HP <= HPMax * napePhaseAt;
+        public float napePhaseAt = 0.25f;
+        bool napeAnnounced;
+        /// <summary>The nape phase kill: an airborne slash on the upper half of his body. Freezes into the nape cutscene
+        /// (Hud plays StreamingAssets/nape.mp4), then <see cref="FinishNapeKill"/> drops him.</summary>
+        public void NapeKill(Vector3 from)
+        {
+            if (Current == State.Dead || Ctx.Get<bool>("napeCutscene")) return;
+            Vector3 at = Fx != null ? Fx.NapePos() : ZonePos("Zone_Nape", from);
+            Fx?.HitBurst(at, 1f); Fx?.NapePlume(true);
+            HudEvents.Add(at, "NAPE", new Color(1f, 0.85f, 0.3f), 1.8f);
+            HitStop.Do(0.16f);
+            Sfx.Play("titan_hit", at, 0.9f, 1f, 200f);
+            if (Harness.Active) Debug.Log("[TitanHit] NAPE KILL hp=" + HP + " t=" + Time.time.ToString("0.00"));
+            Ctx.Set("napeCutscene", true); Ctx.Set("napeCutsceneAt", Time.unscaledTime);
+        }
+        /// <summary>Called by the Hud when the cutscene ends: he dies for real and the ending card follows.</summary>
+        public void FinishNapeKill()
+        {
+            if (Current == State.Dead) return;
+            HP = 0f; Current = State.Dead; t = 2.0f; Set(Pose.Stagger); Invoke(nameof(DeathPose), 0.2f);
+            Ctx.Set("bossDead", true); Ctx.Set("gameOverTitle", "YOU WON");
+            Fx?.Death();
+            var rig = Ctx.Get<Component>("cameraRig"); if (rig != null && !Application.isBatchMode) rig.SendMessage("KillCam", Fx != null ? Fx.NapePos() : transform.position + Vector3.up * height * 0.9f, SendMessageOptions.DontRequireReceiver);
+        }
         public float Hit(string zone, Vector3 from)
         {
             if (Current == State.Dead) return 0f;
             float dmg = zone == "cannon" ? 40f : zone == "Zone_Nape" ? (Current == State.Kneel ? 100f : 40f) : zone.StartsWith("Zone_Hamstring") ? 18f : zone.StartsWith("Zone_") ? 12f : 6f;
+            if (NapePhase)
+            {
+                // nothing but the nape cut lands now: the blade skids off, he shrugs it, the banner tells you where to go
+                Vector3 skid = ZonePos(zone, from);
+                Fx?.HitBurst(skid, 0.15f);
+                HudEvents.Add(skid, "NAPE ONLY", new Color(0.75f, 0.75f, 0.8f), 0.9f);
+                Sfx.Play("titan_hit", skid, 0.3f, 1.6f, 200f);
+                if (Harness.Active) Debug.Log("[TitanHit] zone=" + zone + " blocked (nape phase) hp=" + HP);
+                return 0f;
+            }
+            // never drop below the nape threshold from ordinary hits: the last quarter is the nape's
+            dmg = Mathf.Min(dmg, Mathf.Max(0f, HP - HPMax * napePhaseAt));
             HP = Mathf.Max(0f, HP - dmg); Sfx.Play("titan_hit", transform.position + Vector3.up * height * 0.5f, 0.5f, 1f, 200f);
+            if (NapePhase && !napeAnnounced)
+            {
+                napeAnnounced = true; Roar(); Ctx.Set("napePhaseAt", Time.unscaledTime);
+                HudEvents.Add(transform.position + Vector3.up * height * 1.05f, "GO FOR THE NAPE", new Color(1f, 0.8f, 0.2f), 2.0f, 3f);
+                if (Current != State.Kneel) { Current = State.Stagger; t = 0f; Set(Pose.Stagger); }
+                return dmg;
+            }
             if (Harness.Active) Debug.Log("[TitanHit] zone=" + zone + " dmg=" + dmg + " hp=" + HP + " state=" + Current + " t=" + Time.time.ToString("0.00"));
             // presentation: steam and a red spray at the cut, a number, a beat of hit-stop on the heavy ones
             Vector3 at = ZonePos(zone, from);

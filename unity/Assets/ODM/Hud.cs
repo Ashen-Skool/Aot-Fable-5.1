@@ -16,28 +16,36 @@ namespace ODM
         static GUIStyle sTitle, sBig, sNum, sLabel, sSmall, sPrompt, sPop;
         static Texture2D vignette, ring;
         static float playStart = -1f, helpFade = 1f, fpsAcc, fpsShown; static int fpsN; static bool orbitStarted;
-        static VideoPlayer titleVideo; static RenderTexture titleRt; static bool videoTried;
-        /// <summary>The title backdrop: StreamingAssets/title.mp4 looping into a render texture (falls back to the live orbit if missing).</summary>
-        static Texture TitleVideo()
+        static VideoPlayer titleVideo; static RenderTexture titleRt; static string videoFile;
+        /// <summary>A StreamingAssets video looping into a render texture (title.mp4 behind the title, nape.mp4 for the kill cutscene).
+        /// Returns null while it prepares or when the file is missing.</summary>
+        static Texture Video(string file, bool loop)
         {
-            if (!videoTried)
+            if (videoFile != file)
             {
-                videoTried = true;
-                var path = System.IO.Path.Combine(Application.streamingAssetsPath, "title.mp4");
+                StopVideo(); videoFile = file;
+                var path = System.IO.Path.Combine(Application.streamingAssetsPath, file);
                 if (System.IO.File.Exists(path))
                 {
-                    var go = new GameObject("TitleVideo"); Object.DontDestroyOnLoad(go);
-                    titleRt = new RenderTexture(1920, 1080, 0);
+                    var go = new GameObject("HudVideo"); Object.DontDestroyOnLoad(go);
+                    if (titleRt == null) titleRt = new RenderTexture(1920, 1080, 0);
                     titleVideo = go.AddComponent<VideoPlayer>();
-                    titleVideo.playOnAwake = false; titleVideo.isLooping = true; titleVideo.source = VideoSource.Url; titleVideo.url = path;
+                    titleVideo.playOnAwake = false; titleVideo.isLooping = loop; titleVideo.source = VideoSource.Url; titleVideo.url = path;
                     titleVideo.renderMode = VideoRenderMode.RenderTexture; titleVideo.targetTexture = titleRt; titleVideo.audioOutputMode = VideoAudioOutputMode.None;
                     titleVideo.aspectRatio = VideoAspectRatio.FitOutside; titleVideo.Play();
                 }
             }
-            if (titleVideo != null && !titleVideo.isPlaying && titleVideo.isPrepared) titleVideo.Play();
+            if (titleVideo != null && loop && !titleVideo.isPlaying && titleVideo.isPrepared) titleVideo.Play();
             return titleVideo != null && titleVideo.isPrepared ? titleRt : null;
         }
-        static void StopTitleVideo() { if (titleVideo != null) { titleVideo.Stop(); Object.Destroy(titleVideo.gameObject); titleVideo = null; } }
+        static bool VideoLoaded => titleVideo != null;
+        static bool VideoDone => titleVideo != null && titleVideo.isPrepared && !titleVideo.isLooping && titleVideo.frameCount > 0 && (ulong)titleVideo.frame >= titleVideo.frameCount - 1;
+        static void StopVideo() { if (titleVideo != null) { titleVideo.Stop(); Object.Destroy(titleVideo.gameObject); titleVideo = null; } videoFile = null; }
+        static void DrawVideoCover(Texture vid, float W, float H)
+        {
+            float va = 2912f / 1280f, sa = W / H; float vw = sa > va ? W : H * va, vh = sa > va ? W / va : H;
+            GUI.DrawTexture(new Rect((W - vw) * 0.5f, (H - vh) * 0.5f, vw, vh), vid, ScaleMode.StretchToFill);
+        }
 
         static void Init()
         {
@@ -97,6 +105,7 @@ namespace ODM
                 return;
             }
             if (playStart < 0f) playStart = Time.unscaledTime;
+            if (Ctx.Get<bool>("napeCutscene")) { Cutscene(c, W, H, s); return; }
             var over = Ctx.Get<string>("gameOver");
             if (!string.IsNullOrEmpty(over)) { Music.Set("ending"); Ending(c, over, W, H, s); return; }   // the card alone, nothing bleeding through
             var brain = Ctx.Get<Proxies.TitanBrain>("bossBrain");
@@ -169,7 +178,18 @@ namespace ODM
                 // hamstring chips
                 float chipW = 70f * s, chipY = ty + 56f * s;
                 Chip(tx, chipY, chipW, "L HAM", brain.HamL, s); Chip(tx + tw - chipW, chipY, chipW, "R HAM", brain.HamR, s);
-                if (brain.Current == Proxies.TitanBrain.State.Kneel)
+                // the nape line on the bar: the last quarter only falls to the nape cut
+                Box(tx + tw * brain.napePhaseAt - 1f * s, ty + 33f * s, 2f * s, 16f * s, new Color(1f, 0.85f, 0.3f, 0.9f));
+                if (brain.NapePhase)
+                {
+                    float since = Time.unscaledTime - Ctx.Get<float>("napePhaseAt");
+                    float pulse = 0.7f + 0.3f * Mathf.Sin(Time.unscaledTime * 6f);
+                    float big = since < 3f ? Mathf.Lerp(72f, 36f, Mathf.SmoothStep(0f, 1f, (since - 1.5f) / 1.5f)) : 36f;
+                    var sNape = Sized(sPrompt, big);
+                    Text(new Rect(0, since < 3f ? H * 0.36f : chipY - 4f * s, W, big * 1.2f * s), "GO FOR THE NAPE", sNape, new Color(1f, 0.8f, 0.2f, pulse), 4f);
+                    if (since < 3f) { var sh = Sized(sLabel, 20f); sh.alignment = TextAnchor.MiddleCenter; Text(new Rect(0, H * 0.36f + big * 1.25f * s, W, 30f * s), "HOOK HIGH   ·   HIT THE BACK OF HIS NECK FROM THE AIR", sh, new Color(1f, 1f, 1f, 0.85f)); sLabel.alignment = TextAnchor.MiddleLeft; }
+                }
+                else if (brain.Current == Proxies.TitanBrain.State.Kneel)
                 {
                     float pulse = 0.7f + 0.3f * Mathf.Sin(Time.unscaledTime * 8f);
                     var sNape = Sized(sPrompt, 36f);
@@ -234,7 +254,7 @@ namespace ODM
                 Box(0, 0, W, H, new Color(0f, 0f, 0f, 0.55f));
                 Text(new Rect(0, cy - 70f * s, W, 80f * s), "PAUSED", Sized(sTitle, 72f), Color.white, 3f);
                 Text(new Rect(0, cy + 10f * s, W, 34f * s), "CLICK OR ESC  RESUME      R  RESTART      CMD-Q  QUIT", Sized(sPrompt, 26f), new Color(1f, 1f, 1f, 0.85f));
-                if (UnityEngine.Input.GetKeyDown(KeyCode.R) && !Reboot.Restarting) { OdmController.Paused = false; playStart = -1f; orbitStarted = false; OdmController.TitleDone = false; videoTried = false; Reboot.Now(); }
+                if (UnityEngine.Input.GetKeyDown(KeyCode.R) && !Reboot.Restarting) { OdmController.Paused = false; playStart = -1f; orbitStarted = false; OdmController.TitleDone = false;  Reboot.Now(); }
             }
             else if (!GameInput.CursorCaptured) Text(new Rect(0, H - 40f * s, W, 22f * s), "CLICK TO CAPTURE THE MOUSE  ·  ESC PAUSES", Sized(sSmall, 14f), new Color(1f, 1f, 1f, 0.7f), 1f);
             // frame rate, tiny, top right, so a build's cost is always visible
@@ -260,13 +280,8 @@ namespace ODM
             Time.timeScale = 0f;   // nothing moves until a key is pressed (the video runs on its own clock)
             Ctx.Set("titleHold", true);
             if (!orbitStarted) { orbitStarted = true; var rig = Ctx.Get<Component>("cameraRig"); if (rig != null) rig.SendMessage("TitleOrbit", SendMessageOptions.DontRequireReceiver); }
-            var vid = TitleVideo();
-            if (vid != null)
-            {
-                // cover the screen, keep the aspect
-                float va = 2912f / 1280f, sa = W / H; float vw = sa > va ? W : H * va, vh = sa > va ? W / va : H;
-                GUI.DrawTexture(new Rect((W - vw) * 0.5f, (H - vh) * 0.5f, vw, vh), vid, ScaleMode.StretchToFill);
-            }
+            var vid = Video("title.mp4", true);
+            if (vid != null) DrawVideoCover(vid, W, H);
             Box(0, 0, W, H, new Color(0.02f, 0.02f, 0.03f, vid != null ? 0.3f : 0.42f));
             Text(new Rect(0, H * 0.30f, W, 120f * s), "AOT FABLE 5.1", Sized(sTitle, 110f), Color.white, 4f);
             var sub = Sized(sLabel, 18f); sub.alignment = TextAnchor.MiddleCenter;
@@ -277,10 +292,34 @@ namespace ODM
             Text(new Rect(0, H * 0.30f + 280f * s, W, 40f * s), "PRESS ANY KEY", Sized(sPrompt, 34f), new Color(1f, 1f, 1f, pulse));
             if (UnityEngine.Input.anyKeyDown || Ctx.Get<bool>("autoStart"))
             {
-                Ctx.Set("autoStart", false); StopTitleVideo();
+                Ctx.Set("autoStart", false); StopVideo();
                 OdmController.TitleDone = true; Time.timeScale = 1f; Sfx.Play("ui", c.transform.position, 1f, 0.6f);
                 Ctx.Set("titleHold", false); Ctx.Set("introUntil", Time.unscaledTime + 2.6f);
                 var rig = Ctx.Get<Component>("cameraRig"); if (rig != null) rig.SendMessage("BeginIntroDive", SendMessageOptions.DontRequireReceiver);
+            }
+        }
+
+        /// <summary>The nape kill: the game freezes, StreamingAssets/nape.mp4 plays once (7 s), then the Titan drops and the
+        /// win card follows. Without the file: a 1.6 s black beat with the words.</summary>
+        public const float CutsceneSeconds = 7f;
+        static void Cutscene(OdmController c, float W, float H, float s)
+        {
+            Time.timeScale = 0f; Ctx.Set("titleHold", true);
+            float since = Time.unscaledTime - Ctx.Get<float>("napeCutsceneAt");
+            var vid = Video("nape.mp4", false);
+            bool has = VideoLoaded;
+            Box(0, 0, W, H, Color.black);
+            if (vid != null) DrawVideoCover(vid, W, H);
+            else if (!has) { var st = Sized(sTitle, 96f); Text(new Rect(0, H * 0.42f, W, 110f * s), "THE NAPE", st, new Color(1f, 0.9f, 0.7f, Mathf.Clamp01(since * 2f)), 4f); }
+            // letterbox + fade in/out
+            float fade = Mathf.Clamp01(since * 3f); float end = has ? CutsceneSeconds : 1.6f;
+            fade = Mathf.Min(fade, Mathf.Clamp01((end - since) * 2.5f));
+            Box(0, 0, W, H, new Color(0f, 0f, 0f, 1f - fade));
+            bool skip = UnityEngine.Input.GetKeyDown(KeyCode.Space) || UnityEngine.Input.GetKeyDown(KeyCode.Escape);
+            if (since >= end || (has && VideoDone) || skip || Application.isBatchMode)
+            {
+                StopVideo(); Ctx.Set("napeCutscene", false); Ctx.Set("titleHold", false); Time.timeScale = 1f;
+                var brain = Ctx.Get<Proxies.TitanBrain>("bossBrain"); if (brain != null) brain.FinishNapeKill();
             }
         }
 
@@ -294,7 +333,7 @@ namespace ODM
             sLabel.alignment = TextAnchor.MiddleLeft;
             float pulse = 0.6f + 0.4f * Mathf.Sin(Time.unscaledTime * 3f);
             Text(new Rect(0, cy + 44f * s, W, 40f * s), "R  PLAY AGAIN      CMD-Q  QUIT", Sized(sPrompt, 30f), new Color(1f, 1f, 1f, pulse));
-            if (UnityEngine.Input.GetKeyDown(KeyCode.R) && !Reboot.Restarting) { playStart = -1f; orbitStarted = false; OdmController.TitleDone = false; videoTried = false; Reboot.Now(); }
+            if (UnityEngine.Input.GetKeyDown(KeyCode.R) && !Reboot.Restarting) { playStart = -1f; orbitStarted = false; OdmController.TitleDone = false;  Reboot.Now(); }
         }
     }
 }

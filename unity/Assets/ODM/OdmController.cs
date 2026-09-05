@@ -504,7 +504,7 @@ namespace ODM
             if (cam == null) { cam = Ctx.Get<Camera>("camera"); if (cam == null) cam = Camera.main; }
             if (Scripted) return;
             if (Ctx.Get<bool>("autoPause")) { Ctx.Set("autoPause", false); Paused = true; Time.timeScale = 0f; }
-            if (TitleDone && GameInput.Escape && !InputHeld && string.IsNullOrEmpty(Ctx.Get<string>("gameOver"))) { Paused = !Paused; Time.timeScale = Paused ? 0f : 1f; }
+            if (TitleDone && GameInput.Escape && !InputHeld && string.IsNullOrEmpty(Ctx.Get<string>("gameOver")) && !Ctx.Get<bool>("napeCutscene")) { Paused = !Paused; Time.timeScale = Paused ? 0f : 1f; }
             if (Paused && UnityEngine.Input.GetMouseButtonDown(0)) { Paused = false; Time.timeScale = 1f; }
             GameInput.UpdateCursor();
             if (Paused) { liveInput = default; return; }
@@ -581,6 +581,8 @@ namespace ODM
             {
                 var c = overlap[i]; if (c == null) continue;
                 var brain = c.GetComponentInParent<Proxies.TitanBrain>(); if (brain == null) continue;
+                // nape phase: an airborne slash anywhere on his upper half is the kill (ODM onto the neck)
+                if (brain.NapePhase && slashAirborne && rb.position.y > brain.transform.position.y + brain.height * 0.5f) { brain.NapeKill(rb.position); return; }
                 if (c.name.StartsWith("Zone_")) { brain.Hit(c.name, rb.position); Shared.Sfx.Play("titan_hit", rb.position, 0.7f, 1f); return; }
                 bodyHit = brain;
             }

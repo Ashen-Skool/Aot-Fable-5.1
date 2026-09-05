@@ -382,8 +382,8 @@ namespace AotCamera
             // Free flight (no cables, not locked): the mouse IS the heading. Never pull it toward the velocity or the body:
             // the velocity is itself turning toward the look (OdmController.airTurnRate) and a heading that chases the
             // velocity re-centres the view faster than the body can follow, so a 180 turn snapped back to straight ahead.
-            bool freeFlight = Lock == null && (Target.State & CameraTargetState.Flying) != 0 && (Target.State & CameraTargetState.Hooked) == 0;
-            if (freeFlight) { want = headingDir; want.y *= 0.5f; }   // yaw untouched, pitch eases back to the horizon
+            bool airborne = Lock == null && (Target.State & CameraTargetState.Flying) != 0;
+            if (airborne) { want = headingDir; want.y *= 0.5f; }   // yaw untouched, pitch eases back to the horizon (hooked or free)
             else if (Speed > 2f) want = Vector3.Slerp(want, v / Speed, Mathf.Clamp01((Speed - 2f) / 8f) * Mathf.Clamp01((Speed - 6f) / 6f));
             if (want.sqrMagnitude < 1e-4f) want = headingDir;
             want.Normalize();
@@ -447,7 +447,8 @@ namespace AotCamera
             smoothedRot = snapNext ? rot : Quaternion.Slerp(smoothedRot, rot, 1f - Mathf.Exp(-rotSharpness * dt));
 
             // dutch tilt: bank into turns (heading yaw rate) plus a little from lateral drift, up to dutchDeg
-            float headingYaw = Mathf.Atan2(headingDir.x, headingDir.z) * Mathf.Rad2Deg;
+            var yawSrc = Speed > 4f ? v : headingDir;
+            float headingYaw = Mathf.Atan2(yawSrc.x, yawSrc.z) * Mathf.Rad2Deg;
             float rate = snapNext || dt <= 1e-5f ? 0f : Mathf.DeltaAngle(prevHeadingYaw, headingYaw) / dt;
             prevHeadingYaw = headingYaw;
             yawRate = Mathf.Lerp(yawRate, rate, 1f - Mathf.Exp(-12f * dt));
@@ -556,7 +557,7 @@ namespace AotCamera
             var mv = Shared.GameInput.Move;
             bool steering = (Target.State & CameraTargetState.Grounded) != 0 && mv.sqrMagnitude > 0.1f && Speed > 2f;
             // free flight (no cables): the mouse is the heading itself, so a 180 turn is a 180 turn and the body follows the view
-            bool freeFlight = (Target.State & CameraTargetState.Flying) != 0 && (Target.State & CameraTargetState.Hooked) == 0;
+            bool freeFlight = (Target.State & CameraTargetState.Flying) != 0;   // any air time, cables or not
             if (freeFlight) { mousePitch = Mathf.Clamp(mousePitch, -35f, 45f); }
             if ((steering || freeFlight) && Mathf.Abs(mouseYaw) > 0.01f)
             {
