@@ -98,9 +98,11 @@ namespace Proxies
             var mpb = new MaterialPropertyBlock();
             foreach (var r in root.GetComponentsInChildren<MeshRenderer>())
             {
-                bool isTop = r.transform.localScale.y < 1.5f && r.transform.parent != root;
+                // roof slabs and parapets are the thin ones (they sit directly under the grid root, like the towers)
+                bool isTop = r.transform.localScale.y < 1.5f;
                 r.sharedMaterial = isTop ? top : stone;
-                // a unit cube's UVs span 0..1 per face: tile the stone per 3 m so a 30 m tower is not one stretched brick
+                // a unit cube's UVs span 0..1 per face: tile the stone per 3 m so a 30 m tower is not one stretched brick.
+                // Tops tile square in x/z; tiling a slab by its 0.3 m height smeared the roof texture into 40:1 streaks.
                 var sc = r.transform.lossyScale; float tx = Mathf.Max(sc.x, sc.z) / 3f, ty = (isTop ? Mathf.Max(sc.x, sc.z) : sc.y) / 3f;
                 r.GetPropertyBlock(mpb); mpb.SetVector("_BaseMap_ST", new Vector4(tx, ty, 0f, 0f)); mpb.SetVector("_BumpMap_ST", new Vector4(tx, ty, 0f, 0f)); r.SetPropertyBlock(mpb);
             }
