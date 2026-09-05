@@ -81,7 +81,7 @@ namespace Setup
             pipeline.shadowCascadeCount = 4;
             pipeline.cascade4Split = new Vector3(0.04f, 0.12f, 0.35f);
             pipeline.mainLightShadowmapResolution = 4096;
-            pipeline.supportsSoftShadows = true;
+            { var pso = new SerializedObject(pipeline); pso.FindProperty("m_SoftShadowsSupported").boolValue = true; pso.ApplyModifiedPropertiesWithoutUndo(); }
             pipeline.shadowDepthBias = 1.0f;
             pipeline.shadowNormalBias = 0.6f;
             pipeline.supportsCameraDepthTexture = true;
