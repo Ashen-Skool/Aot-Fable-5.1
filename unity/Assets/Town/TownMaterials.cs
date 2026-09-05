@@ -67,7 +67,7 @@ namespace Town
         }
 
         public static readonly float[] Shade = { 0.82f, 1.0f, 1.14f };
-        public static readonly Color FogColor = new Color(0.86f, 0.75f, 0.6f);
+        public static readonly Color FogColor = new Color(0.8f, 0.74f, 0.68f);
 
         public Material Stone(int set, int shade = 1)
         {
@@ -104,6 +104,17 @@ namespace Town
         public Material Paving(float tile) => Textured("paving", "PavingStones131", tile, new Color(0.72f, 0.68f, 0.62f), 0.12f, 1f);
         public Material Ground => Textured("ground", "PavingStones131", 3.2f, new Color(0.72f, 0.68f, 0.62f), 0.12f, 1f);
         public Material Glass => Plain("glass", new Color(0.1f, 0.13f, 0.18f), 0.9f, 0.3f);
+        /// <summary>Lamp-lit window: unlit HDR amber so bloom picks it up. Deterministic per house.</summary>
+        public Material GlassLit
+        {
+            get
+            {
+                if (cache.TryGetValue("glassLit", out var m)) return m;
+                m = Mats.Unlit(new Color(2.2f, 1.35f, 0.55f)); m.name = "glassLit";
+                cache["glassLit"] = m; return m;
+            }
+        }
+        public Material GlassFor(HouseSpec h) => h.LitWindows ? GlassLit : Glass;
         public Material Iron => Plain("iron", new Color(0.12f, 0.11f, 0.11f), 0.45f, 0.6f);
         public Material Water => Plain("water", new Color(0.25f, 0.38f, 0.42f), 0.95f, 0.1f);
         public Material Cloth(int i) { i = Mathf.Abs(i) % ClothTint.Length; return Plain("cloth" + i, ClothTint[i], 0.05f); }

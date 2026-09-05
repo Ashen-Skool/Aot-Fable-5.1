@@ -56,6 +56,21 @@ namespace Setup
             Make("SimpleLit", "Universal Render Pipeline/Simple Lit");
             Make("Particles", "Universal Render Pipeline/Particles/Unlit");
             Make("Sky", "Skybox/Procedural");
+            // Soft alpha-blended particles: the transparent variant must exist on an asset or the build strips it.
+            var part = AssetDatabase.LoadAssetAtPath<Material>(MatDir + "/Particles.mat");
+            if (part != null)
+            {
+                part.SetFloat("_Surface", 1f); part.SetFloat("_Blend", 0f); part.SetFloat("_ZWrite", 0f);
+                part.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                part.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                part.SetOverrideTag("RenderType", "Transparent");
+                part.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                part.EnableKeyword("_ALPHABLEND_ON");
+                part.SetFloat("_SoftParticlesEnabled", 1f); part.EnableKeyword("_SOFTPARTICLES_ON");
+                part.SetFloat("_SoftParticlesNearFadeDistance", 0f); part.SetFloat("_SoftParticlesFarFadeDistance", 1.5f);
+                part.renderQueue = 3000;
+                EditorUtility.SetDirty(part);
+            }
         }
 
         static void Make(string name, string shader)

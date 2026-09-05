@@ -119,7 +119,7 @@ namespace Town
             var kRoof = g.Get(roof, xf, uv);
             var kTimber = g.Get(mats.TimberDark, xf, uv);
             var kPale = g.Get(mats.TimberPale, xf, uv);
-            var kGlass = g.Get(mats.Glass, xf, uv);
+            var kGlass = g.Get(mats.GlassFor(h), xf, uv);
             var kShut = g.Get(mats.Shutter(h.shutterTint), xf, uv);
             var kChim = g.Get(mats.Stone(0, h.shade), xf, uv);
             var kDark = g.Get(mats.Dark, xf, uv);
@@ -206,6 +206,7 @@ namespace Town
                 kChim.Box(new Vector3(c.x - 0.45f, ys - 0.7f, c.z - 0.45f), new Vector3(c.x + 0.45f, h.RidgeY + 1.3f, c.z + 0.45f));
                 kStone.Box(new Vector3(c.x - 0.6f, h.RidgeY + 1.3f, c.z - 0.6f), new Vector3(c.x + 0.6f, h.RidgeY + 1.52f, c.z + 0.6f));
                 kDark.Cylinder(new Vector3(c.x, h.RidgeY + 1.5f, c.z), 0.2f, 0.55f, 8);
+                info.chimneys.Add(xf.MultiplyPoint3x4(new Vector3(c.x, h.RidgeY + 2.05f, c.z)));
             }
 
             // dormer on the front slope
@@ -249,7 +250,7 @@ namespace Town
         void Face(HouseSpec h, Group g, Matrix4x4 xf, Vector3 outN, float halfDepth, float width, bool front)
         {
             var kPale = g.Get(mats.TimberPale, xf, h.uvOffset);
-            var kGlass = g.Get(mats.Glass, xf, h.uvOffset);
+            var kGlass = g.Get(mats.GlassFor(h), xf, h.uvOffset);
             var kShut = g.Get(mats.Shutter(h.shutterTint), xf, h.uvOffset);
             var kStone = g.Get(mats.Stone(h.stoneSet, h.shade), xf, h.uvOffset);
             var kDoor = g.Get(mats.TimberDark, xf, h.uvOffset);

@@ -17,6 +17,38 @@ namespace Setup
         const string RendererPath = Dir + "/UrpRenderer.asset";
         const string PipelinePath = Dir + "/UrpPipeline.asset";
 
+        /// <summary>Screen-space ambient occlusion as a renderer feature (sub-asset of the renderer data). Idempotent.</summary>
+        static void Ssao(UniversalRendererData renderer)
+        {
+            foreach (var f in renderer.rendererFeatures) if (f is ScreenSpaceAmbientOcclusion) return;
+            var ao = ScriptableObject.CreateInstance<ScreenSpaceAmbientOcclusion>();
+            ao.name = "SSAO";
+            AssetDatabase.AddObjectToAsset(ao, renderer);
+            var aso = new SerializedObject(ao);
+            var st = aso.FindProperty("m_Settings");
+            st.FindPropertyRelative("AOMethod").enumValueIndex = 0;          // blue noise
+            st.FindPropertyRelative("Downsample").boolValue = false;
+            st.FindPropertyRelative("AfterOpaque").boolValue = false;
+            st.FindPropertyRelative("Source").enumValueIndex = 1;            // depth + normals
+            st.FindPropertyRelative("NormalSamples").enumValueIndex = 2;     // high
+            st.FindPropertyRelative("Intensity").floatValue = 1.6f;
+            st.FindPropertyRelative("DirectLightingStrength").floatValue = 0.3f;
+            st.FindPropertyRelative("Radius").floatValue = 0.6f;
+            st.FindPropertyRelative("Samples").enumValueIndex = 1;           // medium
+            st.FindPropertyRelative("BlurQuality").enumValueIndex = 0;       // high
+            st.FindPropertyRelative("Falloff").floatValue = 120f;
+            aso.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.SaveAssets();
+            AssetDatabase.TryGetGUIDAndLocalFileIdentifier(ao, out _, out long localId);
+            var rso = new SerializedObject(renderer);
+            var list = rso.FindProperty("m_RendererFeatures"); var map = rso.FindProperty("m_RendererFeatureMap");
+            list.arraySize++; list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = ao;
+            map.arraySize++; map.GetArrayElementAtIndex(map.arraySize - 1).longValue = localId;
+            rso.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(renderer);
+            Debug.Log("[UrpSetup] SSAO feature added (localId " + localId + ")");
+        }
+
         public static UniversalRenderPipelineAsset Run()
         {
             if (!Directory.Exists(Dir)) Directory.CreateDirectory(Dir);
@@ -34,6 +66,7 @@ namespace Setup
             renderer.renderingMode = RenderingMode.Forward;
             renderer.depthPrimingMode = DepthPrimingMode.Auto;
             EditorUtility.SetDirty(renderer);
+            Ssao(renderer);
 
             var pipeline = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(PipelinePath);
             if (pipeline == null)
@@ -44,8 +77,13 @@ namespace Setup
             }
             pipeline.supportsHDR = true;
             pipeline.msaaSampleCount = 4;
-            pipeline.shadowDistance = 250f;
+            pipeline.shadowDistance = 300f;
             pipeline.shadowCascadeCount = 4;
+            pipeline.cascade4Split = new Vector3(0.04f, 0.12f, 0.35f);
+            pipeline.mainLightShadowmapResolution = 4096;
+            pipeline.supportsSoftShadows = true;
+            pipeline.shadowDepthBias = 1.0f;
+            pipeline.shadowNormalBias = 0.6f;
             pipeline.supportsCameraDepthTexture = true;
             pipeline.supportsCameraOpaqueTexture = true;
             pipeline.colorGradingMode = ColorGradingMode.HighDynamicRange;

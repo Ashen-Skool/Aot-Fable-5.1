@@ -56,6 +56,8 @@ namespace Town
         public float GableOverhang => 0.35f;
         public float Rise => (gableFront ? w * 0.5f : d * 0.5f) * Mathf.Tan(pitch * Mathf.Deg2Rad) + Overhang * Mathf.Tan(pitch * Mathf.Deg2Rad);
         public float RidgeY => WallTop + Rise;
+        /// <summary>About a quarter of the houses have lamps lit behind the glass at this hour (deterministic per house).</summary>
+        public bool LitWindows => ((int)(Mathf.Abs(uvOffset.x * 7.31f + uvOffset.y * 3.17f) * 1000f) % 4) == 0;
     }
 
     public enum PropKind { Fountain, Stall, Barrel, Crate, Cart, Lamp, Well, Clothesline, Sacks }
@@ -74,6 +76,7 @@ namespace Town
         public Bounds bounds;
         public Vector3 spawn, gate;
         public List<Vector3> rooftops = new List<Vector3>(1024);
+        public List<Vector3> chimneys = new List<Vector3>(512);   // chimney pot tops, world space (smoke)
         public int hookLayer;
         public int houseCount;
         public Rect square;

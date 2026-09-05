@@ -16,7 +16,7 @@ namespace Town.Editor
     {
         const string MatDir = "Assets/Town/Resources/Town/Materials";
         const string TexDir = "Assets/Town/Imported/Resources/Town/Textures";
-        const string Hdri = "Assets/Town/Imported/Resources/Town/Sky/qwantani.hdr";
+        const string Hdri = "Assets/Town/Imported/Resources/Town/Sky/wasteland.hdr";
 
         public static void Run()
         {

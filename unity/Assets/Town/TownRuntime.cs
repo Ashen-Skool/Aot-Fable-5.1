@@ -12,10 +12,12 @@ namespace Town
     /// </summary>
     public static class TownRuntime
     {
-        // Sun position measured in qwantani_late_afternoon_puresky_2k.hdr (brightest texel):
+        // Sun position measured in wasteland_clouds_puresky_2k.hdr (brightest texel, tools/sunpos.py):
         // azimuth atan2(x,z) in degrees at _Rotation = 0, elevation above the horizon.
-        public const float HdriSunAzimuth = 126.1f;
-        public const float HdriSunElevation = 19.1f;
+        public const float HdriSunAzimuth = 125.9f;
+        public const float HdriSunElevation = 7.6f;
+        // The light sits a little higher than the sky's sun so the streets keep some direct light.
+        public const float SunElevation = 12f;
         // Where we want the sun: south-west, so south-facing fronts, the east side of the main
         // street and the inner face of the wall catch the light.
         public const float SunAzimuth = -135f;
@@ -78,7 +80,7 @@ namespace Town
 
         public static Vector3 SunDirection()
         {
-            float az = SunAzimuth * Mathf.Deg2Rad, el = HdriSunElevation * Mathf.Deg2Rad;
+            float az = SunAzimuth * Mathf.Deg2Rad, el = SunElevation * Mathf.Deg2Rad;
             var toSun = new Vector3(Mathf.Sin(az) * Mathf.Cos(el), Mathf.Sin(el), Mathf.Cos(az) * Mathf.Cos(el));
             return -toSun;
         }
@@ -90,8 +92,8 @@ namespace Town
             {
                 var sky = new Material(skyBase);
                 sky.SetFloat("_Rotation", Mathf.Repeat(HdriSunAzimuth - SunAzimuth, 360f)); // panoramic: feature at az0 shows at az0 - rotation
-                sky.SetFloat("_Exposure", 1.0f);
-                sky.SetColor("_Tint", new Color(0.5f, 0.48f, 0.46f));
+                sky.SetFloat("_Exposure", 1.25f);
+                sky.SetColor("_Tint", new Color(0.56f, 0.53f, 0.5f));
                 RenderSettings.skybox = sky;
             }
             else
@@ -104,28 +106,29 @@ namespace Town
             if (sun != null)
             {
                 sun.transform.rotation = Quaternion.LookRotation(SunDirection(), Vector3.up);
-                sun.color = new Color(1f, 0.8f, 0.6f);
-                sun.intensity = 2.9f;
+                sun.color = new Color(1f, 0.76f, 0.52f);
+                sun.intensity = 3.2f;
                 sun.shadows = LightShadows.Soft;
-                sun.shadowStrength = 0.88f;
+                sun.shadowStrength = 0.92f;
                 sun.shadowBias = 0.02f;
-                sun.shadowNormalBias = 0.25f;
+                sun.shadowNormalBias = 0.3f;
                 RenderSettings.sun = sun;
             }
 
-            RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.42f, 0.5f, 0.68f) * 1.35f;
-            RenderSettings.ambientEquatorColor = new Color(0.82f, 0.66f, 0.5f) * 0.95f;
-            RenderSettings.ambientGroundColor = new Color(0.36f, 0.3f, 0.24f);
+            // Ambient from the sky itself (cool blue from above, warm bounce at the horizon), lifted a touch for the shadowed streets.
+            RenderSettings.ambientMode = AmbientMode.Skybox;
+            RenderSettings.ambientIntensity = 1.35f;
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogColor = new Color(0.86f, 0.75f, 0.6f);
-            RenderSettings.fogDensity = 0.0022f;
+            RenderSettings.fogColor = TownMaterials.FogColor;
+            RenderSettings.fogDensity = 0.0026f;
+            QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
             DynamicGI.UpdateEnvironment();
             Grade();
+            TownLife.Build(Info, Root.transform);
         }
 
-        /// <summary>Global volume: ACES tonemapping so the HDR sky and sunlit walls roll off instead of clipping to white.</summary>
+        /// <summary>Global volume: ACES tonemapping, bloom for the sun and lit windows, warm highlights over cool shadows, a soft vignette.</summary>
         static void Grade()
         {
             if (Root == null) return;
@@ -138,9 +141,27 @@ namespace Town
             var tone = prof.Add<Tonemapping>(true);
             tone.mode.Override(TonemappingMode.ACES);
             var adj = prof.Add<ColorAdjustments>(true);
-            adj.postExposure.Override(0.4f);
-            adj.saturation.Override(6f);
-            adj.contrast.Override(8f);
+            adj.postExposure.Override(0.45f);
+            adj.saturation.Override(10f);
+            adj.contrast.Override(14f);
+            var wb = prof.Add<WhiteBalance>(true);
+            wb.temperature.Override(8f);
+            var smh = prof.Add<ShadowsMidtonesHighlights>(true);
+            smh.shadows.Override(new Vector4(0.92f, 0.96f, 1.08f, 0f));
+            smh.highlights.Override(new Vector4(1.06f, 1.0f, 0.92f, 0f));
+            var bloom = prof.Add<Bloom>(true);
+            bloom.threshold.Override(0.95f);
+            bloom.intensity.Override(0.55f);
+            bloom.scatter.Override(0.68f);
+            bloom.tint.Override(new Color(1f, 0.9f, 0.75f));
+            var vig = prof.Add<Vignette>(true);
+            vig.intensity.Override(0.27f);
+            vig.smoothness.Override(0.45f);
+            var grain = prof.Add<FilmGrain>(true);
+            grain.type.Override(FilmGrainLookup.Thin1);
+            grain.intensity.Override(0.12f);
+            var ca = prof.Add<ChromaticAberration>(true);
+            ca.intensity.Override(0.05f);
             vol.sharedProfile = prof;
             var cam = Ctx.Get<Camera>("camera");
             if (cam != null)
