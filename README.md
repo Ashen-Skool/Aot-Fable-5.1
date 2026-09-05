@@ -59,7 +59,11 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
 - Title: live orbit over the district from boot (`CameraRig.TitleOrbit`), click = intro dive to Mikasa (`BeginIntroDive`), input held
   and the Titan waits at the gate (`Ctx titleHold` / `introUntil`) then roars (`Shared/Synth.cs`: roar, whoosh). Boss starts at z=98.
 - Soft camera lock on the Titan within 80 m (`Ctx cameraLockTarget`, set by `TitanBrain`). He now closes to stomp range.
-- Verified from screenshots: title orbit, dive, HUD, approach with lock, swipe wind-up, kill cam + steam + damage number, ending card.
+- Verified from screenshots: title orbit, dive, HUD, approach with lock, swipe wind-up, kill cam + steam + damage number, ending card,
+  and flight (`-autoFly N`: `FlightScript.HarnessHop`, HUD stays on while scripted in a windowed run).
+- Runtime transparent materials must clone `Resources/Materials/Particles` (see `OdmController.Transparent`): flipping keywords on
+  `Unlit.mat` at runtime is stripped from builds and rendered the gas/smear opaque white. Tower roof slabs are tiled square now
+  (`DressTowers`: thin = top); the "motion blur" streaks on tower roofs were that stretched texture.
 - Music: `Shared/Music.cs` crossfades `Resources/Audio/Music/{title,battle,ending}`; files not yet present (Suno).
 - Audio: `Shared/Sfx.cs` pooled one-shots over `Resources/Audio` (Kenney): hooks, landing, slash, hits, titan steps and attacks, cannon.
 - Title screen (click to begin, Time.timeScale 0 until then) and ending screen live in `OdmController.OnGUI`.
