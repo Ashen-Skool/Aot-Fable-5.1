@@ -68,7 +68,7 @@ namespace Town
                     float a = j / (float)segs * Mathf.PI * 2f;
                     float x = b.center.x + Mathf.Cos(a) * r, z = b.center.z + Mathf.Sin(a) * r;
                     float n = Mathf.PerlinNoise(nx + x * 0.004f, nz + z * 0.004f) * 0.7f + Mathf.PerlinNoise(nx + x * 0.015f, nz + z * 0.015f) * 0.3f;
-                    float rise = i == 0 ? -0.1f : Mathf.Lerp(0f, 150f, Mathf.Pow(t, 0.85f)) * (0.3f + 1.1f * n) + (i == 1 ? 0f : 3f * n);
+                    float rise = i == 0 ? -0.1f : Mathf.Lerp(0f, 150f, Mathf.Pow(t, 1.7f)) * (0.3f + 1.1f * n) + (i == 1 ? 0f : 3f * n);   // flat meadow first, the ridges far out
                     if (z > L.wallZ1 - 40f && i < 4) rise = Mathf.Min(rise, 2f);   // flat outside the gate
                     verts.Add(new Vector3(x, rise, z)); uvs.Add(new Vector2(x / 14f, z / 14f));   // 1 UV unit per texture tile
                 }
