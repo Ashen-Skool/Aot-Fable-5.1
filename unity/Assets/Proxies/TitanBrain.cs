@@ -15,7 +15,9 @@ namespace Proxies
         public State Current { get; private set; } = State.Idle;
         public float height = 15f, walkSpeed = 6.5f, sprintSpeed = 11f, sightRange = 120f, attackRange = 16f, turnRate = 70f;
         public float swipeDamage = 24f, stompDamage = 32f;
-        public float windUp = 1.05f, attackLength = 2.1f, attackCooldown = 2.6f;   // a readable telegraph, then a real opening
+        public float windUp = 1.05f, attackLength = 2.1f, attackCooldown = 2.6f;
+        public static bool SoftLock = false;
+        public float gateHold = 6f, firstAttackGrace = 8f; float chaseStart = -1f;   // a readable telegraph, then a real opening
         public bool HamL, HamR;
         public float HP = 100f, HPMax = 100f;
         IPoser poser; Transform player; Component playerCtrl; float t, cooldown, kneelTimer, roarTimer;
@@ -41,7 +43,7 @@ namespace Proxies
             var pl = Player; if (pl == null || Poser == null) return;
             Vector3 toP = pl.position - transform.position; float distFlat = new Vector2(toP.x, toP.z).magnitude;
             // soft camera lock: once he is close and alive the chase camera keeps him in frame (the rig blends, the mouse still steers)
-            bool wantLock = Current != State.Idle && Current != State.Dead && distFlat < 80f;
+            bool wantLock = SoftLock && Current != State.Idle && Current != State.Dead && distFlat < 80f;   // off: it dragged the view toward him while running (user)
             if (wantLock != locked)
             {
                 locked = wantLock; if (locked) Ctx.Set("cameraLockTarget", LockPoint()); else Ctx.Remove("cameraLockTarget");
@@ -52,11 +54,11 @@ namespace Proxies
                 case State.Idle:
                     Set(Pose.Idle);
                     if (Ctx.Get<bool>("titleHold")) break;                                   // the title is up: he waits at the gate
-                    if (distFlat < sightRange || (Ctx.Has("introUntil") && Time.unscaledTime > Ctx.Get<float>("introUntil"))) { Current = State.Chase; roarTimer = 1.2f; Roar(); }
+                    if (distFlat < sightRange || (Ctx.Has("introUntil") && Time.unscaledTime > Ctx.Get<float>("introUntil") + gateHold)) { Current = State.Chase; roarTimer = 1.2f; chaseStart = Time.time; Roar(); }
                     break;
                 case State.Chase:
                     Face(toP, dt);
-                    if (distFlat < attackRange && cooldown <= 0f && InFront(toP, 0.1f))
+                    if (distFlat < attackRange && cooldown <= 0f && InFront(toP, 0.1f) && Time.time > chaseStart + firstAttackGrace)
                     {
                         Current = State.Attack; t = 0f; attackKind = pl.position.y > height * 0.35f ? Pose.Swipe : (Random.value < 0.5f ? Pose.Stomp : Pose.Swipe); Set(attackKind); hitDone = false;
                         // the telegraph: a warning at the spot he is about to hit, a grunt, a shiver through the camera
@@ -69,7 +71,7 @@ namespace Proxies
                     }
                     else
                     {
-                        bool sprint = distFlat > attackRange * 3f;
+                        bool sprint = distFlat > 70f;   // walks the last stretch so you see him coming
                         Set(sprint ? Pose.Sprint : Pose.Run);
                         float sp = sprint ? sprintSpeed : walkSpeed;
                         var f = transform.forward; f.y = 0f; f.Normalize();
