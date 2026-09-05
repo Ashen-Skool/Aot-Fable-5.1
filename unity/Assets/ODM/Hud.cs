@@ -43,7 +43,9 @@ namespace ODM
         static void StopVideo() { if (titleVideo != null) { titleVideo.Stop(); Object.Destroy(titleVideo.gameObject); titleVideo = null; } videoFile = null; }
         static void DrawVideoCover(Texture vid, float W, float H)
         {
-            float va = 2912f / 1280f, sa = W / H; float vw = sa > va ? W : H * va, vh = sa > va ? W / va : H;
+            // cover the screen, keep the clip's own aspect (title 2912x1280, nape 2544x1456)
+            float va = titleVideo != null && titleVideo.width > 0 && titleVideo.height > 0 ? (float)titleVideo.width / titleVideo.height : 2912f / 1280f;
+            float sa = W / H; float vw = sa > va ? W : H * va, vh = sa > va ? W / va : H;
             GUI.DrawTexture(new Rect((W - vw) * 0.5f, (H - vh) * 0.5f, vw, vh), vid, ScaleMode.StretchToFill);
         }
 
