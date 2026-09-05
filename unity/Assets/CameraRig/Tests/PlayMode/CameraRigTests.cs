@@ -177,6 +177,8 @@ public class CameraRigTests
     [UnityTest]
     public IEnumerator DutchTiltsIntoTurns()
     {
+        // a cable turn: the heading follows the velocity only while hooked (free flight follows the mouse, see ChaseDesired)
+        target.State = CameraTargetState.Flying | CameraTargetState.Hooked;
         target.Velocity = new Vector3(0, 0, 30f);
         yield return Fly(0.6f);
         Assert.That(Mathf.Abs(rig.Roll), Is.LessThan(2f), "no roll flying straight");
