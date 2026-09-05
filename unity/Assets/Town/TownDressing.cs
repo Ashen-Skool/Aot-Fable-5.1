@@ -50,7 +50,7 @@ namespace Town
             // a wide grass floor under everything, a step below the town's paving so it never z-fights
             var floor = GameObject.CreatePrimitive(PrimitiveType.Plane); floor.name = "Outskirts_Floor"; floor.transform.SetParent(root, false);
             floor.transform.position = new Vector3(b.center.x, -0.08f, b.center.z); floor.transform.localScale = new Vector3(160f, 1f, 160f);
-            var floorMat = mats.TexturedSimple("grassFloor", "Ground103", 9f, new Color(0.16f, 0.2f, 0.11f));   // Simple Lit: no sky reflection at grazing angles
+            var floorMat = mats.TexturedSimple("grassFloor", "Ground103", 9f, new Color(0.08f, 0.1f, 0.06f));   // Simple Lit: no sky reflection at grazing angles
             var floorScale = new Vector2(1600f / 9f, 1600f / 9f);   // the plane's UVs span 0..1 over 1600 m: tile every 9 m
             floorMat.SetTextureScale("_BaseMap", floorScale);
             floor.GetComponent<Renderer>().sharedMaterial = floorMat;
@@ -82,7 +82,7 @@ namespace Town
             mesh.SetVertices(verts); mesh.SetUVs(0, uvs); mesh.SetTriangles(tris, 0); mesh.RecalculateNormals(); mesh.RecalculateBounds();
             var hills = new GameObject("Hills"); hills.transform.SetParent(root, false);
             hills.AddComponent<MeshFilter>().sharedMesh = mesh;
-            hills.AddComponent<MeshRenderer>().sharedMaterial = mats.TexturedSimple("hills", "Ground103", 1f, new Color(0.14f, 0.19f, 0.11f));
+            hills.AddComponent<MeshRenderer>().sharedMaterial = mats.TexturedSimple("hills", "Ground103", 1f, new Color(0.08f, 0.11f, 0.07f));
             // treeline: dark cones on the first hill rings, merged into one mesh
             var kTree = new MeshKit(); var kTrunk = new MeshKit();
             int placed = 0;

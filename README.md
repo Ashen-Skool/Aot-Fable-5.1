@@ -6,7 +6,7 @@ A ten-minute playable Attack on Titan homage in Unity 6, built through the CLI
 on the Mac Studio by a gauntlet loop of builder and critic sub-agents. Started
 2026-09-01. **Read this whole file before doing anything.**
 
-## STATE (2026-09-05, read this, the rest of this file is history)
+## STATE (2026-09-05 night, read this, the rest of this file is history)
 
 Scope is v2: one district, one 15 m Titan, Mikasa, three-minute loop. No agent loops; the director builds by hand
 and the user is the critic (he plays the mac build on his laptop; never screenshot or drive his machine).
@@ -32,11 +32,29 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
   (chimney smoke, dust motes on the camera, two bird flocks). A quarter of the houses have lamp-lit windows (`HouseSpec.LitWindows`).
   Editor setup must run after pulling on the Studio: `tools/unity.sh townsetup -quit -executeMethod Town.Editor.TownSetup.Run` then
   `tools/setup.sh` (they rewrite Sky.mat, Particles.mat, UrpPipeline/UrpRenderer assets, which are then committed).
+- Flight feel (2026-09-05): catenary cables with a whip on bite and a 4-frame shoot-out, grapple heads, anchor dust/sparks, camera kick
+  on latch, twin hip gas jets, procedural wind + gas-hiss beds (`Shared/NoiseLoop.cs`), blade trails during a slash, FOV widens with
+  speed (`CameraRig.speedFovAdd`).
+- HUD: `ODM/Hud.cs` (Bebas Neue / Oswald in `Resources/Fonts`): crosshair + hook-target ring with range, HP + segmented gas, speed,
+  Titan bar with hamstring chips and NAPE OPEN, floating damage numbers (`Shared/HudEvents`), cannon markers, hit vignette, FPS
+  counter top right, title and ending screens. R on the ending screen rebuilds the world through `Shared/Reboot` (boots register
+  with a priority) instead of reloading an empty scene. **Reboot is untested in a real build.**
+- Titan presentation: `Proxies/TitanFx.cs` (steam + red spray at cuts, nape plume when opened, stomp dust ring + rubble, step and
+  impact camera trauma, death steam, steam noise), hit-stop (`Shared/HitStop`) on heavy hits, kill cam on the nape kill, music ducks on hits.
+- Titan balance: 1.05 s telegraph with a SWIPE/STOMP warning at the strike point, hits only land in his front arc, damage 24/32,
+  softer knockback, 2.6 s cooldown, player has 1.6 s of grace after a hit (user said he was getting cooked on approach).
+- World layer 2: `Town/TownDressing.cs` (forest + hills on a dark meadow beyond the boundary, gutters, puddles, dirt, hay, moss at
+  the wall foot, hanging shop signs, weathervanes, pigeons, lamp glow + point lights, gate torches with flame and flicker, raised
+  portcullis), wall blocks in three shades, ground mist bank (`TownLife.Mist`), `Shared/AmbientBed.cs` (wind gusts, synthesized bell).
+  Ground103 is now imported under `Town/Imported/Resources/Town/Textures` (it was missing; ground materials fell back to bricks).
+  Outskirt ground uses `TownMaterials.TexturedSimple` (Simple Lit) and a dark tint; from the rooftops it still lifts toward the fog.
+- Capture poses `outskirts` and `wall_top` added to `tools/poses.json`.
 - Music: `Shared/Music.cs` crossfades `Resources/Audio/Music/{title,battle,ending}`; files not yet present (Suno).
 - Audio: `Shared/Sfx.cs` pooled one-shots over `Resources/Audio` (Kenney): hooks, landing, slash, hits, titan steps and attacks, cannon.
 - Title screen (click to begin, Time.timeScale 0 until then) and ending screen live in `OdmController.OnGUI`.
 
-**Open items:** fist roll number from the user; draw/sheathe pose; the tower grid visually swallows the town from above
+**Open items:** Reboot (R) needs a real-build check; Suno music files; building destruction is rubble/dust only; attic hatches skipped;
+fist roll number from the user; draw/sheathe pose; the tower grid visually swallows the town from above
 (user asked for cannons on those towers, so they stay; a smaller grid or fewer towers is a design call for him);
 music; the 7 m titan is a grey proxy on purpose.
 

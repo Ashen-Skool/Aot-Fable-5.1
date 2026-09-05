@@ -82,7 +82,7 @@ namespace Town
         }
 
         public static readonly float[] Shade = { 0.82f, 1.0f, 1.14f };
-        public static readonly Color FogColor = new Color(0.66f, 0.68f, 0.72f);   // the sky at the horizon, so distant things dissolve into it instead of turning to paper
+        public static readonly Color FogColor = new Color(0.6f, 0.62f, 0.66f);   // the sky at the horizon, so distant things dissolve into it instead of turning to paper
 
         public Material Stone(int set, int shade = 1)
         {
