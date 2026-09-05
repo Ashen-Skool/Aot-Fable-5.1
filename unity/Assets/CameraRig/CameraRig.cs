@@ -7,7 +7,7 @@ using UnityEngine.Rendering.Universal;
 
 namespace AotCamera
 {
-    public enum CameraMode { Chase, KillCam, Dive }
+    public enum CameraMode { Chase, KillCam, Dive, Title }
 
     /// <summary>
     /// Piece 3: third-person chase camera for ODM speeds. Registered in Ctx as "cameraRig".
@@ -215,6 +215,31 @@ namespace AotCamera
             fovVel = 0f;
         }
 
+        [Header("Title")]
+        public float titleRadius = 150f, titleHeight = 80f, titleYawRate = 3.2f;
+        float titleYaw = 200f;
+        /// <summary>Title screen: a slow high orbit over the district (SendMessage-friendly, no arguments).</summary>
+        public void TitleOrbit()
+        {
+            if (Mode == CameraMode.KillCam) EndKillCam();
+            Mode = CameraMode.Title; fovVel = 0f; Cam.fieldOfView = 58f;
+        }
+        /// <summary>The title lifts: dive from wherever the orbit is down to the player.</summary>
+        public void BeginIntroDive()
+        {
+            var to = Target != null ? Target.Position + Vector3.up * 1.4f : Vector3.zero;
+            CinematicDive(transform.position, to, 2.6f);
+        }
+        void UpdateTitle(float udt)
+        {
+            titleYaw += titleYawRate * udt;
+            var centre = Ctx.Has("townCenter") ? Ctx.Get<Vector3>("townCenter") : Vector3.zero;
+            var pos = centre + Quaternion.Euler(0f, titleYaw, 0f) * Vector3.back * titleRadius + Vector3.up * titleHeight;
+            transform.position = pos;
+            transform.rotation = Quaternion.LookRotation(centre + Vector3.up * 12f - pos, Vector3.up);
+            headingDir = Vector3.forward;
+        }
+
         /// <summary>Drop the springs and put the camera straight at its desired chase position next frame.</summary>
         public void SnapToTarget() => snapNext = true;
 
@@ -308,6 +333,10 @@ namespace AotCamera
                 case CameraMode.Dive:
                     UpdateDive(dt, v);
                     fovTarget = Mathf.Lerp(diveFov, baseFov, Mathf.Clamp01(diveT / diveDur));
+                    break;
+                case CameraMode.Title:
+                    UpdateTitle(udt);
+                    fovTarget = 58f;
                     break;
                 default:
                     UpdateChase(dt, v, st);

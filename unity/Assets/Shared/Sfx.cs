@@ -13,6 +13,11 @@ namespace Shared
         {
             if (Application.isBatchMode) return;
             if (!clips.TryGetValue(name, out var clip)) { clip = Resources.Load<AudioClip>("Audio/" + name); clips[name] = clip; }
+            PlayClip(clip, pos, pitch, volume, maxDist);
+        }
+        public static void PlayClip(AudioClip clip, Vector3 pos, float pitch = 1f, float volume = 1f, float maxDist = 60f)
+        {
+            if (Application.isBatchMode) return;
             if (clip == null) return;
             if (root == null) { root = new GameObject("Sfx").transform; Object.DontDestroyOnLoad(root.gameObject); }
             AudioSource src = null;

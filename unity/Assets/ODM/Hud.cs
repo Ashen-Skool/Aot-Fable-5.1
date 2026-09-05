@@ -14,7 +14,7 @@ namespace ODM
         static Font bebas, oswald; static bool fontsTried;
         static GUIStyle sTitle, sBig, sNum, sLabel, sSmall, sPrompt, sPop;
         static Texture2D vignette, ring;
-        static float playStart = -1f, helpFade = 1f, fpsAcc, fpsShown; static int fpsN;
+        static float playStart = -1f, helpFade = 1f, fpsAcc, fpsShown; static int fpsN; static bool orbitStarted;
 
         static void Init()
         {
@@ -65,6 +65,14 @@ namespace ODM
             Init();
             float W = Screen.width, H = Screen.height, s = S;
             if (!OdmController.TitleDone) { Title(c, W, H, s); return; }
+            float introLeft = Ctx.Get<float>("introUntil") - Time.unscaledTime;
+            if (introLeft > 0f)
+            {
+                // the dive: a dark frame that opens as the camera arrives, and the objective
+                Box(0, 0, W, H, new Color(0f, 0f, 0f, Mathf.Clamp01(introLeft / 2.6f) * 0.5f));
+                var so = Sized(sPrompt, 34f); Text(new Rect(0, H * 0.78f, W, 40f * s), "CUT THE NAPE", so, new Color(1f, 0.85f, 0.4f, Mathf.Clamp01(introLeft * 1.5f)));
+                return;
+            }
             if (playStart < 0f) playStart = Time.unscaledTime;
             var brain = Ctx.Get<Proxies.TitanBrain>("bossBrain");
             Music.Set(brain != null && brain.Current == Proxies.TitanBrain.State.Dead ? "ending" : "battle");
@@ -215,8 +223,10 @@ namespace ODM
         static void Title(OdmController c, float W, float H, float s)
         {
             Music.Set("title");
-            Time.timeScale = 0f;
-            Box(0, 0, W, H, new Color(0.02f, 0.02f, 0.03f, 0.84f));
+            Time.timeScale = 1f;
+            Ctx.Set("titleHold", true);
+            if (!orbitStarted) { orbitStarted = true; var rig = Ctx.Get<Component>("cameraRig"); if (rig != null) rig.SendMessage("TitleOrbit", SendMessageOptions.DontRequireReceiver); }
+            Box(0, 0, W, H, new Color(0.02f, 0.02f, 0.03f, 0.42f));
             Box(0, H * 0.30f - 10f * s, W, 2f * s, new Color(1f, 1f, 1f, 0.25f));
             Text(new Rect(0, H * 0.30f, W, 120f * s), "AOT FABLE 5.1", Sized(sTitle, 110f), Color.white, 4f);
             var sub = Sized(sLabel, 18f); sub.alignment = TextAnchor.MiddleCenter;
@@ -226,7 +236,11 @@ namespace ODM
             float pulse = 0.6f + 0.4f * Mathf.Sin(Time.unscaledTime * 3f);
             Text(new Rect(0, H * 0.30f + 280f * s, W, 40f * s), "CLICK TO BEGIN", Sized(sPrompt, 34f), new Color(1f, 1f, 1f, pulse));
             if (UnityEngine.Input.GetMouseButtonDown(0) || UnityEngine.Input.GetKeyDown(KeyCode.Space) || UnityEngine.Input.GetKeyDown(KeyCode.Return))
-            { OdmController.TitleDone = true; Time.timeScale = 1f; Sfx.Play("ui", c.transform.position, 1f, 0.6f); }
+            {
+                OdmController.TitleDone = true; Time.timeScale = 1f; Sfx.Play("ui", c.transform.position, 1f, 0.6f);
+                Ctx.Set("titleHold", false); Ctx.Set("introUntil", Time.unscaledTime + 2.6f);
+                var rig = Ctx.Get<Component>("cameraRig"); if (rig != null) rig.SendMessage("BeginIntroDive", SendMessageOptions.DontRequireReceiver);
+            }
         }
 
         static void Ending(OdmController c, string over, float W, float H, float s)
@@ -239,7 +253,7 @@ namespace ODM
             sLabel.alignment = TextAnchor.MiddleLeft;
             float pulse = 0.6f + 0.4f * Mathf.Sin(Time.unscaledTime * 3f);
             Text(new Rect(0, cy + 44f * s, W, 40f * s), "R  PLAY AGAIN      CMD-Q  QUIT", Sized(sPrompt, 30f), new Color(1f, 1f, 1f, pulse));
-            if (UnityEngine.Input.GetKeyDown(KeyCode.R) && !Reboot.Restarting) { playStart = -1f; Reboot.Now(); }
+            if (UnityEngine.Input.GetKeyDown(KeyCode.R) && !Reboot.Restarting) { playStart = -1f; orbitStarted = false; OdmController.TitleDone = false; Reboot.Now(); }
         }
     }
 }

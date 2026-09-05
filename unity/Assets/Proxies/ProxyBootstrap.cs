@@ -17,7 +17,7 @@ namespace Proxies
     {
         public static readonly Vector3 MikasaPos = new Vector3(0f, 0f, -20f);
         public static readonly Vector3 TitanPos = new Vector3(-6f, 0f, 50f);
-        public static readonly Vector3 BossPos = new Vector3(0f, 0f, 60f);
+        public static readonly Vector3 BossPos = new Vector3(0f, 0f, 98f);   // just inside the gate; he comes for you when the title lifts
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void Register()

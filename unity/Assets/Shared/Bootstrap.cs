@@ -72,6 +72,7 @@ namespace Shared
             BuildPlaceholders();
             if (CharacterFactory != null) CharacterFactory(this);
             else { BuildMikasa(); BuildTitan(); }
+            Harness.Ensure();
             Debug.Log("[Bootstrap] built, seed=" + seed);
         }
 

@@ -497,6 +497,7 @@ namespace ODM
             if (cam == null) { cam = Ctx.Get<Camera>("camera"); if (cam == null) cam = Camera.main; }
             if (Scripted) return;
             GameInput.UpdateCursor();
+            if (InputHeld) { liveInput = default; hookLatched = false; if (Hook == HookState.Attached) Detach(); return; }
             var mv = GameInput.Move;
             liveInput.moveX = mv.x;
             liveInput.moveY = mv.y;
@@ -591,6 +592,8 @@ namespace ODM
 
         // ---------- HUD (ODM/Hud.cs) ----------
         public static bool TitleDone { get; set; }
+        /// <summary>True while the title orbit or the intro dive owns the screen.</summary>
+        public bool InputHeld => !TitleDone || Time.unscaledTime < Ctx.Get<float>("introUntil");
         void OnGUI()
         {
             if (Scripted || Application.isBatchMode) return;

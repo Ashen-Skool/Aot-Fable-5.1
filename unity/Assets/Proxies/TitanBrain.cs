@@ -42,7 +42,8 @@ namespace Proxies
             {
                 case State.Idle:
                     Set(Pose.Idle);
-                    if (distFlat < sightRange) { Current = State.Chase; roarTimer = 1.2f; }
+                    if (Ctx.Get<bool>("titleHold")) break;                                   // the title is up: he waits at the gate
+                    if (distFlat < sightRange || (Ctx.Has("introUntil") && Time.unscaledTime > Ctx.Get<float>("introUntil"))) { Current = State.Chase; roarTimer = 1.2f; Roar(); }
                     break;
                 case State.Chase:
                     Face(toP, dt);
@@ -53,6 +54,7 @@ namespace Proxies
                         Vector3 warn = transform.position + transform.forward * height * 0.38f + Vector3.up * (attackKind == Pose.Stomp ? height * 0.1f : height * 0.45f);
                         HudEvents.Add(warn, attackKind == Pose.Stomp ? "STOMP" : "SWIPE", new Color(1f, 0.3f, 0.2f), 1.2f);
                         Sfx.Play("titan_step", transform.position + Vector3.up * height * 0.8f, 0.25f, 0.9f, 260f);
+                        if (attackKind == Pose.Swipe) Invoke(nameof(SwipeWhoosh), windUp - 0.25f);
                         Fx?.Step(distFlat * 0.5f);
                     }
                     else
@@ -83,7 +85,7 @@ namespace Proxies
                     break;
                 case State.Kneel:
                     kneelTimer -= dt;
-                    if (kneelTimer <= 0f) { HamL = HamR = false; Current = State.Chase; walkSpeed *= 1.15f; sprintSpeed *= 1.15f; cooldown = 0.5f; Fx?.NapePlume(false); }
+                    if (kneelTimer <= 0f) { HamL = HamR = false; Current = State.Chase; walkSpeed *= 1.15f; sprintSpeed *= 1.15f; cooldown = 0.5f; Fx?.NapePlume(false); Roar(); }
                     break;
                 case State.Dead:
                     // He stays down where he fell; the ending screen takes over.
@@ -92,6 +94,8 @@ namespace Proxies
             }
         }
         Pose attackKind; bool hitDone; bool endShown;
+        void SwipeWhoosh() { if (Current == State.Attack) Sfx.PlayClip(Synth.Whoosh(), transform.position + transform.forward * height * 0.35f + Vector3.up * height * 0.45f, 0.55f, 1f, 220f); }
+        void Roar() { Sfx.PlayClip(Synth.Roar(), transform.position + Vector3.up * height * 0.9f, 1f, 1f, 400f); Fx?.Step(0f); Ctx.Set("roarAt", Time.unscaledTime); }
         bool InFront(Vector3 toP, float minDot) { var f = transform.forward; f.y = 0f; toP.y = 0f; if (toP.sqrMagnitude < 0.01f) return true; return Vector3.Dot(f.normalized, toP.normalized) > minDot; }
         static readonly float[] probeAngles = { 0f, -35f, 35f, -70f, 70f, -110f, 110f };
         /// <summary>Obstacle avoidance: a fat sphere cast at chest height; the first clear direction wins, else stay put.</summary>
