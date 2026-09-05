@@ -39,7 +39,7 @@ namespace ODM
             return titleVideo != null && titleVideo.isPrepared ? titleRt : null;
         }
         static bool VideoLoaded => titleVideo != null;
-        static bool VideoDone => titleVideo != null && titleVideo.isPrepared && !titleVideo.isLooping && titleVideo.frameCount > 0 && (ulong)titleVideo.frame >= titleVideo.frameCount - 1;
+        static bool VideoDone => titleVideo != null && titleVideo.isPrepared && !titleVideo.isLooping && titleVideo.frameCount > 0 && titleVideo.frame >= 0 && (ulong)titleVideo.frame >= titleVideo.frameCount - 1;
         static void StopVideo() { if (titleVideo != null) { titleVideo.Stop(); Object.Destroy(titleVideo.gameObject); titleVideo = null; } videoFile = null; }
         static void DrawVideoCover(Texture vid, float W, float H)
         {
