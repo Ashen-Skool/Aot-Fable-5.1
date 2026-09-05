@@ -379,7 +379,12 @@ namespace AotCamera
             // feedback loop (the body faces the camera), and following the camera integrates the mouse offset every frame.
             var want = (Speed < 10f && Lock == null) ? headingDir : Target.Forward;
             if (Mathf.Abs(mouseYaw) > 90f && Lock == null) want = headingDir; // looking behind: do not drag the heading around under the offset
-            if (Speed > 2f) want = Vector3.Slerp(want, v / Speed, Mathf.Clamp01((Speed - 2f) / 8f) * Mathf.Clamp01((Speed - 6f) / 6f));
+            // Free flight (no cables, not locked): the mouse IS the heading. Never pull it toward the velocity or the body:
+            // the velocity is itself turning toward the look (OdmController.airTurnRate) and a heading that chases the
+            // velocity re-centres the view faster than the body can follow, so a 180 turn snapped back to straight ahead.
+            bool freeFlight = Lock == null && (Target.State & CameraTargetState.Flying) != 0 && (Target.State & CameraTargetState.Hooked) == 0;
+            if (freeFlight) { want = headingDir; want.y *= 0.5f; }   // yaw untouched, pitch eases back to the horizon
+            else if (Speed > 2f) want = Vector3.Slerp(want, v / Speed, Mathf.Clamp01((Speed - 2f) / 8f) * Mathf.Clamp01((Speed - 6f) / 6f));
             if (want.sqrMagnitude < 1e-4f) want = headingDir;
             want.Normalize();
             if ((Target.State & CameraTargetState.Grounded) != 0) { want.y = 0f; if (want.sqrMagnitude < 1e-4f) want = headingDir; want.Normalize(); }
