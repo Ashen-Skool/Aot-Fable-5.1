@@ -227,7 +227,7 @@ namespace Characters
         /// <summary>0 = blades follow the hands (attacks, flight); 1 = hanging down along the legs at rest. The player controller drives it.</summary>
         public static float BladeRest = 0f;
         /// <summary>Wrist roll (degrees, around the forearm) applied to the Titan's hands after animation: the Meshy rig plays every clip palms-out.</summary>
-        public static float TitanHandRollDeg = 0f;
+        public static float TitanHandRollDeg = 180f;
         public bool isTitan;
         /// <summary>Twin ODM blades (Resources/Props/Blade) in gloved fists (Resources/Props/Fist), aligned from the geometry.</summary>
         void AddBlades(float height)

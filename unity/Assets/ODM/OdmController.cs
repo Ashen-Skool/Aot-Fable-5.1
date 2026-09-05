@@ -551,6 +551,8 @@ namespace ODM
             }
             if (UnityEngine.Input.GetKeyDown(KeyCode.LeftBracket)) Characters.CharacterModel.FistRollDeg -= 15f;
             if (UnityEngine.Input.GetKeyDown(KeyCode.RightBracket)) Characters.CharacterModel.FistRollDeg += 15f;
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Semicolon)) Characters.CharacterModel.TitanHandRollDeg -= 15f;
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Quote)) Characters.CharacterModel.TitanHandRollDeg += 15f;
         }
         float slashTimer; bool slashAirborne; bool slashPoseSet; bool hookLatched, wantVirtual; float slashHitTimer;
         public float Health { get; private set; } = 100f; public float HealthMax = 100f; float deathTimer; float hitFlash;
