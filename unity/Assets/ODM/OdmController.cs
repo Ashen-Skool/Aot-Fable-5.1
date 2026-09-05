@@ -817,7 +817,16 @@ namespace ODM
             wallContact = false;
             Speed = v.magnitude;
             if (Speed > MaxSpeedSeen) MaxSpeedSeen = Speed;
-            if (Grounded) { if (!wasGrounded && AirTime > 0.15f) OnLanded(pos, preLandSpeed); AirTime = 0f; }
+            if (Grounded)
+            {
+                if (!wasGrounded && AirTime > 0.15f)
+                {
+                    OnLanded(pos, preLandSpeed);
+                    // superhero landing: momentum dies on contact, she lands where she aimed (user)
+                    v = new Vector3(0f, Mathf.Min(v.y, 0f), 0f); rb.linearVelocity = v; Speed = 0f;
+                }
+                AirTime = 0f;
+            }
             else AirTime += dt;
             preLandSpeed = Speed;
 
