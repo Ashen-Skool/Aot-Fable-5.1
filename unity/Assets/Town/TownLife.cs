@@ -28,17 +28,7 @@ namespace Town
         static Material ParticleMat()
         {
             if (particleMat != null) return particleMat;
-            if (soft == null)
-            {
-                const int n = 64; soft = new Texture2D(n, n, TextureFormat.RGBA32, true) { wrapMode = TextureWrapMode.Clamp };
-                for (int y = 0; y < n; y++) for (int x = 0; x < n; x++)
-                {
-                    float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(n * 0.5f, n * 0.5f)) / (n * 0.5f);
-                    float a = Mathf.Clamp01(1f - d); a = a * a * (3f - 2f * a);
-                    soft.SetPixel(x, y, new Color(1f, 1f, 1f, a));
-                }
-                soft.Apply();
-            }
+            if (soft == null) soft = Resources.Load<Texture2D>("Particles/soft");   // a real asset: runtime-built textures came out as grey squares on one GPU
             var baseMat = Resources.Load<Material>("Materials/Particles");
             particleMat = baseMat != null ? new Material(baseMat) : Mats.Unlit(Color.white);
             particleMat.name = "lifeParticles";

@@ -245,7 +245,7 @@ namespace ODM
             sol.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 0.5f), new Keyframe(1f, 1.6f)));
             var pr = dust.GetComponent<ParticleSystemRenderer>();
             var dm = Transparent(Mats.Unlit(Color.white), Color.white);
-            var puff = SoftPuffTexture(64);
+            var puff = Resources.Load<Texture2D>("Particles/soft") ?? SoftPuffTexture(64);
             dm.mainTexture = puff;
             if (dm.HasProperty("_BaseMap")) dm.SetTexture("_BaseMap", puff);
             pr.sharedMaterial = dm;

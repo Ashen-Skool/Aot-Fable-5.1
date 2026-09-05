@@ -24,17 +24,7 @@ namespace Proxies
         static Material PuffMat()
         {
             if (puffMat != null) return puffMat;
-            if (soft == null)
-            {
-                const int n = 64; soft = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
-                for (int y = 0; y < n; y++) for (int x = 0; x < n; x++)
-                {
-                    float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(n * 0.5f, n * 0.5f)) / (n * 0.5f);
-                    float a = Mathf.Clamp01(1f - d); a = a * a * (3f - 2f * a);
-                    soft.SetPixel(x, y, new Color(1f, 1f, 1f, a));
-                }
-                soft.Apply();
-            }
+            if (soft == null) soft = Resources.Load<Texture2D>("Particles/soft");
             var b = Resources.Load<Material>("Materials/Particles");
             puffMat = b != null ? new Material(b) : Mats.Unlit(Color.white);
             puffMat.mainTexture = soft; if (puffMat.HasProperty("_BaseMap")) puffMat.SetTexture("_BaseMap", soft);

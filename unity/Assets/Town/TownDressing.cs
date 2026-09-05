@@ -263,9 +263,7 @@ namespace Town
             {
                 var b = Resources.Load<Material>("Materials/Particles");
                 flameMat = b != null ? new Material(b) : Mats.Unlit(Color.white);
-                var tex = new Texture2D(32, 32, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
-                for (int y = 0; y < 32; y++) for (int x = 0; x < 32; x++) { float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(16f, 16f)) / 16f; float a = Mathf.Clamp01(1f - d); tex.SetPixel(x, y, new Color(1f, 1f, 1f, a * a)); }
-                tex.Apply(); flameMat.mainTexture = tex; if (flameMat.HasProperty("_BaseMap")) flameMat.SetTexture("_BaseMap", tex);
+                var tex = Resources.Load<Texture2D>("Particles/soft"); flameMat.mainTexture = tex; if (flameMat.HasProperty("_BaseMap")) flameMat.SetTexture("_BaseMap", tex);
             }
             var ps = go.AddComponent<ParticleSystem>();
             var m = ps.main; m.simulationSpace = ParticleSystemSimulationSpace.World; m.startLifetime = new ParticleSystem.MinMaxCurve(0.35f, 0.6f); m.startSpeed = new ParticleSystem.MinMaxCurve(0.8f, 1.6f); m.startSize = new ParticleSystem.MinMaxCurve(0.35f, 0.6f); m.startColor = new Color(1f, 0.55f, 0.15f, 0.9f); m.maxParticles = 40;

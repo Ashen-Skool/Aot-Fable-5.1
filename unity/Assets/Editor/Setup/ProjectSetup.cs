@@ -66,7 +66,8 @@ namespace Setup
                 part.SetOverrideTag("RenderType", "Transparent");
                 part.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
                 part.EnableKeyword("_ALPHABLEND_ON");
-                part.SetFloat("_SoftParticlesEnabled", 1f); part.EnableKeyword("_SOFTPARTICLES_ON");
+                part.SetFloat("_SoftParticlesEnabled", 0f); part.DisableKeyword("_SOFTPARTICLES_ON");   // depth-dependent fade rendered as opaque grey squares on the user's laptop GPU
+                var softTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Resources/Particles/soft.png"); if (softTex != null) { part.SetTexture("_BaseMap", softTex); part.mainTexture = softTex; }
                 part.SetFloat("_SoftParticlesNearFadeDistance", 0f); part.SetFloat("_SoftParticlesFarFadeDistance", 1.5f);
                 part.renderQueue = 3000;
                 EditorUtility.SetDirty(part);
