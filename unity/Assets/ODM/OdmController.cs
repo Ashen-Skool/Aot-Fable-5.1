@@ -19,6 +19,8 @@ namespace ODM
         public float runSpeed = 8f, runAccel = 45f, groundFriction = 30f;
         public float gravity = 16f;
         public float airSteer = 7f;
+        public float airTurnRate = 4.5f;    // free flight: velocity turns toward the look direction (Spider-Man): ~180 deg in half a second
+        public float hookedTurnRate = 1.2f; // on the cables the rope owns the arc; only a little steer toward the look
         public float airDrag = 0.003f;   // quadratic: a = airDrag * v^2
         public float maxSpeed = 55f;
         public float hookRange = 60f;
@@ -774,8 +776,9 @@ namespace ODM
                 }
                 // rope shortens by itself as you swing past the anchor (no slack winch)
                 if (d < RopeLength) RopeLength = Mathf.Max(1.5f, Mathf.Lerp(RopeLength, d, 1f - Mathf.Exp(-6f * dt)));
-                // light air steering while hooked
+                // light air steering while hooked, plus a gentle pull of the arc toward the look
                 v += (right * input.moveX + aimFlat * input.moveY * 0.5f) * (airSteer * dt);
+                float hs = v.magnitude; if (hs > 3f) v = Vector3.Slerp(v / hs, LookDir, 1f - Mathf.Exp(-hookedTurnRate * dt)) * hs;
             }
             else if (Grounded)
             {
@@ -796,7 +799,15 @@ namespace ODM
             }
             else
             {
-                // free air: momentum, light steering, small drag
+                // free air: the velocity turns toward where you look, speed kept; WASD adds a little sideways drift
+                float spd = v.magnitude;
+                if (spd > 3f)
+                {
+                    Vector3 dir = v / spd;
+                    Vector3 lookSteer = LookDir; if (lookSteer.y > 0.6f) lookSteer = (lookSteer + Vector3.up * 0.6f).normalized;   // no straight-up stalls
+                    dir = Vector3.Slerp(dir, lookSteer, 1f - Mathf.Exp(-airTurnRate * dt));
+                    v = dir * spd;
+                }
                 v += (right * input.moveX + aimFlat * input.moveY) * (airSteer * dt);
                 if (input.boost && Gas > 0f)
                 {

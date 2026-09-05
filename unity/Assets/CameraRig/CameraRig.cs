@@ -377,9 +377,10 @@ namespace AotCamera
             speed01 = Mathf.Clamp01(Speed / speedRef);
             // Slow and unlocked: the heading is frozen and the mouse offset is absolute. Following the body here is a
             // feedback loop (the body faces the camera), and following the camera integrates the mouse offset every frame.
-            var want = (Speed < 10f && Lock == null) ? headingDir : Target.Forward;
+            bool free = (Target.State & CameraTargetState.Flying) != 0 && (Target.State & CameraTargetState.Hooked) == 0;
+            var want = (free || (Speed < 10f && Lock == null)) ? headingDir : Target.Forward;   // free flight: the heading is the mouse, never dragged by velocity
             if (Mathf.Abs(mouseYaw) > 90f && Lock == null) want = headingDir; // looking behind: do not drag the heading around under the offset
-            if (Speed > 2f) want = Vector3.Slerp(want, v / Speed, Mathf.Clamp01((Speed - 2f) / 8f) * Mathf.Clamp01((Speed - 6f) / 6f));
+            if (Speed > 2f && !free) want = Vector3.Slerp(want, v / Speed, Mathf.Clamp01((Speed - 2f) / 8f) * Mathf.Clamp01((Speed - 6f) / 6f));
             if (want.sqrMagnitude < 1e-4f) want = headingDir;
             want.Normalize();
             if ((Target.State & CameraTargetState.Grounded) != 0) { want.y = 0f; if (want.sqrMagnitude < 1e-4f) want = headingDir; want.Normalize(); }
@@ -550,7 +551,10 @@ namespace AotCamera
             // is actively steering with WASD on the ground, so a run looks where it goes but flight lets you look around.
             var mv = Shared.GameInput.Move;
             bool steering = (Target.State & CameraTargetState.Grounded) != 0 && mv.sqrMagnitude > 0.1f && Speed > 2f;
-            if (steering && Mathf.Abs(mouseYaw) > 0.01f)
+            // free flight (no cables): the mouse is the heading itself, so a 180 turn is a 180 turn and the body follows the view
+            bool freeFlight = (Target.State & CameraTargetState.Flying) != 0 && (Target.State & CameraTargetState.Hooked) == 0;
+            if (freeFlight) { mousePitch = Mathf.Clamp(mousePitch, -35f, 45f); }
+            if ((steering || freeFlight) && Mathf.Abs(mouseYaw) > 0.01f)
             {
                 // Re-base: fold the yaw offset into the heading so the view does not move at all. Easing the offset back
                 // toward a stale frozen heading is what made runs curve to one side.

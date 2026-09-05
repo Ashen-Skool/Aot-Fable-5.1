@@ -19,6 +19,7 @@ namespace ODM
                 if (c == null) return s;
                 s |= c.Grounded ? CameraTargetState.Grounded : CameraTargetState.Flying;
                 if (c.Boosting) s |= CameraTargetState.Boosting;
+                if (c.Hook != HookState.None) s |= CameraTargetState.Hooked;
                 if (hitLatch) { s |= CameraTargetState.Hit; hitLatch = false; }
                 return s;
             }

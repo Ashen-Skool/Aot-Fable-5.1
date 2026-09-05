@@ -11,7 +11,8 @@ namespace Shared.Cam
         Grounded = 1 << 0,
         Flying = 1 << 1,
         Boosting = 1 << 2,   // gas boost: the camera kicks its FOV 70 -> 95 while set
-        Hit = 1 << 3,        // took an impact this frame (set for at least one frame)
+        Hit = 1 << 3,
+        Hooked = 1 << 4,     // cables attached: the rig leaves the heading to the rope, otherwise free flight is absolute mouse control        // took an impact this frame (set for at least one frame)
     }
 
     /// <summary>
