@@ -69,7 +69,7 @@ public class CameraRigTests
         Assert.IsTrue(rig.Lines.Visible, "speed lines show at speed while boosting");
         target.State = CameraTargetState.Flying;
         yield return WaitRealtime(1.5f);
-        Assert.That(rig.Fov, Is.EqualTo(rig.baseFov).Within(3f), "fov settles back after boost");
+        Assert.That(rig.Fov, Is.EqualTo(cruise).Within(3f), "fov settles back after boost");
     }
 
     [UnityTest]
