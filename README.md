@@ -6,7 +6,7 @@ A ten-minute playable Attack on Titan homage in Unity 6, built through the CLI
 on the Mac Studio by a gauntlet loop of builder and critic sub-agents. Started
 2026-09-01. **Read this whole file before doing anything.**
 
-## STATE (2026-09-05, late, read this, the rest of this file is history)
+## STATE (2026-09-05 afternoon, read this, the rest of this file is history)
 
 Scope is v2: one district, one 15 m Titan, Mikasa, three-minute loop. No agent loops; the director builds by hand
 and the user is the critic (he plays the mac build on his laptop; never screenshot or drive his machine).
@@ -20,6 +20,10 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
 - Player: `ODM/OdmController.cs`. Space toggles hooks (virtual anchor 45 m out if nothing is aimed at, auto pull, press again
   to release), Shift gas, WASD air steer, LMB attack, Esc frees the mouse, click captures it. 100 HP, knockback, respawn.
 - Camera: `CameraRig/CameraRig.cs`, centered on her, free look at any speed, heading re-based (not eased) when steering on foot.
+  In the air (flying, not hooked) the mouse yaw folds into the heading every frame and `OdmController.airTurnRate` slerps the
+  velocity toward the look direction: full 180s mid-flight, Spider-Man style. Hooked flight uses `hookedTurnRate`.
+  Landing is a dead stop (horizontal velocity zeroed, superhero landing), no sliding. Soft camera lock is OFF (`TitanBrain.SoftLock`,
+  `-softLock` to try it; user said it panned the camera on its own).
 - Cannons: `Proxies/Cannon.cs`, placed by `ProxyBootstrap.CannonPlacer` on the 3 tallest flight-test towers (now permanent,
   stone-dressed) + the wall walkway. E to fire within 5 m, 40 dmg, HUD markers with distance. Tower placement verified in a capture (`tools/unity.sh ... -odmGrid 1`): three on tower tops, one on the wall.
 - World: ground trimmed to the town bounds with invisible boundary walls; fall below -25 m respawns.
@@ -50,7 +54,8 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
   Outskirt ground uses `TownMaterials.TexturedSimple` (Simple Lit) and a dark tint; from the rooftops it still lifts toward the fog.
 - Capture poses `outskirts` and `wall_top` added to `tools/poses.json`.
 - **Performance: the 26 fps was vsync.** `Bootstrap` forces `vSyncCount = 0`; the Studio then runs 150-360 fps at 1080p with everything on.
-  Town is static-batched at runtime (`TownRuntime`), dressing/outskirts cast no shadows, the Titan has a kinematic Rigidbody.
+  Runtime static batching is REMOVED (`StaticBatchingUtility.Combine` produced giant grey planes across the map in the build);
+  dressing/outskirts cast no shadows, the Titan has a kinematic Rigidbody.
 - **Player self-checks** (`Shared/Harness.cs`, all command-line): `-quitAfter N`, `-autoRestart N` (proved `Reboot` in a real build:
   RESTART_OK), `-fpslog`, `-autoStart N` (lifts the title), `-autoKill N` (nape hit through reflection), `-screenshotAt a,b,c`
   (real frames with the HUD to `shots/play/`). `tools/play.sh 42 -fpslog -autoStart 2 -autoKill 26 -screenshotAt 15,27 -quitAfter 30`
@@ -58,24 +63,35 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
   -noTrees -noLamps -noHud -noTown -noChars` for bisecting frame cost.
 - Title: live orbit over the district from boot (`CameraRig.TitleOrbit`), click = intro dive to Mikasa (`BeginIntroDive`), input held
   and the Titan waits at the gate (`Ctx titleHold` / `introUntil`) then roars (`Shared/Synth.cs`: roar, whoosh). Boss starts at z=98.
-- Soft camera lock on the Titan within 80 m (`Ctx cameraLockTarget`, set by `TitanBrain`). He now closes to stomp range.
+- Titan approach: spawns at z=98, waits `gateHold` 6 s then walks in, first attack no sooner than `firstAttackGrace` 8 s, sprints only
+  beyond 70 m, closes to `attackRange*0.55`, steering has hysteresis (no left-right flicker on the transform).
+- Titan run clip = Meshy "Head-Down Charge" (`runfast` take in `Titan.fbx`; every new take must be added to the `.meta`
+  `clipAnimations` list or Unity never sees it). `tools/merge_clips.py` strips the baked hips travel from INPLACE clips per frame
+  (projection on the drift axis) because Meshy bakes root travel into the hips and Unity's Humanoid retarget turned it into 1 m
+  sideways snaps. Blender 5: slotted actions need `arm.animation_data.action_slot = act.slots[0]`. `-titanLog` prints transform +
+  hips per frame to prove it. Titan wrist roll `CharacterModel.TitanHandRollDeg` is 0 (180 pinched the forearms), tune live `;` `'`.
 - Verified from screenshots: title orbit, dive, HUD, approach with lock, swipe wind-up, kill cam + steam + damage number, ending card,
   and flight (`-autoFly N`: `FlightScript.HarnessHop`, HUD stays on while scripted in a windowed run).
 - Runtime transparent materials must clone `Resources/Materials/Particles` (see `OdmController.Transparent`): flipping keywords on
   `Unlit.mat` at runtime is stripped from builds and rendered the gas/smear opaque white. Tower roof slabs are tiled square now
   (`DressTowers`: thin = top); the "motion blur" streaks on tower roofs were that stretched texture.
-- Music: `Shared/Music.cs` crossfades `Resources/Audio/Music/{title,battle,ending}`; files not yet present (Suno).
+- Music: `Shared/Music.cs` crossfades `Resources/Audio/Music/{title,battle}` = the user's Suno track "Iron Walled Rise"; no ending
+  track by his call (music fades out on the ending card). `Music.Duck` on hits.
 - Audio: `Shared/Sfx.cs` pooled one-shots over `Resources/Audio` (Kenney): hooks, landing, slash, hits, titan steps and attacks, cannon.
-- Title screen (click to begin, Time.timeScale 0 until then) and ending screen live in `OdmController.OnGUI`.
+- Title screen: the user's `StreamingAssets/title.mp4` loops full-screen (VideoPlayer -> RenderTexture in `Hud.Title`) under
+  PRESS ANY KEY; `Time.timeScale = 0` and the Titan held until any key (`Input.anyKeyDown` or `-autoStart`), then `StopTitleVideo`
+  and the intro dive. Ending screen in `Hud`. Esc pauses with an overlay.
+- Particles: the puff texture is a shipped asset `Resources/Particles/soft.png` (was generated at runtime and came out as grey
+  squares in the build); soft particles are off on `Particles.mat`. `ProjectSetup` writes both.
 
-**Open items:** Suno music files; building destruction is rubble/dust only; attic hatches skipped;
-fist roll number from the user; draw/sheathe pose; the tower grid visually swallows the town from above
-(user asked for cannons on those towers, so they stay; a smaller grid or fewer towers is a design call for him);
-music; the 7 m titan is a grey proxy on purpose.
+**Open items:** user to confirm the grey squares are gone with smoke/dust/mist on (fallback: ship with them off by default);
+building destruction is rubble/dust only; attic hatches skipped; fist roll and Titan wrist numbers from the user; draw/sheathe pose;
+the tower grid visually swallows the town from above (cannons live there, his call); outskirt ground lifts toward the fog from above.
 
 **Process notes:** the Studio working copy that actually builds is the director lane `~/dev/lanes/director` (on main); set
-`AOT_STUDIO_REPO=dev/lanes/director` for every tool. The old `~/dev/aot-fable-5.1` clone is stale and blocked by dirty Unity files.
-Captures rewrite `shots/*/latest.png` on the Studio, so `git checkout -- shots/` there before every pull.
+(`tools/_remote.sh` defaults to it now). `remote()` runs `git checkout -q -- .` before every command: Unity's import churn
+(fbx metas, Main.unity, URP assets, Particles.mat) silently blocked `git pull --ff-only`, so several "builds" were old.
+Always check the Studio HEAD hash after a pull before trusting a build.
 Keep `tools/test.sh` green (36 tests incl. `CharactersWiredTests`, `GroundSnapProbe`); build with
 `tools/build.sh mac`, then rsync the app to `~/Desktop/AOT-build/` on the laptop and `open` it for him. Unity batch runs
 sometimes leave a stale editor holding the project lock after an interrupted command: `pkill -f lanes/director`.
