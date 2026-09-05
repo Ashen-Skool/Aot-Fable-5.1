@@ -172,7 +172,7 @@ namespace ODM
                     float sx = Mathf.Clamp(sp.x, 60f * s, W - 60f * s), sy = Mathf.Clamp(H - sp.y, 60f * s, H - 160f * s);
                     float dist = Vector3.Distance(c.transform.position, cn.transform.position);
                     var col = new Color(1f, 0.8f, 0.3f, behind ? 0.45f : 0.9f);
-                    var m = GUIUtility.RotateAroundPivot(45f, new Vector2(sx, sy)); var keep = GUI.matrix; GUI.matrix = m;
+                    var keep = GUI.matrix; GUIUtility.RotateAroundPivot(45f, new Vector2(sx, sy));
                     Box(sx - 5f * s, sy - 5f * s, 10f * s, 10f * s, col); GUI.matrix = keep;
                     Text(new Rect(sx - 70f * s, sy + 9f * s, 140f * s, 18f * s), "CANNON  " + dist.ToString("0") + " M", sm, col, 1f);
                 }
