@@ -85,7 +85,7 @@ namespace Proxies
               var c = sparks.colorOverLifetime; c.enabled = true; c.color = Fade(1f, 0.9f, 0f);
               var r = sparks.GetComponent<ParticleSystemRenderer>(); r.renderMode = ParticleSystemRenderMode.Stretch; r.velocityScale = 0.06f; r.lengthScale = 1.5f;
               var sh = sparks.shape; sh.shapeType = ParticleSystemShapeType.Sphere; sh.radius = 0.3f; }
-            steamSrc = NoiseLoop.Source(gameObject, NoiseLoop.White(), 1f, 140f, out steamLp); steamLp.cutoffFrequency = 1400f;
+            steamSrc = NoiseLoop.Source(gameObject, NoiseLoop.White(), 1f, 140f, out steamLp); if (steamLp != null) steamLp.cutoffFrequency = 1400f;
         }
 
         Transform Nape()

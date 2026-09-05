@@ -139,7 +139,7 @@ namespace ODM
             BuildSpeedFx();
             BuildAnchorFx();
             wind = NoiseLoop.Source(gameObject, NoiseLoop.Brown(), 0f, 50f, out windLp);
-            hiss = NoiseLoop.Source(gameObject, NoiseLoop.White(), 0f, 50f, out hissLp); hissLp.cutoffFrequency = 6000f;
+            hiss = NoiseLoop.Source(gameObject, NoiseLoop.White(), 0f, 50f, out hissLp); if (hissLp != null) hissLp.cutoffFrequency = 6000f;
             Ctx.Set("player", this);
         }
 
@@ -528,11 +528,12 @@ namespace ODM
                 AimHasHit = Physics.Raycast(rb.position + Vector3.up * 0.6f, cam.transform.forward, out var ah, hookRange, OdmLayers.HookMask, QueryTriggerInteraction.Ignore);
                 if (AimHasHit) { AimHitPoint = ah.point; AimHitDist = ah.distance; }
             }
-            if (wind != null)
+            if (wind != null && hiss != null)
             {
                 float k = Mathf.Clamp01((Speed - 6f) / 42f);
                 wind.volume = Mathf.Lerp(wind.volume, (Grounded ? 0.15f : 1f) * Mathf.Pow(k, 1.4f) * 0.55f, 1f - Mathf.Exp(-6f * Time.unscaledDeltaTime));
-                windLp.cutoffFrequency = Mathf.Lerp(300f, 2600f, k); wind.pitch = 0.8f + 0.5f * k;
+                if (windLp != null) windLp.cutoffFrequency = Mathf.Lerp(300f, 2600f, k);
+                wind.pitch = 0.8f + 0.5f * k;
                 hiss.volume = Mathf.Lerp(hiss.volume, Boosting ? 0.32f : 0f, 1f - Mathf.Exp(-18f * Time.unscaledDeltaTime));
             }
             if (UnityEngine.Input.GetKeyDown(KeyCode.LeftBracket)) Characters.CharacterModel.FistRollDeg -= 15f;

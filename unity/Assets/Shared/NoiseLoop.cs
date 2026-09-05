@@ -29,11 +29,14 @@ namespace Shared
         /// <summary>A silent, playing, looping source. Drive .volume (and the filter cutoff) every frame.</summary>
         public static AudioSource Source(GameObject host, AudioClip clip, float spatial, float maxDist, out AudioLowPassFilter lp)
         {
+            lp = null;
+            if (Application.isBatchMode) return null;   // the test runner has audio disabled; filters come back null
             var src = host.AddComponent<AudioSource>();
+            if (src == null) return null;
             src.clip = clip; src.loop = true; src.playOnAwake = false; src.volume = 0f; src.spatialBlend = spatial;
             src.rolloffMode = AudioRolloffMode.Linear; src.maxDistance = maxDist; src.minDistance = maxDist * 0.2f;
-            lp = host.AddComponent<AudioLowPassFilter>(); lp.cutoffFrequency = 800f;
-            if (!Application.isBatchMode) src.Play();
+            lp = host.AddComponent<AudioLowPassFilter>(); if (lp != null) lp.cutoffFrequency = 800f;
+            src.Play();
             return src;
         }
     }

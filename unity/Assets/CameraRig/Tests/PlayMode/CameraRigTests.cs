@@ -60,7 +60,8 @@ public class CameraRigTests
         yield return null; yield return null;
         yield return WaitRealtime(0.5f);
         float before = rig.Fov;
-        Assert.That(before, Is.EqualTo(rig.baseFov).Within(2f), "idle fov is the base fov");
+        float cruise = rig.baseFov + rig.speedFovAdd * Mathf.Pow(Mathf.Clamp01(target.Velocity.magnitude / rig.speedFovRef), 1.4f);
+        Assert.That(before, Is.EqualTo(cruise).Within(2f), "cruising fov is the base fov plus the speed widening");
         target.State = CameraTargetState.Flying | CameraTargetState.Boosting;
         yield return WaitRealtime(1.0f);
         Assert.Greater(rig.Fov, before + 15f, "fov kicks up while boosting");
