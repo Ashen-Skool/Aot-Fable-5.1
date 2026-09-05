@@ -70,9 +70,9 @@ namespace Town
                 main.simulationSpace = ParticleSystemSimulationSpace.World;
                 main.startLifetime = new ParticleSystem.MinMaxCurve(7f, 11f);
                 main.startSpeed = new ParticleSystem.MinMaxCurve(0.5f, 0.9f);
-                main.startSize = new ParticleSystem.MinMaxCurve(0.7f, 1.1f);
+                main.startSize = new ParticleSystem.MinMaxCurve(0.5f, 0.8f);
                 main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
-                main.startColor = new Color(0.62f, 0.6f, 0.58f, 1f);
+                main.startColor = new Color(0.4f, 0.39f, 0.38f, 1f);
                 main.gravityModifier = -0.012f;
                 main.maxParticles = 60;
                 var em = ps.emission; em.rateOverTime = 2.6f;
@@ -86,7 +86,7 @@ namespace Town
                 var col = ps.colorOverLifetime; col.enabled = true;
                 var g = new Gradient();
                 g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
-                          new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(0.32f, 0.12f), new GradientAlphaKey(0.18f, 0.6f), new GradientAlphaKey(0f, 1f) });
+                          new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(0.16f, 0.12f), new GradientAlphaKey(0.08f, 0.6f), new GradientAlphaKey(0f, 1f) });
                 col.color = g;
                 var rot = ps.rotationOverLifetime; rot.enabled = true; rot.z = new ParticleSystem.MinMaxCurve(-0.25f, 0.25f);
                 var noise = ps.noise; noise.enabled = true; noise.strength = 0.35f; noise.frequency = 0.18f; noise.scrollSpeed = 0.15f;
@@ -95,7 +95,7 @@ namespace Town
             }
         }
 
-        static AnimationCurve Grow() => new AnimationCurve(new Keyframe(0f, 0.3f), new Keyframe(0.5f, 1.6f), new Keyframe(1f, 3.2f));
+        static AnimationCurve Grow() => new AnimationCurve(new Keyframe(0f, 0.3f), new Keyframe(0.5f, 1.4f), new Keyframe(1f, 2.6f));
 
         /// <summary>Dust and pollen hanging in the light around the camera. Follows the camera, world-simulated so it hangs still.</summary>
         static void Dust(Transform root)
@@ -108,12 +108,12 @@ namespace Town
             main.simulationSpace = ParticleSystemSimulationSpace.World;
             main.startLifetime = new ParticleSystem.MinMaxCurve(6f, 10f);
             main.startSpeed = 0.05f;
-            main.startSize = new ParticleSystem.MinMaxCurve(0.03f, 0.07f);
-            main.startColor = new Color(1f, 0.92f, 0.75f, 0.55f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.02f, 0.045f);
+            main.startColor = new Color(1f, 0.92f, 0.75f, 0.38f);
             main.gravityModifier = 0.002f;
             main.maxParticles = 700;
-            var em = ps.emission; em.rateOverTime = 70f;
-            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(26f, 14f, 26f);
+            var em = ps.emission; em.rateOverTime = 45f;
+            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(22f, 10f, 22f);
             var noise = ps.noise; noise.enabled = true; noise.strength = 0.22f; noise.frequency = 0.5f; noise.scrollSpeed = 0.2f;
             var col = ps.colorOverLifetime; col.enabled = true;
             var g = new Gradient();
@@ -152,7 +152,7 @@ namespace Town
             void LateUpdate()
             {
                 if (cam == null) cam = Ctx.Get<Camera>("camera");
-                if (cam != null) transform.position = cam.transform.position + cam.transform.forward * 6f;
+                if (cam != null) transform.position = cam.transform.position + cam.transform.forward * 12f;
             }
         }
 

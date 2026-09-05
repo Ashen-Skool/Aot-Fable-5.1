@@ -17,7 +17,7 @@ namespace Town
         public const float HdriSunAzimuth = 125.9f;
         public const float HdriSunElevation = 7.6f;
         // The light sits a little higher than the sky's sun so the streets keep some direct light.
-        public const float SunElevation = 12f;
+        public const float SunElevation = 16f;
         // Where we want the sun: south-west, so south-facing fronts, the east side of the main
         // street and the inner face of the wall catch the light.
         public const float SunAzimuth = -135f;
@@ -107,7 +107,7 @@ namespace Town
             {
                 sun.transform.rotation = Quaternion.LookRotation(SunDirection(), Vector3.up);
                 sun.color = new Color(1f, 0.76f, 0.52f);
-                sun.intensity = 3.2f;
+                sun.intensity = 3.0f;
                 sun.shadows = LightShadows.Soft;
                 sun.shadowStrength = 0.92f;
                 sun.shadowBias = 0.02f;
@@ -117,7 +117,7 @@ namespace Town
 
             // Ambient from the sky itself (cool blue from above, warm bounce at the horizon), lifted a touch for the shadowed streets.
             RenderSettings.ambientMode = AmbientMode.Skybox;
-            RenderSettings.ambientIntensity = 1.0f;
+            RenderSettings.ambientIntensity = 1.7f;
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = TownMaterials.FogColor;
@@ -141,9 +141,9 @@ namespace Town
             var tone = prof.Add<Tonemapping>(true);
             tone.mode.Override(TonemappingMode.ACES);
             var adj = prof.Add<ColorAdjustments>(true);
-            adj.postExposure.Override(0.25f);
+            adj.postExposure.Override(0.4f);
             adj.saturation.Override(10f);
-            adj.contrast.Override(14f);
+            adj.contrast.Override(10f);
             var wb = prof.Add<WhiteBalance>(true);
             wb.temperature.Override(8f);
             var smh = prof.Add<ShadowsMidtonesHighlights>(true);
@@ -155,13 +155,13 @@ namespace Town
             bloom.scatter.Override(0.68f);
             bloom.tint.Override(new Color(1f, 0.9f, 0.75f));
             var vig = prof.Add<Vignette>(true);
-            vig.intensity.Override(0.27f);
+            vig.intensity.Override(0.22f);
             vig.smoothness.Override(0.45f);
             var grain = prof.Add<FilmGrain>(true);
             grain.type.Override(FilmGrainLookup.Thin1);
             grain.intensity.Override(0.12f);
             var ca = prof.Add<ChromaticAberration>(true);
-            ca.intensity.Override(0.05f);
+            ca.intensity.Override(0.02f);
             vol.sharedProfile = prof;
             var cam = Ctx.Get<Camera>("camera");
             if (cam != null)
