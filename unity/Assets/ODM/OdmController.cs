@@ -88,8 +88,16 @@ namespace ODM
         LineRenderer trail; readonly Vector3[] trailPts = new Vector3[8];
         Renderer[] ghosts; Transform[] ghostTf; Material[] ghostMats; float ghostBaseAlpha = 0.5f;
         Renderer[] bodyRenderers; Transform[] bodyTfs;
-        ParticleSystem dust, gasPuff; Material puffMat;
+        ParticleSystem dust, gasPuff, anchorDust, anchorSparks; Material puffMat;
         Vector3 baseScale;
+        float hookTime = -10f; readonly Vector3[] cablePts = new Vector3[14];
+        Transform[] bladeRoots; TrailRenderer[] bladeTrails; float bladeSearch;
+        AudioSource wind, hiss; AudioLowPassFilter windLp, hissLp;
+        public bool AimHasHit { get; private set; }
+        public Vector3 AimHitPoint { get; private set; }
+        public float AimHitDist { get; private set; }
+        public float HitFlash => hitFlash;
+        public float StaggerTimer => staggerTimer;
 
         void OnCollisionStay(Collision c)
         {
@@ -129,6 +137,9 @@ namespace ODM
             SetCablesVisible(false);
             baseScale = transform.localScale;
             BuildSpeedFx();
+            BuildAnchorFx();
+            wind = NoiseLoop.Source(gameObject, NoiseLoop.Brown(), 0f, 50f, out windLp);
+            hiss = NoiseLoop.Source(gameObject, NoiseLoop.White(), 0f, 50f, out hissLp); hissLp.cutoffFrequency = 6000f;
             Ctx.Set("player", this);
         }
 
@@ -279,12 +290,55 @@ namespace ODM
             return tex;
         }
 
+        void BuildAnchorFx()
+        {
+            anchorDust = new GameObject("AnchorDust").AddComponent<ParticleSystem>();
+            { var m = anchorDust.main; m.playOnAwake = false; m.loop = false; m.simulationSpace = ParticleSystemSimulationSpace.World; m.startLifetime = new ParticleSystem.MinMaxCurve(0.4f, 0.8f); m.startSpeed = new ParticleSystem.MinMaxCurve(1.5f, 4f); m.startSize = new ParticleSystem.MinMaxCurve(0.25f, 0.6f); m.startColor = new Color(0.7f, 0.65f, 0.58f, 0.6f); m.maxParticles = 128;
+              var em = anchorDust.emission; em.enabled = false; var sh = anchorDust.shape; sh.shapeType = ParticleSystemShapeType.Sphere; sh.radius = 0.15f;
+              var col = anchorDust.colorOverLifetime; col.enabled = true; var g = new Gradient(); g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) }, new[] { new GradientAlphaKey(0.6f, 0f), new GradientAlphaKey(0f, 1f) }); col.color = g;
+              var r = anchorDust.GetComponent<ParticleSystemRenderer>(); r.sharedMaterial = puffMat; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; }
+            anchorSparks = new GameObject("AnchorSparks").AddComponent<ParticleSystem>();
+            { var m = anchorSparks.main; m.playOnAwake = false; m.loop = false; m.simulationSpace = ParticleSystemSimulationSpace.World; m.startLifetime = new ParticleSystem.MinMaxCurve(0.15f, 0.4f); m.startSpeed = new ParticleSystem.MinMaxCurve(4f, 11f); m.startSize = new ParticleSystem.MinMaxCurve(0.04f, 0.09f); m.gravityModifier = 0.6f; m.maxParticles = 128;
+              var em = anchorSparks.emission; em.enabled = false; var sh = anchorSparks.shape; sh.shapeType = ParticleSystemShapeType.Sphere; sh.radius = 0.1f;
+              var r = anchorSparks.GetComponent<ParticleSystemRenderer>(); r.sharedMaterial = Mats.Unlit(new Color(2.5f, 1.9f, 1.1f)); r.renderMode = ParticleSystemRenderMode.Stretch; r.velocityScale = 0.05f; r.lengthScale = 1.5f; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; }
+        }
+
+        /// <summary>Trail renderers on the blade tips, found once the rig has dressed her. Emit only during a slash.</summary>
+        void EnsureBladeTrails()
+        {
+            if (bladeTrails != null || Time.time < bladeSearch) return;
+            bladeSearch = Time.time + 0.5f;
+            var l = FindDeep(transform, "Blade_L"); var r = FindDeep(transform, "Blade_R");
+            if (l == null || r == null) return;
+            bladeRoots = new[] { l, r }; bladeTrails = new TrailRenderer[2];
+            for (int i = 0; i < 2; i++)
+            {
+                float ext = 0.6f;
+                foreach (var rd in bladeRoots[i].GetComponentsInChildren<Renderer>())
+                {
+                    var b = rd.bounds; var c = b.center; var e = b.extents;
+                    for (int k = 0; k < 8; k++)
+                    {
+                        var corner = c + new Vector3((k & 1) == 0 ? -e.x : e.x, (k & 2) == 0 ? -e.y : e.y, (k & 4) == 0 ? -e.z : e.z);
+                        ext = Mathf.Max(ext, Vector3.Dot(corner - bladeRoots[i].position, bladeRoots[i].forward));
+                    }
+                }
+                var go = new GameObject("BladeTrail"); go.transform.SetParent(bladeRoots[i], false); go.transform.localPosition = new Vector3(0f, 0f, ext * 0.95f);
+                var t = go.AddComponent<TrailRenderer>();
+                t.time = 0.16f; t.startWidth = 0.28f; t.endWidth = 0.02f; t.minVertexDistance = 0.02f; t.numCapVertices = 3; t.alignment = LineAlignment.View;
+                t.sharedMaterial = Transparent(Mats.Unlit(Color.white), new Color(1.7f, 1.9f, 2.4f, 0.85f));
+                var g = new Gradient(); g.SetKeys(new[] { new GradientColorKey(new Color(1f, 1f, 1f), 0f), new GradientColorKey(new Color(0.6f, 0.8f, 1f), 1f) }, new[] { new GradientAlphaKey(0.9f, 0f), new GradientAlphaKey(0f, 1f) });
+                t.colorGradient = g; t.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; t.receiveShadows = false; t.emitting = false;
+                bladeTrails[i] = t;
+            }
+        }
+
         bool IsBodyPart(Transform t)
         {
             for (var p = t; p != null; p = p.parent)
             {
                 var nm = p.name;
-                if (nm.StartsWith("Cable_") || nm.StartsWith("HookHead_") || nm == "SpeedTrail" || nm == "LandingDust") return false;
+                if (nm.StartsWith("Cable_") || nm.StartsWith("HookHead_") || nm == "SpeedTrail" || nm == "LandingDust" || nm == "BladeTrail") return false;
                 if (p == transform) return true;
             }
             return false;
@@ -376,9 +430,9 @@ namespace ODM
             var go = new GameObject(name);
             go.transform.SetParent(transform, false);
             var lr = go.AddComponent<LineRenderer>();
-            lr.positionCount = 2;
+            lr.positionCount = cablePts.Length;
             lr.useWorldSpace = true;
-            lr.startWidth = 0.14f; lr.endWidth = 0.08f;
+            lr.startWidth = 0.075f; lr.endWidth = 0.05f;
             lr.numCapVertices = 2;
             lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             lr.receiveShadows = false;
@@ -388,12 +442,19 @@ namespace ODM
 
         Transform MakeHookHead(string name)
         {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            go.name = name;
-            Destroy(go.GetComponent<Collider>());
-            go.transform.localScale = Vector3.one * 0.32f;
-            go.GetComponent<Renderer>().sharedMaterial = Mats.Lit(new Color(0.75f, 0.72f, 0.65f), 0.6f, 0.9f);
-            go.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            // a grapple: a short shaft with two barbed prongs, oriented into the surface at hook time
+            var go = new GameObject(name);
+            var steel = Mats.Lit(new Color(0.55f, 0.55f, 0.58f), 0.65f, 0.9f);
+            void Part(string n, Vector3 pos, Vector3 euler, Vector3 scale, PrimitiveType t)
+            {
+                var pgo = GameObject.CreatePrimitive(t); pgo.name = n; Destroy(pgo.GetComponent<Collider>());
+                pgo.transform.SetParent(go.transform, false); pgo.transform.localPosition = pos; pgo.transform.localRotation = Quaternion.Euler(euler); pgo.transform.localScale = scale;
+                var r = pgo.GetComponent<Renderer>(); r.sharedMaterial = steel; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
+            Part("shaft", new Vector3(0f, 0f, -0.22f), new Vector3(90f, 0f, 0f), new Vector3(0.07f, 0.22f, 0.07f), PrimitiveType.Cylinder);
+            Part("prongL", new Vector3(-0.09f, 0f, 0.02f), new Vector3(0f, -28f, 0f), new Vector3(0.05f, 0.05f, 0.34f), PrimitiveType.Cube);
+            Part("prongR", new Vector3(0.09f, 0f, 0.02f), new Vector3(0f, 28f, 0f), new Vector3(0.05f, 0.05f, 0.34f), PrimitiveType.Cube);
+            Part("prongU", new Vector3(0f, 0.09f, 0.02f), new Vector3(-28f, 0f, 0f), new Vector3(0.05f, 0.05f, 0.34f), PrimitiveType.Cube);
             return go.transform;
         }
 
@@ -461,13 +522,31 @@ namespace ODM
             }
             if (Health <= 0f) { deathTimer -= Time.deltaTime; if (deathTimer <= 0f) Respawn(); }
             if (rb.position.y < -25f) Respawn(); // fell off the world
+            // what the crosshair is over (HUD marker); the wind and gas beds
+            if (cam != null)
+            {
+                AimHasHit = Physics.Raycast(rb.position + Vector3.up * 0.6f, cam.transform.forward, out var ah, hookRange, OdmLayers.HookMask, QueryTriggerInteraction.Ignore);
+                if (AimHasHit) { AimHitPoint = ah.point; AimHitDist = ah.distance; }
+            }
+            if (wind != null)
+            {
+                float k = Mathf.Clamp01((Speed - 6f) / 42f);
+                wind.volume = Mathf.Lerp(wind.volume, (Grounded ? 0.15f : 1f) * Mathf.Pow(k, 1.4f) * 0.55f, 1f - Mathf.Exp(-6f * Time.unscaledDeltaTime));
+                windLp.cutoffFrequency = Mathf.Lerp(300f, 2600f, k); wind.pitch = 0.8f + 0.5f * k;
+                hiss.volume = Mathf.Lerp(hiss.volume, Boosting ? 0.32f : 0f, 1f - Mathf.Exp(-18f * Time.unscaledDeltaTime));
+            }
             if (UnityEngine.Input.GetKeyDown(KeyCode.LeftBracket)) Characters.CharacterModel.FistRollDeg -= 15f;
             if (UnityEngine.Input.GetKeyDown(KeyCode.RightBracket)) Characters.CharacterModel.FistRollDeg += 15f;
         }
         float slashTimer; bool slashAirborne; bool slashPoseSet; bool hookLatched, wantVirtual; float slashHitTimer;
         public float Health { get; private set; } = 100f; public float HealthMax = 100f; float deathTimer; float hitFlash;
 
-        void LateUpdate() { UpdateCables(); UpdateSpeedFx(); SlashHitCheck(Time.deltaTime); UpdatePose(); }
+        void LateUpdate()
+        {
+            UpdateCables(); UpdateSpeedFx(); SlashHitCheck(Time.deltaTime); UpdatePose();
+            EnsureBladeTrails();
+            if (bladeTrails != null) { bool on = slashTimer > 0.05f; for (int i = 0; i < 2; i++) if (bladeTrails[i] != null && bladeTrails[i].emitting != on) { bladeTrails[i].emitting = on; if (on) bladeTrails[i].Clear(); } }
+        }
 
         // ---------- combat: blade hits on titan zones, taking hits ----------
         static readonly Collider[] overlap = new Collider[32];
@@ -506,84 +585,12 @@ namespace ODM
             rb.position = sp + Vector3.up * 1.2f; rb.linearVelocity = Vector3.zero; Gas = gasMax; hookLatched = false; Detach();
         }
 
-        // ---------- temporary on-screen help + reticle (the HUD piece replaces this) ----------
-        static GUIStyle hudStyle;
-        static bool titleDone;
+        // ---------- HUD (ODM/Hud.cs) ----------
+        public static bool TitleDone { get; set; }
         void OnGUI()
         {
             if (Scripted || Application.isBatchMode) return;
-            if (!titleDone)
-            {
-                Shared.Music.Set("title");
-                if (hudStyle == null) { hudStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, richText = true }; hudStyle.normal.textColor = Color.white; }
-                Time.timeScale = 0f;
-                GUI.color = new Color(0.02f, 0.02f, 0.03f, 0.82f); GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture); GUI.color = Color.white;
-                var big = new GUIStyle(hudStyle) { fontSize = 64, alignment = TextAnchor.MiddleCenter }; var mid = new GUIStyle(hudStyle) { fontSize = 20, alignment = TextAnchor.MiddleCenter };
-                GUI.Label(new Rect(0, Screen.height * 0.30f, Screen.width, 90), "<b>AOT FABLE 5.1</b>", big);
-                GUI.Label(new Rect(0, Screen.height * 0.30f + 90, Screen.width, 30), "Shiganshina District   ·   one Titan   ·   cut the nape", mid);
-                GUI.Label(new Rect(0, Screen.height * 0.30f + 150, Screen.width, 120),
-                    "WASD move   Mouse aim   Space hook / release   Shift gas   LMB slash   E fire a cannon\nHook a tower, get above him, cut both hamstrings, then the nape.\n\n<b>Click to begin</b>", mid);
-                if (UnityEngine.Input.GetMouseButtonDown(0) || UnityEngine.Input.GetKeyDown(KeyCode.Space) || UnityEngine.Input.GetKeyDown(KeyCode.Return)) { titleDone = true; Time.timeScale = 1f; Shared.Sfx.Play("ui", rb.position, 1f, 0.6f); }
-                return;
-            }
-            if (hudStyle == null) { hudStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, richText = true }; hudStyle.normal.textColor = Color.white; }
-            float cx = Screen.width * 0.5f, cy = Screen.height * 0.5f;
-            var col = Hook != HookState.None ? new Color(1f, 0.55f, 0.15f) : Color.white;
-            GUI.color = col;
-            GUI.DrawTexture(new Rect(cx - 1f, cy - 14f, 2f, 28f), Texture2D.whiteTexture);
-            GUI.DrawTexture(new Rect(cx - 14f, cy - 1f, 28f, 2f), Texture2D.whiteTexture);
-            GUI.color = Color.white;
-            GUI.Label(new Rect(16, 12, 720, 120),
-                "<b>WASD</b> move   <b>Mouse</b> aim   <b>Space</b> fire hooks at the crosshair and get pulled in (press again to release)\n" +
-                "<b>Shift</b> gas burst   <b>LMB</b> slash (air: blade spin)   <b>Esc</b> release mouse\n" +
-                "gas " + Gas.ToString("0") + "   speed " + Speed.ToString("0") + " m/s   fist roll [ ] " + Characters.CharacterModel.FistRollDeg.ToString("0") + "°   " + (Hook != HookState.None ? "<color=#ff9933>HOOKED</color>" : (Grounded ? "grounded" : "airborne")), hudStyle);
-            var brainHud = Ctx.Get<Proxies.TitanBrain>("bossBrain");
-            Shared.Music.Set(brainHud != null && brainHud.Current == Proxies.TitanBrain.State.Dead ? "ending" : "battle");
-            if (brainHud != null && brainHud.Current != Proxies.TitanBrain.State.Idle)
-            {
-                float w = Mathf.Min(520f, Screen.width * 0.4f); float x0 = (Screen.width - w) * 0.5f;
-                GUI.color = new Color(0, 0, 0, 0.55f); GUI.DrawTexture(new Rect(x0 - 2, 52, w + 4, 20), Texture2D.whiteTexture);
-                GUI.color = brainHud.Current == Proxies.TitanBrain.State.Dead ? Color.gray : new Color(0.75f, 0.2f, 0.6f);
-                GUI.DrawTexture(new Rect(x0, 54, w * Mathf.Clamp01(brainHud.HP / brainHud.HPMax), 16), Texture2D.whiteTexture);
-                GUI.color = Color.white; GUI.Label(new Rect(x0, 30, w, 22), "<b>ATTACK TITAN</b>  " + brainHud.HP.ToString("0") + (brainHud.HamL ? "  L-ham cut" : "") + (brainHud.HamR ? "  R-ham cut" : "") + (brainHud.Current == Proxies.TitanBrain.State.Kneel ? "  <color=#ffcc33>NAPE OPEN</color>" : ""), hudStyle);
-            }
-            // cannon markers: label + distance where the cannon is on screen, clamped to the screen edge when behind you
-            var cannons = Ctx.Get<Proxies.Cannon[]>("cannons");
-            if (cannons != null && cam != null)
-            {
-                var ms = new GUIStyle(hudStyle) { fontSize = 15, alignment = TextAnchor.MiddleCenter };
-                foreach (var cn in cannons)
-                {
-                    if (cn == null) continue;
-                    Vector3 wp = cn.transform.position + Vector3.up * 2.5f; Vector3 sp = cam.WorldToScreenPoint(wp);
-                    bool behind = sp.z < 0f; if (behind) { sp.x = Screen.width - sp.x; sp.y = Screen.height - sp.y; }
-                    float sx = Mathf.Clamp(sp.x, 60f, Screen.width - 60f), sy = Mathf.Clamp(Screen.height - sp.y, 40f, Screen.height - 80f);
-                    float dist = Vector3.Distance(rb.position, cn.transform.position);
-                    GUI.color = new Color(1f, 0.8f, 0.3f, behind ? 0.6f : 1f);
-                    GUI.DrawTexture(new Rect(sx - 6, sy - 6, 12, 12), Texture2D.whiteTexture);
-                    GUI.Label(new Rect(sx - 70, sy + 6, 140, 22), "CANNON " + dist.ToString("0") + " m", ms);
-                }
-                GUI.color = Color.white;
-            }
-            var prompt = Ctx.Get<string>("cannonPrompt");
-            if (!string.IsNullOrEmpty(prompt)) { var ps = new GUIStyle(hudStyle) { fontSize = 22, alignment = TextAnchor.MiddleCenter }; GUI.Label(new Rect(0, cy + 70, Screen.width, 40), prompt, ps); Ctx.Set("cannonPrompt", ""); }
-            // health bar
-            GUI.color = new Color(0, 0, 0, 0.55f); GUI.DrawTexture(new Rect(16, Screen.height - 44, 304, 22), Texture2D.whiteTexture);
-            GUI.color = hitFlash > 0f ? Color.white : new Color(0.85f, 0.15f, 0.12f); GUI.DrawTexture(new Rect(18, Screen.height - 42, 300f * Health / HealthMax, 18), Texture2D.whiteTexture);
-            GUI.color = Color.white; GUI.Label(new Rect(20, Screen.height - 66, 300, 22), Health <= 0f ? "<b>DOWN</b>" : "<b>HP</b> " + Health.ToString("0"), hudStyle);
-            if (hitFlash > 0f) { GUI.color = new Color(1f, 0f, 0f, hitFlash * 0.6f); GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture); GUI.color = Color.white; }
-            var over = Ctx.Get<string>("gameOver");
-            if (!string.IsNullOrEmpty(over))
-            {
-                GUI.color = new Color(0, 0, 0, 0.72f); GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture); GUI.color = Color.white;
-                var big = new GUIStyle(hudStyle) { fontSize = 56, alignment = TextAnchor.MiddleCenter }; var mid = new GUIStyle(hudStyle) { fontSize = 22, alignment = TextAnchor.MiddleCenter };
-                GUI.Label(new Rect(0, cy - 90, Screen.width, 80), "<b>" + over + "</b>", big);
-                GUI.Label(new Rect(0, cy + 0, Screen.width, 40), "The district is clear.   Time " + Time.timeSinceLevelLoad.ToString("0") + " s   ·   HP left " + Health.ToString("0"), mid);
-                GUI.Label(new Rect(0, cy + 44, Screen.width, 40), "<b>R</b> to play again   ·   <b>Cmd-Q</b> to quit", mid);
-                if (UnityEngine.Input.GetKeyDown(KeyCode.R)) UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
-                return;
-            }
-            if (!GameInput.CursorCaptured) GUI.Label(new Rect(cx - 160, cy + 40, 320, 30), "<b>click to capture the mouse   ·   Esc releases it   ·   Cmd-Q quits</b>", hudStyle);
+            Hud.Draw(this, cam);
         }
 
         float landPoseTimer;
@@ -758,6 +765,7 @@ namespace ODM
                 if (input.boost && !prevBoost && Gas >= hopGas)
                 {
                     v.y = hopSpeed; Gas -= hopGas; Grounded = false;
+                    if (gasPuff != null) { gasPuff.transform.position = (socketL.position + socketR.position) * 0.5f; gasPuff.Emit(14); }
                 }
                 Gas = Mathf.Min(gasMax, Gas + gasRefill * dt);
             }
@@ -815,8 +823,13 @@ namespace ODM
 
             if (Boosting && gasPuff != null)
             {
-                gasPuff.transform.position = (socketL.position + socketR.position) * 0.5f - v.normalized * 0.5f;
-                gasPuff.Emit(1);
+                // two jets from the hip tanks, thrown back along the travel direction
+                Vector3 back = -(v.sqrMagnitude > 1f ? v.normalized : LookDir);
+                for (int j = 0; j < 2; j++)
+                {
+                    var ep = new ParticleSystem.EmitParams { position = (j == 0 ? socketL.position : socketR.position) + back * 0.35f, velocity = back * 9f + Random.insideUnitSphere * 1.5f, startSize = Random.Range(0.22f, 0.4f) };
+                    gasPuff.Emit(ep, 2);
+                }
             }
 
             if (verbose)
@@ -855,6 +868,15 @@ namespace ODM
             rb.linearVelocity = v;
             SetCablesVisible(true);
             hookHeadL.position = AnchorL; hookHeadR.position = AnchorR;
+            var into = Quaternion.LookRotation(-hookNormal, Vector3.up);
+            hookHeadL.rotation = into; hookHeadR.rotation = into;
+            hookTime = Time.time;
+            if (real && !Application.isBatchMode)
+            {
+                anchorDust.Emit(new ParticleSystem.EmitParams { position = Anchor, applyShapeToPosition = true }, 10);
+                anchorSparks.Emit(new ParticleSystem.EmitParams { position = Anchor, applyShapeToPosition = true }, 12);
+            }
+            var rig = Ctx.Get<Component>("cameraRig"); if (rig != null && !Application.isBatchMode) rig.SendMessage("Shake", real ? 0.2f : 0.12f, SendMessageOptions.DontRequireReceiver);
             return true;
         }
 
@@ -867,8 +889,31 @@ namespace ODM
         void UpdateCables()
         {
             if (Hook != HookState.Attached) return;
-            cableL.SetPosition(0, socketL.position); cableL.SetPosition(1, AnchorL);
-            cableR.SetPosition(0, socketR.position); cableR.SetPosition(1, AnchorR);
+            float age = Time.time - hookTime;
+            float ext = Mathf.Clamp01(age / 0.07f);                            // the cable shoots out over a few frames
+            float d = Vector3.Distance(rb.position, Anchor);
+            float slack = Mathf.Max(0f, RopeLength - d);
+            float sag = Mathf.Min(2.2f, slack * 0.45f) + 0.12f;                // slack cable hangs; a taut one is nearly straight
+            float whip = 0.55f * Mathf.Sin(age * 34f) * Mathf.Exp(-age * 5.5f); // the snap when the grapple bites
+            Cable(cableL, socketL.position, AnchorL, ext, sag, whip, 1f);
+            Cable(cableR, socketR.position, AnchorR, ext, sag, whip, -1f);
+            hookHeadL.position = AnchorL; hookHeadR.position = AnchorR;
+        }
+
+        void Cable(LineRenderer lr, Vector3 a, Vector3 b, float ext, float sag, float whip, float side)
+        {
+            Vector3 end = Vector3.Lerp(a, b, ext);
+            Vector3 dir = end - a; float len = dir.magnitude; if (len < 1e-3f) dir = Vector3.forward; else dir /= len;
+            Vector3 lateral = Vector3.Cross(dir, Vector3.up); if (lateral.sqrMagnitude < 1e-4f) lateral = Vector3.right;
+            lateral.Normalize();
+            int n = cablePts.Length;
+            for (int i = 0; i < n; i++)
+            {
+                float f = i / (float)(n - 1);
+                float bulge = 4f * f * (1f - f);
+                cablePts[i] = Vector3.Lerp(a, end, f) + Vector3.down * (sag * bulge * ext) + lateral * (whip * side * Mathf.Sin(f * Mathf.PI * 2f) * ext);
+            }
+            lr.SetPositions(cablePts);
         }
 
         void OnDestroy()

@@ -62,6 +62,8 @@ namespace AotCamera
         [Header("FOV")]
         public float baseFov = 70f;
         public float boostFov = 95f;
+        public float speedFovAdd = 12f;             // FOV widens with speed even without boost
+        public float speedFovRef = 45f;
         public float fovRiseTime = 0.16f;
         public float fovFallTime = 0.45f;
 
@@ -309,7 +311,8 @@ namespace AotCamera
                     break;
                 default:
                     UpdateChase(dt, v, st);
-                    fovTarget = (st & CameraTargetState.Boosting) != 0 ? boostFov : baseFov;
+                    fovTarget = baseFov + speedFovAdd * Mathf.Pow(Mathf.Clamp01(Speed / speedFovRef), 1.4f);
+                    if ((st & CameraTargetState.Boosting) != 0) fovTarget = Mathf.Max(fovTarget, boostFov);
                     break;
             }
 

@@ -27,7 +27,7 @@ namespace Town
         public static TownMaterials Materials { get; private set; }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        static void AutoBuild() => Ensure();
+        static void AutoBuild() { Reboot.Register(10, () => Ensure()); Ensure(); }
 
         public static TownInfo Ensure()
         {

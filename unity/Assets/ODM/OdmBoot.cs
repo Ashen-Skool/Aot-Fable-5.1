@@ -17,6 +17,7 @@ namespace ODM
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Auto()
         {
+            Reboot.Register(30, () => { spawnPlaced = false; Auto(); });
             string piece = Bootstrap.Arg("-piece");
             bool capturingOdm = piece == "odm";
             bool wantGrid = capturingOdm || Bootstrap.Arg("-odmGrid") != null || piece == null; // in play the towers are part of the district now

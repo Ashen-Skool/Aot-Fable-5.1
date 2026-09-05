@@ -30,7 +30,7 @@ namespace Shared
         public static Action<Bootstrap> CharacterFactory;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        static void AutoBoot() => Ensure();
+        static void AutoBoot() { Reboot.Register(0, () => Ensure()); Ensure(); }
 
         /// <summary>Idempotent: builds the scene once, returns the live instance.</summary>
         public static Bootstrap Ensure()

@@ -13,7 +13,7 @@ namespace AotCamera
     public static class CameraBoot
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        static void Boot() => Install();
+        static void Boot() { Reboot.Register(40, () => Install()); Install(); }
 
         static bool RunningTests()
         {

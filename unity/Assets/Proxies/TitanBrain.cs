@@ -18,12 +18,14 @@ namespace Proxies
         public bool HamL, HamR;
         public float HP = 100f, HPMax = 100f;
         IPoser poser; Transform player; Component playerCtrl; float t, cooldown, kneelTimer, roarTimer;
+        public TitanFx Fx { get; private set; }
         Vector3 spawnPos;
         public static TitanBrain Attach(GameObject host, float height)
         {
             var b = host.GetComponent<TitanBrain>() ?? host.AddComponent<TitanBrain>();
             b.height = height; b.walkSpeed = height * 0.45f; b.sprintSpeed = height * 0.8f; b.attackRange = height * 0.62f;   // ~9 m for the 15 m boss: he has to actually reach you
             b.spawnPos = host.transform.position;
+            b.Fx = TitanFx.Attach(host, height);
             return b;
         }
         IPoser Poser => poser ??= Ctx.Get<IPoser>("bossPoser");
@@ -60,6 +62,7 @@ namespace Proxies
                         hitDone = true; Sfx.Play("titan_step", transform.position + transform.forward * height * 0.4f, attackKind == Pose.Stomp ? 0.35f : 0.6f, 1f, 260f);
                         Vector3 hitCenter = transform.position + transform.forward * height * 0.38f + Vector3.up * (attackKind == Pose.Stomp ? height * 0.06f : height * 0.45f);
                         float r = attackKind == Pose.Stomp ? height * 0.24f : height * 0.3f;   // stomp reaches ~3.6 m around the foot, swipe ~4.5 m around the hand
+                        if (attackKind == Pose.Stomp) Fx?.Stomp(new Vector3(hitCenter.x, transform.position.y, hitCenter.z), toP); else Fx?.Swipe(hitCenter);
                         if (Vector3.Distance(pl.position, hitCenter) < r) (playerCtrl as ODMHit)?.Hit(this, attackKind == Pose.Stomp ? stompDamage : swipeDamage);
                         else playerCtrl.SendMessage("TakeHitIfInside", new object[] { hitCenter, r, attackKind == Pose.Stomp ? stompDamage : swipeDamage }, SendMessageOptions.DontRequireReceiver);
                     }
@@ -70,7 +73,7 @@ namespace Proxies
                     break;
                 case State.Kneel:
                     kneelTimer -= dt;
-                    if (kneelTimer <= 0f) { HamL = HamR = false; Current = State.Chase; walkSpeed *= 1.15f; sprintSpeed *= 1.15f; cooldown = 0.5f; }
+                    if (kneelTimer <= 0f) { HamL = HamR = false; Current = State.Chase; walkSpeed *= 1.15f; sprintSpeed *= 1.15f; cooldown = 0.5f; Fx?.NapePlume(false); }
                     break;
                 case State.Dead:
                     // He stays down where he fell; the ending screen takes over.
@@ -106,25 +109,42 @@ namespace Proxies
         {
             if (Current != State.Chase) return;
             stepTimer -= Time.deltaTime;
-            if (stepTimer <= 0f) { stepTimer = Poser != null && Poser.Current == Pose.Sprint ? 0.42f : 0.62f; Sfx.Play("titan_step", transform.position, 0.45f, 1f, 220f); }
+            if (stepTimer <= 0f) { stepTimer = Poser != null && Poser.Current == Pose.Sprint ? 0.42f : 0.62f; Sfx.Play("titan_step", transform.position, 0.45f, 1f, 220f); var pl = Player; if (pl != null) Fx?.Step(Vector3.Distance(pl.position, transform.position)); }
         }
 
         /// <summary>A blade hit on one of the named zones.</summary>
-        public void Hit(string zone, Vector3 from)
+        public float Hit(string zone, Vector3 from)
         {
-            if (Current == State.Dead) return;
+            if (Current == State.Dead) return 0f;
             float dmg = zone == "cannon" ? 40f : zone == "Zone_Nape" ? (Current == State.Kneel ? 100f : 40f) : zone.StartsWith("Zone_Hamstring") ? 18f : zone.StartsWith("Zone_") ? 12f : 6f;
             HP = Mathf.Max(0f, HP - dmg); Sfx.Play("titan_hit", transform.position + Vector3.up * height * 0.5f, 0.5f, 1f, 200f);
+            // presentation: steam and a red spray at the cut, a number, a beat of hit-stop on the heavy ones
+            Vector3 at = ZonePos(zone, from);
+            bool nape = zone == "Zone_Nape", ham = zone.StartsWith("Zone_Hamstring");
+            Fx?.HitBurst(at, nape ? 1f : zone == "cannon" ? 0.8f : ham ? 0.55f : 0.3f);
+            HudEvents.Add(at, dmg.ToString("0"), nape ? new Color(1f, 0.85f, 0.3f) : ham ? new Color(1f, 0.55f, 0.35f) : Color.white, nape ? 1.5f : ham ? 1.15f : 1f);
+            if (nape || zone == "cannon") HitStop.Do(nape && HP <= 0f ? 0.16f : 0.07f); else if (ham) HitStop.Do(0.04f);
             if (HP <= 0f)
             {
                 Current = State.Dead; t = 0f; Set(Pose.Stagger); Invoke(nameof(DeathPose), 0.4f);
-                Ctx.Set("bossDead", true); return;
+                Ctx.Set("bossDead", true);
+                Fx?.Death();
+                var rig = Ctx.Get<Component>("cameraRig"); if (rig != null && !Application.isBatchMode) rig.SendMessage("KillCam", Fx != null ? Fx.NapePos() : at, SendMessageOptions.DontRequireReceiver);
+                return dmg;
             }
             if (zone == "Zone_HamstringL") HamL = true;
             if (zone == "Zone_HamstringR") HamR = true;
-            if (HamL && HamR && Current != State.Kneel) { Current = State.Kneel; kneelTimer = 4f; t = 0f; Set(Pose.Kneel); return; }
+            if (HamL && HamR && Current != State.Kneel) { Current = State.Kneel; kneelTimer = 4f; t = 0f; Set(Pose.Kneel); Fx?.NapePlume(true); HudEvents.Add(Fx != null ? Fx.NapePos() : at, "NAPE OPEN", new Color(1f, 0.8f, 0.2f), 1.3f); return dmg; }
             if (Current != State.Kneel && zone != "body") { Current = State.Stagger; if (zone == "cannon") t = -0.6f; else t = 0f; Set(Pose.Stagger); }
+            return dmg;
         }
+        Vector3 ZonePos(string zone, Vector3 fallback)
+        {
+            if (zone == "cannon" || zone == "body") return fallback;
+            var z = FindDeep(transform, zone); if (z == null) return fallback;
+            var c = z.GetComponent<Collider>(); return c != null ? c.bounds.center : z.position;
+        }
+        static Transform FindDeep(Transform t, string name) { if (t.name == name) return t; for (int i = 0; i < t.childCount; i++) { var r = FindDeep(t.GetChild(i), name); if (r != null) return r; } return null; }
         void DeathPose() { var m = Ctx.Get<Characters.CharacterModel>("bossModel"); if (m != null) m.PlayClip("death"); }
     }
 

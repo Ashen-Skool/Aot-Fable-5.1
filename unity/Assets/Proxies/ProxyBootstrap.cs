@@ -28,6 +28,7 @@ namespace Proxies
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void AfterScene()
         {
+            Reboot.Register(20, AfterScene);
             var b = Bootstrap.Ensure();
             if (Ctx.Get<MikasaProxy>("mikasaProxy") == null) Spawn(b); // Bootstrap ran before our hook was set
             if (Bootstrap.Arg("-piece") == "proxies" || Bootstrap.Arg("-lineup") != null) BuildLineup();
