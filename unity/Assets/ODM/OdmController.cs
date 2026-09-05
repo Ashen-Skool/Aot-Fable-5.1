@@ -501,7 +501,10 @@ namespace ODM
         {
             if (cam == null) { cam = Ctx.Get<Camera>("camera"); if (cam == null) cam = Camera.main; }
             if (Scripted) return;
+            if (TitleDone && GameInput.Escape && !InputHeld && string.IsNullOrEmpty(Ctx.Get<string>("gameOver"))) { Paused = !Paused; Time.timeScale = Paused ? 0f : 1f; }
+            if (Paused && UnityEngine.Input.GetMouseButtonDown(0)) { Paused = false; Time.timeScale = 1f; }
             GameInput.UpdateCursor();
+            if (Paused) { liveInput = default; return; }
             if (InputHeld) { liveInput = default; hookLatched = false; if (Hook == HookState.Attached) Detach(); return; }
             if (Ctx.Get<bool>("autoFly")) { Ctx.Set("autoFly", false); Play(FlightScript.HarnessHop(rb.position, cam != null ? cam.transform.forward : transform.forward)); }
             var mv = GameInput.Move;
@@ -553,6 +556,9 @@ namespace ODM
         void LateUpdate()
         {
             UpdateCables(); UpdateSpeedFx(); SlashHitCheck(Time.deltaTime); UpdatePose();
+            // blades hang at rest on the ground, come up for a slash, a hook or a run
+            float restWant = (Grounded && slashTimer <= 0f && Hook == HookState.None && Speed < 6f && staggerTimer <= 0f) ? 1f : 0f;
+            Characters.CharacterModel.BladeRest = Mathf.Lerp(Characters.CharacterModel.BladeRest, restWant, 1f - Mathf.Exp(-(restWant > 0.5f ? 5f : 14f) * Time.deltaTime));
             EnsureBladeTrails();
             if (bladeTrails != null) { bool on = slashTimer > 0.05f; for (int i = 0; i < 2; i++) if (bladeTrails[i] != null && bladeTrails[i].emitting != on) { bladeTrails[i].emitting = on; if (on) bladeTrails[i].Clear(); } }
         }
@@ -599,6 +605,7 @@ namespace ODM
 
         // ---------- HUD (ODM/Hud.cs) ----------
         public static bool TitleDone { get; set; }
+        public static bool Paused { get; set; }
         /// <summary>True while the title orbit or the intro dive owns the screen.</summary>
         public bool InputHeld => !TitleDone || Time.unscaledTime < Ctx.Get<float>("introUntil");
         void OnGUI()

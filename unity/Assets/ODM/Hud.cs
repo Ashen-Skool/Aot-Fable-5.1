@@ -206,7 +206,14 @@ namespace ODM
                     sh, new Color(1f, 1f, 1f, 0.7f * helpFade), 1f);
                 sSmall.alignment = TextAnchor.MiddleLeft;
             }
-            if (!GameInput.CursorCaptured) Text(new Rect(0, cy + 40f * s, W, 24f * s), "CLICK TO CAPTURE THE MOUSE", Sized(sPrompt, 22f), new Color(1f, 1f, 1f, 0.8f));
+            if (OdmController.Paused)
+            {
+                Box(0, 0, W, H, new Color(0f, 0f, 0f, 0.55f));
+                Text(new Rect(0, cy - 70f * s, W, 80f * s), "PAUSED", Sized(sTitle, 72f), Color.white, 3f);
+                Text(new Rect(0, cy + 10f * s, W, 34f * s), "CLICK OR ESC  RESUME      R  RESTART      CMD-Q  QUIT", Sized(sPrompt, 26f), new Color(1f, 1f, 1f, 0.85f));
+                if (UnityEngine.Input.GetKeyDown(KeyCode.R) && !Reboot.Restarting) { OdmController.Paused = false; playStart = -1f; orbitStarted = false; OdmController.TitleDone = false; Reboot.Now(); }
+            }
+            else if (!GameInput.CursorCaptured) Text(new Rect(0, H - 40f * s, W, 22f * s), "CLICK TO CAPTURE THE MOUSE  ·  ESC PAUSES", Sized(sSmall, 14f), new Color(1f, 1f, 1f, 0.7f), 1f);
             // frame rate, tiny, top right, so a build's cost is always visible
             fpsAcc += Time.unscaledDeltaTime; fpsN++;
             if (fpsAcc > 0.5f) { fpsShown = fpsN / fpsAcc; fpsAcc = 0f; fpsN = 0; }

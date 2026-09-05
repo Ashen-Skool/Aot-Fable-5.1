@@ -42,7 +42,11 @@ namespace Proxies
             Vector3 toP = pl.position - transform.position; float distFlat = new Vector2(toP.x, toP.z).magnitude;
             // soft camera lock: once he is close and alive the chase camera keeps him in frame (the rig blends, the mouse still steers)
             bool wantLock = Current != State.Idle && Current != State.Dead && distFlat < 80f;
-            if (wantLock != locked) { locked = wantLock; if (locked) Ctx.Set("cameraLockTarget", LockPoint()); else Ctx.Remove("cameraLockTarget"); }
+            if (wantLock != locked)
+            {
+                locked = wantLock; if (locked) Ctx.Set("cameraLockTarget", LockPoint()); else Ctx.Remove("cameraLockTarget");
+                if (locked && !hinted) { hinted = true; HudEvents.Add(transform.position + Vector3.up * height * 0.3f, "GET BEHIND HIM  ·  HAMSTRINGS FIRST", new Color(1f, 0.85f, 0.4f), 0.9f, 3.5f); }
+            }
             switch (Current)
             {
                 case State.Idle:
@@ -99,7 +103,7 @@ namespace Proxies
                     break;
             }
         }
-        Pose attackKind; bool hitDone; bool endShown; bool locked; Transform lockPoint;
+        Pose attackKind; bool hitDone; bool endShown; bool locked, hinted; Transform lockPoint;
         Transform LockPoint()
         {
             if (lockPoint == null) { var go = new GameObject("TitanLockPoint"); go.transform.SetParent(transform, false); go.transform.localPosition = Vector3.up * height * 0.55f; lockPoint = go.transform; }

@@ -211,6 +211,8 @@ namespace Characters
         readonly System.Collections.Generic.List<(Transform root, Transform hand, Transform arm)> blades = new System.Collections.Generic.List<(Transform, Transform, Transform)>();
         readonly System.Collections.Generic.List<(Transform mount, float side)> fists = new System.Collections.Generic.List<(Transform, float)>();
         public static float FistRollDeg = 0f;
+        /// <summary>0 = blades follow the hands (attacks, flight); 1 = hanging down along the legs at rest. The player controller drives it.</summary>
+        public static float BladeRest = 0f;
         /// <summary>Twin ODM blades (Resources/Props/Blade) in gloved fists (Resources/Props/Fist), aligned from the geometry.</summary>
         void AddBlades(float height)
         {
@@ -259,7 +261,15 @@ namespace Characters
                 axis.Normalize();
                 Vector3 up = Vector3.Cross(axis, transform.parent.right); if (up.sqrMagnitude < 1e-4f) up = Vector3.up;
                 root.position = hand.position + axis * 0.01f;
-                root.rotation = Quaternion.LookRotation(axis, up);
+                var follow = Quaternion.LookRotation(axis, up);
+                if (BladeRest > 0.001f)
+                {
+                    // at rest the blade hangs from the fist: tip down, a touch behind her
+                    Vector3 down = (Vector3.down + transform.parent.forward * -0.18f).normalized;
+                    var rest = Quaternion.LookRotation(down, transform.parent.forward);
+                    root.rotation = Quaternion.Slerp(follow, rest, BladeRest);
+                }
+                else root.rotation = follow;
             }
         }
         void OnDestroy() { if (graph.IsValid()) graph.Destroy(); }
