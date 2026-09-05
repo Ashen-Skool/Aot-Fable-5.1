@@ -10,7 +10,8 @@ namespace Shared
     public class Harness : MonoBehaviour
     {
         static bool restarted; static Harness inst;
-        float quitAt = -1f, restartAt = -1f; bool fps; float acc; int n; float t0; bool counted;
+        float quitAt = -1f, restartAt = -1f, autoStart = -1f; bool fps; float acc; int n; float t0; bool counted, started;
+        float[] shotAt = new float[0]; int shotIdx; string shotDir;
         readonly FrameTiming[] timings = new FrameTiming[1]; double cpuMain, cpuRender, gpu; int tn;
 
         public static void Ensure()
@@ -18,15 +19,24 @@ namespace Shared
             if (inst != null) return;
             float q = Bootstrap.ArgInt("-quitAfter", -1), r = Bootstrap.ArgInt("-autoRestart", -1);
             bool f = Bootstrap.Arg("-fpslog", null) != null || System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-fpslog") >= 0;
-            if (q < 0f && r < 0f && !f) return;
+            float a = Bootstrap.ArgInt("-autoStart", -1);
+            string shots = Bootstrap.Arg("-screenshotAt"); string dir = Bootstrap.Arg("-shotDir", "shots/play");
+            if (q < 0f && r < 0f && !f && a < 0f && shots == null) return;
             var go = new GameObject("Harness"); DontDestroyOnLoad(go);
-            inst = go.AddComponent<Harness>(); inst.quitAt = q; inst.restartAt = restarted ? -1f : r; inst.fps = f; inst.t0 = Time.realtimeSinceStartup;
+            inst = go.AddComponent<Harness>(); inst.quitAt = q; inst.restartAt = restarted ? -1f : r; inst.fps = f; inst.t0 = Time.realtimeSinceStartup; inst.autoStart = a; inst.shotDir = dir;
+            if (shots != null) { var parts = shots.Split(','); inst.shotAt = new float[parts.Length]; for (int i = 0; i < parts.Length; i++) float.TryParse(parts[i], out inst.shotAt[i]); System.IO.Directory.CreateDirectory(dir); }
             Debug.Log("[Harness] quitAfter=" + q + " autoRestart=" + r + " fpslog=" + f);
         }
 
         void Update()
         {
             float t = Time.realtimeSinceStartup - t0;
+            if (autoStart >= 0f && !started && t >= autoStart) { started = true; Ctx.Set("autoStart", true); Debug.Log("[Harness] autoStart at t=" + t.ToString("0.0")); }
+            if (shotIdx < shotAt.Length && t >= shotAt[shotIdx])
+            {
+                var path = System.IO.Path.Combine(shotDir, "play_" + shotAt[shotIdx].ToString("0") + "s.png");
+                ScreenCapture.CaptureScreenshot(path); Debug.Log("[Harness] screenshot " + path); shotIdx++;
+            }
             if (fps)
             {
                 acc += Time.unscaledDeltaTime; n++;
@@ -40,11 +50,12 @@ namespace Shared
                 }
                 if (!counted && t > 4f)
                 {
-                    counted = true; long verts = 0, tris = 0; int renderers = 0, casters = 0;
+                    counted = true; long verts = 0, tris = 0; int renderers = 0, casters = 0; var seen = new System.Collections.Generic.HashSet<Mesh>();
                     foreach (var mf in Object.FindObjectsByType<MeshFilter>(FindObjectsSortMode.None))
                     {
                         if (mf.sharedMesh == null) continue; var r = mf.GetComponent<Renderer>(); if (r == null || !r.enabled) continue;
-                        verts += mf.sharedMesh.vertexCount; tris += mf.sharedMesh.triangles.Length / 3; renderers++;
+                        renderers++; if (!seen.Add(mf.sharedMesh)) continue;   // static batching shares one combined mesh across many renderers
+                        verts += mf.sharedMesh.vertexCount; tris += mf.sharedMesh.triangles.Length / 3;
                         if (r.shadowCastingMode != UnityEngine.Rendering.ShadowCastingMode.Off) casters++;
                     }
                     foreach (var sk in Object.FindObjectsByType<SkinnedMeshRenderer>(FindObjectsSortMode.None)) { if (sk.sharedMesh != null) { verts += sk.sharedMesh.vertexCount; tris += sk.sharedMesh.triangles.Length / 3; renderers++; } }

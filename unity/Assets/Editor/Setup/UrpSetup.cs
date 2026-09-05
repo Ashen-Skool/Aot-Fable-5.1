@@ -77,9 +77,9 @@ namespace Setup
             }
             pipeline.supportsHDR = true;
             pipeline.msaaSampleCount = 4;
-            pipeline.shadowDistance = 190f;
-            pipeline.shadowCascadeCount = 3;
-            pipeline.cascade3Split = new Vector2(0.07f, 0.25f);
+            pipeline.shadowDistance = 260f;
+            pipeline.shadowCascadeCount = 4;
+            pipeline.cascade4Split = new Vector3(0.05f, 0.15f, 0.4f);
             pipeline.mainLightShadowmapResolution = 4096;
             { var pso = new SerializedObject(pipeline); pso.FindProperty("m_SoftShadowsSupported").boolValue = true; pso.ApplyModifiedPropertiesWithoutUndo(); }
             pipeline.shadowDepthBias = 1.0f;

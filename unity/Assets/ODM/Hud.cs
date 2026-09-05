@@ -235,8 +235,9 @@ namespace ODM
             sLabel.alignment = TextAnchor.MiddleLeft;
             float pulse = 0.6f + 0.4f * Mathf.Sin(Time.unscaledTime * 3f);
             Text(new Rect(0, H * 0.30f + 280f * s, W, 40f * s), "CLICK TO BEGIN", Sized(sPrompt, 34f), new Color(1f, 1f, 1f, pulse));
-            if (UnityEngine.Input.GetMouseButtonDown(0) || UnityEngine.Input.GetKeyDown(KeyCode.Space) || UnityEngine.Input.GetKeyDown(KeyCode.Return))
+            if (UnityEngine.Input.GetMouseButtonDown(0) || UnityEngine.Input.GetKeyDown(KeyCode.Space) || UnityEngine.Input.GetKeyDown(KeyCode.Return) || Ctx.Get<bool>("autoStart"))
             {
+                Ctx.Set("autoStart", false);
                 OdmController.TitleDone = true; Time.timeScale = 1f; Sfx.Play("ui", c.transform.position, 1f, 0.6f);
                 Ctx.Set("titleHold", false); Ctx.Set("introUntil", Time.unscaledTime + 2.6f);
                 var rig = Ctx.Get<Component>("cameraRig"); if (rig != null) rig.SendMessage("BeginIntroDive", SendMessageOptions.DontRequireReceiver);
