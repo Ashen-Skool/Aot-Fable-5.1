@@ -6,7 +6,7 @@ A ten-minute playable Attack on Titan homage in Unity 6, built through the CLI
 on the Mac Studio by a gauntlet loop of builder and critic sub-agents. Started
 2026-09-01. **Read this whole file before doing anything.**
 
-## STATE (2026-09-03, read this, the rest of this file is history)
+## STATE (2026-09-05, read this, the rest of this file is history)
 
 Scope is v2: one district, one 15 m Titan, Mikasa, three-minute loop. No agent loops; the director builds by hand
 and the user is the critic (he plays the mac build on his laptop; never screenshot or drive his machine).
@@ -26,6 +26,13 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
 - Props pipeline: concept (Higgsfield) → `tools/meshy.py` → `tools/prop_finish.py` → `Resources/Props/<Name>.fbx` →
   `Shared/PropAlign.Align` orients from geometry at runtime (exporter axes are not trusted).
 
+- World look (beauty pass 1, 2026-09-05): `wasteland_clouds_puresky` HDRI (sun az/el measured by `tools/sunpos.py`, brightness by
+  `tools/skymean.py`), sky-lit ambient, soft 4k shadows, SSAO renderer feature (added by `UrpSetup.Ssao`), post volume in
+  `TownRuntime.Grade` (ACES, bloom, white balance, split tone, vignette, grain), fog matched to the sky, and `Town/TownLife.cs`
+  (chimney smoke, dust motes on the camera, two bird flocks). A quarter of the houses have lamp-lit windows (`HouseSpec.LitWindows`).
+  Editor setup must run after pulling on the Studio: `tools/unity.sh townsetup -quit -executeMethod Town.Editor.TownSetup.Run` then
+  `tools/setup.sh` (they rewrite Sky.mat, Particles.mat, UrpPipeline/UrpRenderer assets, which are then committed).
+- Music: `Shared/Music.cs` crossfades `Resources/Audio/Music/{title,battle,ending}`; files not yet present (Suno).
 - Audio: `Shared/Sfx.cs` pooled one-shots over `Resources/Audio` (Kenney): hooks, landing, slash, hits, titan steps and attacks, cannon.
 - Title screen (click to begin, Time.timeScale 0 until then) and ending screen live in `OdmController.OnGUI`.
 
@@ -33,7 +40,10 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
 (user asked for cannons on those towers, so they stay; a smaller grid or fewer towers is a design call for him);
 music; the 7 m titan is a grey proxy on purpose.
 
-**Process notes:** keep `tools/test.sh` green (36 tests incl. `CharactersWiredTests`, `GroundSnapProbe`); build with
+**Process notes:** the Studio working copy that actually builds is the director lane `~/dev/lanes/director` (on main); set
+`AOT_STUDIO_REPO=dev/lanes/director` for every tool. The old `~/dev/aot-fable-5.1` clone is stale and blocked by dirty Unity files.
+Captures rewrite `shots/*/latest.png` on the Studio, so `git checkout -- shots/` there before every pull.
+Keep `tools/test.sh` green (36 tests incl. `CharactersWiredTests`, `GroundSnapProbe`); build with
 `tools/build.sh mac`, then rsync the app to `~/Desktop/AOT-build/` on the laptop and `open` it for him. Unity batch runs
 sometimes leave a stale editor holding the project lock after an interrupted command: `pkill -f lanes/director`.
 
