@@ -202,7 +202,7 @@ namespace ODM
             {
                 var sh = Sized(sSmall, 13f); sh.alignment = TextAnchor.UpperLeft;
                 Text(new Rect(36f * s, 30f * s, 520f * s, 90f * s),
-                    "WASD move · MOUSE aim · SPACE hook / release · SHIFT gas\nLMB slash · E cannon · ESC frees the mouse\nfist roll [ ]  " + Characters.CharacterModel.FistRollDeg.ToString("0") + "°",
+                    "WASD move · MOUSE aim · SPACE hook / release · SHIFT gas\nLMB slash · E cannon · ESC frees the mouse\nfist roll [ ]  " + Characters.CharacterModel.FistRollDeg.ToString("0") + "°   titan wrist ; '  " + Characters.CharacterModel.TitanHandRollDeg.ToString("0") + "°",
                     sh, new Color(1f, 1f, 1f, 0.7f * helpFade), 1f);
                 sSmall.alignment = TextAnchor.MiddleLeft;
             }
