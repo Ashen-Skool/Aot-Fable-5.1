@@ -15,6 +15,7 @@ def make_inplace(arm, act, clip):
     hips = next((b for b in arm.pose.bones if b.name.lower() in ("hips", "pelvis")), None)
     if hips is None: print("INPLACE: no hips bone for", clip); return
     arm.animation_data.action = act
+    if getattr(act, "slots", None) and len(act.slots): arm.animation_data.action_slot = act.slots[0]   # Blender 4.4+/5: no slot, no evaluation
     f0, f1 = (int(act.frame_range[0]), int(act.frame_range[1]))
     sc = bpy.context.scene
     def world(f):
