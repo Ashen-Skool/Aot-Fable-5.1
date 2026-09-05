@@ -11,7 +11,7 @@ namespace Shared
     {
         static bool restarted; static Harness inst;
         public static bool Active => inst != null;
-        float quitAt = -1f, restartAt = -1f, autoStart = -1f, autoKill = -1f; bool fps; float acc; int n; float t0; bool counted, started, killed;
+        float quitAt = -1f, restartAt = -1f, autoStart = -1f, autoKill = -1f, autoFly = -1f; bool fps; float acc; int n; float t0; bool counted, started, killed, flew;
         float[] shotAt = new float[0]; int shotIdx; string shotDir;
         readonly FrameTiming[] timings = new FrameTiming[1]; double cpuMain, cpuRender, gpu; int tn;
 
@@ -20,11 +20,11 @@ namespace Shared
             if (inst != null) return;
             float q = Bootstrap.ArgInt("-quitAfter", -1), r = Bootstrap.ArgInt("-autoRestart", -1);
             bool f = Bootstrap.Arg("-fpslog", null) != null || System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-fpslog") >= 0;
-            float a = Bootstrap.ArgInt("-autoStart", -1); float k = Bootstrap.ArgInt("-autoKill", -1);
+            float a = Bootstrap.ArgInt("-autoStart", -1); float k = Bootstrap.ArgInt("-autoKill", -1); float fl = Bootstrap.ArgInt("-autoFly", -1);
             string shots = Bootstrap.Arg("-screenshotAt"); string dir = Bootstrap.Arg("-shotDir", "shots/play");
-            if (q < 0f && r < 0f && !f && a < 0f && k < 0f && shots == null) return;
+            if (q < 0f && r < 0f && !f && a < 0f && k < 0f && fl < 0f && shots == null) return;
             var go = new GameObject("Harness"); DontDestroyOnLoad(go);
-            inst = go.AddComponent<Harness>(); inst.quitAt = q; inst.restartAt = restarted ? -1f : r; inst.fps = f; inst.t0 = Time.realtimeSinceStartup; inst.autoStart = a; inst.autoKill = k; inst.shotDir = dir;
+            inst = go.AddComponent<Harness>(); inst.quitAt = q; inst.restartAt = restarted ? -1f : r; inst.fps = f; inst.t0 = Time.realtimeSinceStartup; inst.autoStart = a; inst.autoKill = k; inst.autoFly = fl; inst.shotDir = dir;
             if (shots != null) { var parts = shots.Split(','); inst.shotAt = new float[parts.Length]; for (int i = 0; i < parts.Length; i++) float.TryParse(parts[i], out inst.shotAt[i]); System.IO.Directory.CreateDirectory(dir); }
             Debug.Log("[Harness] quitAfter=" + q + " autoRestart=" + r + " fpslog=" + f);
         }
@@ -33,6 +33,7 @@ namespace Shared
         {
             float t = Time.realtimeSinceStartup - t0;
             if (autoStart >= 0f && !started && t >= autoStart) { started = true; Ctx.Set("autoStart", true); Debug.Log("[Harness] autoStart at t=" + t.ToString("0.0")); }
+            if (autoFly >= 0f && !flew && t >= autoFly) { flew = true; Ctx.Set("autoFly", true); Debug.Log("[Harness] autoFly at t=" + t.ToString("0.0")); }
             if (autoKill >= 0f && !killed && t >= autoKill)
             {
                 // open the nape from the harness: HP to 1, then a nape hit through reflection (the brain lives in another assembly)

@@ -498,6 +498,7 @@ namespace ODM
             if (Scripted) return;
             GameInput.UpdateCursor();
             if (InputHeld) { liveInput = default; hookLatched = false; if (Hook == HookState.Attached) Detach(); return; }
+            if (Ctx.Get<bool>("autoFly")) { Ctx.Set("autoFly", false); Play(FlightScript.HarnessHop(rb.position, cam != null ? cam.transform.forward : transform.forward)); }
             var mv = GameInput.Move;
             liveInput.moveX = mv.x;
             liveInput.moveY = mv.y;
@@ -597,7 +598,7 @@ namespace ODM
         public bool InputHeld => !TitleDone || Time.unscaledTime < Ctx.Get<float>("introUntil");
         void OnGUI()
         {
-            if (Scripted || Application.isBatchMode || PerfToggles.Off("hud")) return;
+            if (Application.isBatchMode || PerfToggles.Off("hud")) return;   // scripted flights in a windowed run keep the HUD (harness screenshots)
             Hud.Draw(this, cam);
         }
 

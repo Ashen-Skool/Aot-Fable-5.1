@@ -119,6 +119,20 @@ namespace ODM
         public static Vector3 DemoA3(HookTestGrid g) => g.WallNearTop(A3c, A3r, 0.8f);   // x=+22, z=22 (landing roof)
         public static Vector3 DemoLandRoof(HookTestGrid g) => g.RoofTop(A3c, A3r);
 
+        /// <summary>Harness flight for screenshots: hook a virtual anchor high ahead, gas along it for a while, let go, land.</summary>
+        public static FlightScript HarnessHop(Vector3 from, Vector3 forward)
+        {
+            var f = new Vector3(forward.x, 0f, forward.z); if (f.sqrMagnitude < 1e-4f) f = Vector3.forward; f.Normalize();
+            var aim = from + f * 38f + Vector3.up * 30f;
+            var s = new FlightScript { name = "harnessHop" };
+            s.Add(0f, 0, 1, true, false, false, aim, "hook", aim);
+            s.Add(0.4f, 0, 1, true, true, false, aim, "gas", aim + f * 30f);
+            s.Add(3.2f, 0, 1, false, true, false, aim, "release", aim + f * 60f);
+            s.Add(3.8f, 0, 0, false, false, false, null, "fall");
+            s.End(7f);
+            return s;
+        }
+
         public static FlightScript Demo(HookTestGrid g)
         {
             var s = new FlightScript { name = "demo" };
