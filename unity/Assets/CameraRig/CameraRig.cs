@@ -377,10 +377,9 @@ namespace AotCamera
             speed01 = Mathf.Clamp01(Speed / speedRef);
             // Slow and unlocked: the heading is frozen and the mouse offset is absolute. Following the body here is a
             // feedback loop (the body faces the camera), and following the camera integrates the mouse offset every frame.
-            bool free = (Target.State & CameraTargetState.Flying) != 0 && (Target.State & CameraTargetState.Hooked) == 0;
-            var want = (free || (Speed < 10f && Lock == null)) ? headingDir : Target.Forward;   // free flight: the heading is the mouse, never dragged by velocity
+            var want = (Speed < 10f && Lock == null) ? headingDir : Target.Forward;
             if (Mathf.Abs(mouseYaw) > 90f && Lock == null) want = headingDir; // looking behind: do not drag the heading around under the offset
-            if (Speed > 2f && !free) want = Vector3.Slerp(want, v / Speed, Mathf.Clamp01((Speed - 2f) / 8f) * Mathf.Clamp01((Speed - 6f) / 6f));
+            if (Speed > 2f) want = Vector3.Slerp(want, v / Speed, Mathf.Clamp01((Speed - 2f) / 8f) * Mathf.Clamp01((Speed - 6f) / 6f));
             if (want.sqrMagnitude < 1e-4f) want = headingDir;
             want.Normalize();
             if ((Target.State & CameraTargetState.Grounded) != 0) { want.y = 0f; if (want.sqrMagnitude < 1e-4f) want = headingDir; want.Normalize(); }

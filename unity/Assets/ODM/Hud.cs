@@ -257,7 +257,7 @@ namespace ODM
         static void Title(OdmController c, float W, float H, float s)
         {
             Music.Set("title");
-            Time.timeScale = 1f;
+            Time.timeScale = 0f;   // nothing moves until a key is pressed (the video runs on its own clock)
             Ctx.Set("titleHold", true);
             if (!orbitStarted) { orbitStarted = true; var rig = Ctx.Get<Component>("cameraRig"); if (rig != null) rig.SendMessage("TitleOrbit", SendMessageOptions.DontRequireReceiver); }
             var vid = TitleVideo();

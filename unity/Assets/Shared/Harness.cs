@@ -11,7 +11,7 @@ namespace Shared
     {
         static bool restarted; static Harness inst;
         public static bool Active => inst != null;
-        float quitAt = -1f, restartAt = -1f, autoStart = -1f, autoKill = -1f, autoFly = -1f, autoSlash = -1f, autoPause = -1f; bool fps; float acc; int n; float t0; bool counted, started, killed, flew, slashed, paused;
+        float quitAt = -1f, restartAt = -1f, autoStart = -1f, autoKill = -1f, autoFly = -1f, autoSlash = -1f, autoPause = -1f; bool titanLog; Transform hips; bool fps; float acc; int n; float t0; bool counted, started, killed, flew, slashed, paused;
         float[] shotAt = new float[0]; int shotIdx; string shotDir;
         readonly FrameTiming[] timings = new FrameTiming[1]; double cpuMain, cpuRender, gpu; int tn;
 
@@ -22,9 +22,10 @@ namespace Shared
             bool f = Bootstrap.Arg("-fpslog", null) != null || System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-fpslog") >= 0;
             float a = Bootstrap.ArgInt("-autoStart", -1); float k = Bootstrap.ArgInt("-autoKill", -1); float fl = Bootstrap.ArgInt("-autoFly", -1); float sl = Bootstrap.ArgInt("-autoSlash", -1); float pa = Bootstrap.ArgInt("-autoPause", -1);
             string shots = Bootstrap.Arg("-screenshotAt"); string dir = Bootstrap.Arg("-shotDir", "shots/play");
-            if (q < 0f && r < 0f && !f && a < 0f && k < 0f && fl < 0f && sl < 0f && pa < 0f && shots == null) return;
+            bool tl = System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-titanLog") >= 0;
+            if (q < 0f && r < 0f && !f && a < 0f && k < 0f && fl < 0f && sl < 0f && pa < 0f && !tl && shots == null) return;
             var go = new GameObject("Harness"); DontDestroyOnLoad(go);
-            inst = go.AddComponent<Harness>(); inst.quitAt = q; inst.restartAt = restarted ? -1f : r; inst.fps = f; inst.t0 = Time.realtimeSinceStartup; inst.autoStart = a; inst.autoKill = k; inst.autoFly = fl; inst.autoSlash = sl; inst.autoPause = pa; inst.shotDir = dir;
+            inst = go.AddComponent<Harness>(); inst.quitAt = q; inst.restartAt = restarted ? -1f : r; inst.fps = f; inst.t0 = Time.realtimeSinceStartup; inst.autoStart = a; inst.autoKill = k; inst.autoFly = fl; inst.autoSlash = sl; inst.autoPause = pa; inst.shotDir = dir; inst.titanLog = tl;
             if (shots != null) { var parts = shots.Split(','); inst.shotAt = new float[parts.Length]; for (int i = 0; i < parts.Length; i++) float.TryParse(parts[i], out inst.shotAt[i]); System.IO.Directory.CreateDirectory(dir); }
             Debug.Log("[Harness] quitAfter=" + q + " autoRestart=" + r + " fpslog=" + f);
         }
@@ -33,6 +34,16 @@ namespace Shared
         {
             float t = Time.realtimeSinceStartup - t0;
             if (autoStart >= 0f && !started && t >= autoStart) { started = true; Ctx.Set("autoStart", true); Debug.Log("[Harness] autoStart at t=" + t.ToString("0.0")); }
+            if (titanLog)
+            {
+                var boss = Ctx.Get<Component>("bossBrain");
+                if (boss != null)
+                {
+                    if (hips == null) { var an = boss.GetComponentInChildren<Animator>(); if (an != null && an.isHuman) hips = an.GetBoneTransform(HumanBodyBones.Hips); }
+                    var p = boss.transform.position; var f = boss.transform.forward; var hp = hips != null ? hips.position : p;
+                    Debug.Log("[TL] " + t.ToString("0.000") + " " + p.x.ToString("0.000") + " " + p.z.ToString("0.000") + " " + f.x.ToString("0.000") + " " + f.z.ToString("0.000") + " " + hp.x.ToString("0.000") + " " + hp.y.ToString("0.000") + " " + hp.z.ToString("0.000") + " " + Time.deltaTime.ToString("0.0000"));
+                }
+            }
             if (autoSlash >= 0f && !slashed && t >= autoSlash) { slashed = true; Ctx.Set("autoSlash", true); }
             if (autoPause >= 0f && !paused && t >= autoPause) { paused = true; Ctx.Set("autoPause", true); }
             if (autoFly >= 0f && !flew && t >= autoFly) { flew = true; Ctx.Set("autoFly", true); Debug.Log("[Harness] autoFly at t=" + t.ToString("0.0")); }

@@ -220,6 +220,7 @@ namespace Town
             int roofs = 0;
             foreach (var r in info.rooftops)
             {
+                if (true) break;   // pigeons off: from the street they read as random grey blocks (user)
                 if (roofs++ % 5 != 0 || rng.NextDouble() > 0.6) continue;
                 int n = rng.Next(1, 4);
                 for (int i = 0; i < n; i++)
