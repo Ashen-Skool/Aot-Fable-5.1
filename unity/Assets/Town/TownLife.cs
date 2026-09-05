@@ -79,6 +79,7 @@ namespace Town
                 var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Cone; sh.angle = 8f; sh.radius = 0.12f;
                 var vel = ps.velocityOverLifetime; vel.enabled = true; vel.space = ParticleSystemSimulationSpace.World;
                 vel.x = new ParticleSystem.MinMaxCurve(wind.x * 0.9f, wind.x * 1.6f);
+                vel.y = new ParticleSystem.MinMaxCurve(0.35f, 0.6f);   // all three axes must share a curve mode
                 vel.z = new ParticleSystem.MinMaxCurve(wind.z * 0.9f, wind.z * 1.6f);
                 var sol = ps.sizeOverLifetime; sol.enabled = true;
                 sol.size = new ParticleSystem.MinMaxCurve(1f, Grow());

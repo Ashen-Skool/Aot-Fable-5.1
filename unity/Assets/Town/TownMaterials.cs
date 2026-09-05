@@ -110,7 +110,7 @@ namespace Town
             get
             {
                 if (cache.TryGetValue("glassLit", out var m)) return m;
-                m = Mats.Unlit(new Color(2.2f, 1.35f, 0.55f)); m.name = "glassLit";
+                m = Mats.Unlit(new Color(1.5f, 0.95f, 0.42f)); m.name = "glassLit";
                 cache["glassLit"] = m; return m;
             }
         }

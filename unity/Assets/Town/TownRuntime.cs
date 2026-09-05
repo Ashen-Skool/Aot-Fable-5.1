@@ -92,8 +92,8 @@ namespace Town
             {
                 var sky = new Material(skyBase);
                 sky.SetFloat("_Rotation", Mathf.Repeat(HdriSunAzimuth - SunAzimuth, 360f)); // panoramic: feature at az0 shows at az0 - rotation
-                sky.SetFloat("_Exposure", 1.25f);
-                sky.SetColor("_Tint", new Color(0.56f, 0.53f, 0.5f));
+                sky.SetFloat("_Exposure", 0.5f);   // this HDRI is ~2.5x brighter than qwantani in the upper hemisphere (tools/skymean.py)
+                sky.SetColor("_Tint", new Color(0.52f, 0.5f, 0.48f));
                 RenderSettings.skybox = sky;
             }
             else
@@ -117,7 +117,7 @@ namespace Town
 
             // Ambient from the sky itself (cool blue from above, warm bounce at the horizon), lifted a touch for the shadowed streets.
             RenderSettings.ambientMode = AmbientMode.Skybox;
-            RenderSettings.ambientIntensity = 1.35f;
+            RenderSettings.ambientIntensity = 1.0f;
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = TownMaterials.FogColor;
@@ -141,7 +141,7 @@ namespace Town
             var tone = prof.Add<Tonemapping>(true);
             tone.mode.Override(TonemappingMode.ACES);
             var adj = prof.Add<ColorAdjustments>(true);
-            adj.postExposure.Override(0.45f);
+            adj.postExposure.Override(0.25f);
             adj.saturation.Override(10f);
             adj.contrast.Override(14f);
             var wb = prof.Add<WhiteBalance>(true);
