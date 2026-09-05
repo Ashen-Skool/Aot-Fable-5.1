@@ -49,7 +49,7 @@ namespace Shared
             }
             if (shotIdx < shotAt.Length && t >= shotAt[shotIdx])
             {
-                var path = System.IO.Path.Combine(shotDir, "play_" + shotAt[shotIdx].ToString("0") + "s.png");
+                var path = System.IO.Path.Combine(shotDir, "play_" + shotAt[shotIdx].ToString("0.0").Replace(".", "_") + "s.png");
                 ScreenCapture.CaptureScreenshot(path); Debug.Log("[Harness] screenshot " + path); shotIdx++;
             }
             if (fps)
