@@ -67,7 +67,7 @@ namespace Town
                 if (rng.NextDouble() < 0.25) continue;
                 var ps = NewSystem(root, "Smoke", info.chimneys[i]);
                 var main = ps.main;
-                main.simulationSpace = ParticleSimulationSpace.World;
+                main.simulationSpace = ParticleSystemSimulationSpace.World;
                 main.startLifetime = new ParticleSystem.MinMaxCurve(7f, 11f);
                 main.startSpeed = new ParticleSystem.MinMaxCurve(0.5f, 0.9f);
                 main.startSize = new ParticleSystem.MinMaxCurve(0.7f, 1.1f);
@@ -104,7 +104,7 @@ namespace Town
             var ps = NewSystem(root, "Dust", cam.transform.position);
             ps.gameObject.AddComponent<FollowCamera>();
             var main = ps.main;
-            main.simulationSpace = ParticleSimulationSpace.World;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
             main.startLifetime = new ParticleSystem.MinMaxCurve(6f, 10f);
             main.startSpeed = 0.05f;
             main.startSize = new ParticleSystem.MinMaxCurve(0.03f, 0.07f);
