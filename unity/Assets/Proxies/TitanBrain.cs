@@ -116,18 +116,28 @@ namespace Proxies
         bool InFront(Vector3 toP, float minDot) { var f = transform.forward; f.y = 0f; toP.y = 0f; if (toP.sqrMagnitude < 0.01f) return true; return Vector3.Dot(f.normalized, toP.normalized) > minDot; }
         static readonly float[] probeAngles = { 0f, -35f, 35f, -70f, 70f, -110f, 110f };
         /// <summary>Obstacle avoidance: a fat sphere cast at chest height; the first clear direction wins, else stay put.</summary>
+        Vector3 steerDir; float steerHold;
         Vector3 Steer(Vector3 want, float step)
         {
             float r = height * 0.16f; Vector3 origin = transform.position + Vector3.up * height * 0.45f;
             float look = Mathf.Max(step * 8f, height * 0.5f);
             int mask = ~(1 << gameObject.layer);
-            for (int i = 0; i < probeAngles.Length; i++)
+            bool Clear(Vector3 d) => !Physics.SphereCast(origin, r, d, out var h, look, mask, QueryTriggerInteraction.Ignore) || h.collider.transform.root == transform.root || h.collider.GetComponentInParent<Rigidbody>() != null;
+            // hysteresis: keep the last chosen direction while it is still clear, so he does not zigzag between probes every frame
+            Vector3 chosen = Vector3.zero;
+            if (steerHold > 0f && steerDir.sqrMagnitude > 0.5f && Vector3.Dot(steerDir, want) > 0.3f && Clear(steerDir)) chosen = steerDir;
+            else
             {
-                var d = Quaternion.AngleAxis(probeAngles[i], Vector3.up) * want;
-                if (!Physics.SphereCast(origin, r, d, out var h, look, mask, QueryTriggerInteraction.Ignore) || h.collider.transform.root == transform.root || h.collider.GetComponentInParent<Rigidbody>() != null)
-                    return d;
+                for (int i = 0; i < probeAngles.Length; i++)
+                {
+                    var d = Quaternion.AngleAxis(probeAngles[i], Vector3.up) * want;
+                    if (Clear(d)) { chosen = d; steerHold = 0.6f; break; }
+                }
             }
-            return Vector3.zero;
+            steerHold -= Time.deltaTime;
+            if (chosen.sqrMagnitude < 0.5f) return Vector3.zero;
+            steerDir = steerDir.sqrMagnitude < 0.5f ? chosen : Vector3.Slerp(steerDir, chosen, 1f - Mathf.Exp(-5f * Time.deltaTime));
+            return steerDir.normalized;
         }
         void Face(Vector3 to, float dt)
         {
