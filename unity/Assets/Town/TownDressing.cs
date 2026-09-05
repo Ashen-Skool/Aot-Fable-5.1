@@ -16,12 +16,12 @@ namespace Town
             var root = new GameObject("Dressing").transform; root.SetParent(parent, false);
             var rng = new System.Random(L.seed * 17 + 3);
             var g = new Group();
-            Outskirts(L, info, root, mats, rng);
+            if (!PerfToggles.Off("trees")) Outskirts(L, info, root, mats, rng);
             Streets(L, info, g, mats, rng);
             Signs(L, g, mats, rng);
             Roofs(info, g, mats, rng);
             Gate(L, root, g, mats);
-            Lamps(L, root, g, mats);
+            if (!PerfToggles.Off("lamps")) Lamps(L, root, g, mats);
             g.Emit(root, "DressingMesh", 0);
         }
 

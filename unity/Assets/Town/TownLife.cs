@@ -18,9 +18,9 @@ namespace Town
             if (info == null || parent == null) return;
             var root = new GameObject("Life").transform; root.SetParent(parent, false);
             var rng = new System.Random(Ctx.Has("seed") ? Ctx.Get<int>("seed") : 42);
-            Smoke(info, root, rng);
-            Dust(root);
-            Mist(info, root);
+            if (!PerfToggles.Off("smoke")) Smoke(info, root, rng);
+            if (!PerfToggles.Off("dust")) Dust(root);
+            if (!PerfToggles.Off("mist")) Mist(info, root);
             Birds(root, new Vector3(info.square.center.x, 46f, info.square.center.y), 26f, 7, 0.9f);
             Birds(root, new Vector3(info.square.center.x - 70f, 58f, info.wallZ - 40f), 34f, 5, -0.7f);
         }

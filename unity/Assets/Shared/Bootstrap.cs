@@ -73,6 +73,7 @@ namespace Shared
             if (CharacterFactory != null) CharacterFactory(this);
             else { BuildMikasa(); BuildTitan(); }
             Harness.Ensure();
+            PerfToggles.ApplyPipeline(cam);
             Debug.Log("[Bootstrap] built, seed=" + seed);
         }
 
