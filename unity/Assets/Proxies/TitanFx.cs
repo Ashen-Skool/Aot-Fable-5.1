@@ -127,7 +127,7 @@ namespace Proxies
             dust.Emit(ep, 10);
         }
 
-        public void Step(float distToPlayer) { Shake(Mathf.Clamp01(1f - distToPlayer / 60f) * 0.22f); }
+        public void Step(float distToPlayer) { if (distToPlayer < 18f) Shake(Mathf.Clamp01(1f - distToPlayer / 18f) * 0.08f); }   // was a constant judder while he ran at you (user: "glitching side to side")
 
         public void Death()
         {
