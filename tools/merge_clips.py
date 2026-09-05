@@ -8,6 +8,29 @@ arm = next(o for o in bpy.data.objects if o.type == "ARMATURE"); arm.name = "Arm
 base_objs = set(bpy.data.objects)
 for m in [o for o in bpy.data.objects if o.type == "MESH"]: m.name = "Body" if len([o for o in bpy.data.objects if o.type=="MESH"])==1 else m.name
 arm.animation_data_create()
+INPLACE = {"runfast", "sprint", "charge", "runfast4", "headdown", "running_glb_url", "walking_glb_url"}
+def make_inplace(arm, act, clip):
+    """Meshy locomotion clips travel (hips drift several metres over the loop, then snap back). Remove the linear
+    horizontal drift of the hips in world space so the clip plays in place and the loop closes."""
+    hips = next((b for b in arm.pose.bones if b.name.lower() in ("hips", "pelvis")), None)
+    if hips is None: print("INPLACE: no hips bone for", clip); return
+    arm.animation_data.action = act
+    f0, f1 = (int(act.frame_range[0]), int(act.frame_range[1]))
+    sc = bpy.context.scene
+    def world(f):
+        sc.frame_set(f); return (arm.matrix_world @ hips.matrix).translation.copy()
+    w0, w1 = world(f0), world(f1)
+    drift = (w1 - w0); drift.z = 0.0          # Blender world: Z up; horizontal drift only
+    if drift.length < 0.05: arm.animation_data.action = None; print("INPLACE", clip, "no drift"); return
+    n = max(1, f1 - f0)
+    for f in range(f0, f1 + 1):
+        sc.frame_set(f)
+        m = arm.matrix_world @ hips.matrix
+        corr = m.copy(); corr.translation = m.translation - drift * ((f - f0) / n)
+        hips.matrix = arm.matrix_world.inverted() @ corr
+        hips.keyframe_insert("location", frame=f)
+    arm.animation_data.action = None
+    print("INPLACE", clip, "removed drift", tuple(round(v, 2) for v in drift))
 for clip in clips:
     p = os.path.join(rigdir, clip + ".glb")
     if not os.path.exists(p): print("MISSING", clip); continue
@@ -16,6 +39,7 @@ for clip in clips:
     new_acts = [a for a in bpy.data.actions if a not in acts_before]
     if not new_acts: print("NOACTION", clip); continue
     act = new_acts[0]; act.name = clip; act.use_fake_user = True
+    if clip in INPLACE: make_inplace(arm, act, clip)
     tr = arm.animation_data.nla_tracks.new(); tr.name = clip
     s = tr.strips.new(clip, int(act.frame_range[0]), act); s.name = clip
     for o in [o for o in bpy.data.objects if o not in before]: bpy.data.objects.remove(o, do_unlink=True)
