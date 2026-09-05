@@ -57,7 +57,7 @@ namespace Proxies
                         Current = State.Attack; t = 0f; attackKind = pl.position.y > height * 0.35f ? Pose.Swipe : (Random.value < 0.5f ? Pose.Stomp : Pose.Swipe); Set(attackKind); hitDone = false;
                         // the telegraph: a warning at the spot he is about to hit, a grunt, a shiver through the camera
                         Vector3 warn = transform.position + transform.forward * height * 0.38f + Vector3.up * (attackKind == Pose.Stomp ? height * 0.1f : height * 0.45f);
-                        HudEvents.Add(warn, attackKind == Pose.Stomp ? "STOMP" : "SWIPE", new Color(1f, 0.3f, 0.2f), 1.2f);
+                        HudEvents.Add(warn, attackKind == Pose.Stomp ? "STOMP" : "SWIPE", new Color(1f, 0.3f, 0.2f), 1.5f, windUp + 0.2f);   // the warning lives as long as the wind-up
                         if (Harness.Active) Debug.Log("[TitanAttack] " + attackKind + " dist=" + distFlat.ToString("0.0") + " t=" + Time.time.ToString("0.00"));
                         Sfx.Play("titan_step", transform.position + Vector3.up * height * 0.8f, 0.25f, 0.9f, 260f);
                         if (attackKind == Pose.Swipe) Invoke(nameof(SwipeWhoosh), windUp - 0.25f);

@@ -159,7 +159,7 @@ namespace ODM
             {
                 for (int i = 0; i < HudEvents.Pops.Count; i++)
                 {
-                    var p = HudEvents.Pops[i]; float age = (Time.unscaledTime - p.t0) / HudEvents.Life;
+                    var p = HudEvents.Pops[i]; float age = (Time.unscaledTime - p.t0) / p.life;
                     var sp = cam.WorldToScreenPoint(p.pos); if (sp.z < 0f) continue;
                     float rise = 70f * s * (1f - (1f - age) * (1f - age));
                     float alpha = age < 0.7f ? 1f : 1f - (age - 0.7f) / 0.3f;

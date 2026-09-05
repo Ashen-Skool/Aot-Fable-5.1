@@ -6,7 +6,7 @@ A ten-minute playable Attack on Titan homage in Unity 6, built through the CLI
 on the Mac Studio by a gauntlet loop of builder and critic sub-agents. Started
 2026-09-01. **Read this whole file before doing anything.**
 
-## STATE (2026-09-05 night, read this, the rest of this file is history)
+## STATE (2026-09-05, late, read this, the rest of this file is history)
 
 Scope is v2: one district, one 15 m Titan, Mikasa, three-minute loop. No agent loops; the director builds by hand
 and the user is the critic (he plays the mac build on his laptop; never screenshot or drive his machine).
@@ -49,11 +49,22 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
   Ground103 is now imported under `Town/Imported/Resources/Town/Textures` (it was missing; ground materials fell back to bricks).
   Outskirt ground uses `TownMaterials.TexturedSimple` (Simple Lit) and a dark tint; from the rooftops it still lifts toward the fog.
 - Capture poses `outskirts` and `wall_top` added to `tools/poses.json`.
+- **Performance: the 26 fps was vsync.** `Bootstrap` forces `vSyncCount = 0`; the Studio then runs 150-360 fps at 1080p with everything on.
+  Town is static-batched at runtime (`TownRuntime`), dressing/outskirts cast no shadows, the Titan has a kinematic Rigidbody.
+- **Player self-checks** (`Shared/Harness.cs`, all command-line): `-quitAfter N`, `-autoRestart N` (proved `Reboot` in a real build:
+  RESTART_OK), `-fpslog`, `-autoStart N` (lifts the title), `-autoKill N` (nape hit through reflection), `-screenshotAt a,b,c`
+  (real frames with the HUD to `shots/play/`). `tools/play.sh 42 -fpslog -autoStart 2 -autoKill 26 -screenshotAt 15,27 -quitAfter 30`
+  then rsync `shots/play/` back. `Shared/PerfToggles.cs`: `-noSsao -noPost -msaa1 -shadow2k -noShadows -noMist -noSmoke -noDust
+  -noTrees -noLamps -noHud -noTown -noChars` for bisecting frame cost.
+- Title: live orbit over the district from boot (`CameraRig.TitleOrbit`), click = intro dive to Mikasa (`BeginIntroDive`), input held
+  and the Titan waits at the gate (`Ctx titleHold` / `introUntil`) then roars (`Shared/Synth.cs`: roar, whoosh). Boss starts at z=98.
+- Soft camera lock on the Titan within 80 m (`Ctx cameraLockTarget`, set by `TitanBrain`). He now closes to stomp range.
+- Verified from screenshots: title orbit, dive, HUD, approach with lock, swipe wind-up, kill cam + steam + damage number, ending card.
 - Music: `Shared/Music.cs` crossfades `Resources/Audio/Music/{title,battle,ending}`; files not yet present (Suno).
 - Audio: `Shared/Sfx.cs` pooled one-shots over `Resources/Audio` (Kenney): hooks, landing, slash, hits, titan steps and attacks, cannon.
 - Title screen (click to begin, Time.timeScale 0 until then) and ending screen live in `OdmController.OnGUI`.
 
-**Open items:** Reboot (R) needs a real-build check; Suno music files; building destruction is rubble/dust only; attic hatches skipped;
+**Open items:** Suno music files; building destruction is rubble/dust only; attic hatches skipped;
 fist roll number from the user; draw/sheathe pose; the tower grid visually swallows the town from above
 (user asked for cannons on those towers, so they stay; a smaller grid or fewer towers is a design call for him);
 music; the 7 m titan is a grey proxy on purpose.
