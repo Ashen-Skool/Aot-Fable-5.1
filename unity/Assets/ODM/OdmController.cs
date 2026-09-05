@@ -514,6 +514,7 @@ namespace ODM
             if (Scripted || Application.isBatchMode) return;
             if (!titleDone)
             {
+                Shared.Music.Set("title");
                 if (hudStyle == null) { hudStyle = new GUIStyle(GUI.skin.label) { fontSize = 16, richText = true }; hudStyle.normal.textColor = Color.white; }
                 Time.timeScale = 0f;
                 GUI.color = new Color(0.02f, 0.02f, 0.03f, 0.82f); GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture); GUI.color = Color.white;
@@ -537,6 +538,7 @@ namespace ODM
                 "<b>Shift</b> gas burst   <b>LMB</b> slash (air: blade spin)   <b>Esc</b> release mouse\n" +
                 "gas " + Gas.ToString("0") + "   speed " + Speed.ToString("0") + " m/s   fist roll [ ] " + Characters.CharacterModel.FistRollDeg.ToString("0") + "°   " + (Hook != HookState.None ? "<color=#ff9933>HOOKED</color>" : (Grounded ? "grounded" : "airborne")), hudStyle);
             var brainHud = Ctx.Get<Proxies.TitanBrain>("bossBrain");
+            Shared.Music.Set(brainHud != null && brainHud.Current == Proxies.TitanBrain.State.Dead ? "ending" : "battle");
             if (brainHud != null && brainHud.Current != Proxies.TitanBrain.State.Idle)
             {
                 float w = Mathf.Min(520f, Screen.width * 0.4f); float x0 = (Screen.width - w) * 0.5f;
