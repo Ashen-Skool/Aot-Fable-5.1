@@ -69,7 +69,7 @@ namespace Proxies
                         Set(sprint ? Pose.Sprint : Pose.Run);
                         float sp = sprint ? sprintSpeed : walkSpeed;
                         var f = transform.forward; f.y = 0f; f.Normalize();
-                        if (distFlat > attackRange * 0.8f) transform.position += Steer(f, sp * dt) * sp * dt;
+                        if (distFlat > attackRange * 0.55f) transform.position += Steer(f, sp * dt) * sp * dt;   // close enough that a stomp can actually land on a grounded player
                     }
                     break;
                 case State.Attack:
