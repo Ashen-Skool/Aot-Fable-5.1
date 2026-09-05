@@ -14,7 +14,8 @@ namespace Proxies
         public enum State { Idle, Chase, Attack, Stagger, Kneel, Dead }
         public State Current { get; private set; } = State.Idle;
         public float height = 15f, walkSpeed = 6.5f, sprintSpeed = 11f, sightRange = 120f, attackRange = 16f, turnRate = 70f;
-        public float swipeDamage = 35f, stompDamage = 45f;
+        public float swipeDamage = 24f, stompDamage = 32f;
+        public float windUp = 1.05f, attackLength = 2.1f, attackCooldown = 2.6f;   // a readable telegraph, then a real opening
         public bool HamL, HamR;
         public float HP = 100f, HPMax = 100f;
         IPoser poser; Transform player; Component playerCtrl; float t, cooldown, kneelTimer, roarTimer;
@@ -45,7 +46,15 @@ namespace Proxies
                     break;
                 case State.Chase:
                     Face(toP, dt);
-                    if (distFlat < attackRange && cooldown <= 0f) { Current = State.Attack; t = 0f; attackKind = pl.position.y > height * 0.35f ? Pose.Swipe : (Random.value < 0.5f ? Pose.Stomp : Pose.Swipe); Set(attackKind); hitDone = false; }
+                    if (distFlat < attackRange && cooldown <= 0f && InFront(toP, 0.1f))
+                    {
+                        Current = State.Attack; t = 0f; attackKind = pl.position.y > height * 0.35f ? Pose.Swipe : (Random.value < 0.5f ? Pose.Stomp : Pose.Swipe); Set(attackKind); hitDone = false;
+                        // the telegraph: a warning at the spot he is about to hit, a grunt, a shiver through the camera
+                        Vector3 warn = transform.position + transform.forward * height * 0.38f + Vector3.up * (attackKind == Pose.Stomp ? height * 0.1f : height * 0.45f);
+                        HudEvents.Add(warn, attackKind == Pose.Stomp ? "STOMP" : "SWIPE", new Color(1f, 0.3f, 0.2f), 1.2f);
+                        Sfx.Play("titan_step", transform.position + Vector3.up * height * 0.8f, 0.25f, 0.9f, 260f);
+                        Fx?.Step(distFlat * 0.5f);
+                    }
                     else
                     {
                         bool sprint = distFlat > attackRange * 3f;
@@ -56,17 +65,18 @@ namespace Proxies
                     }
                     break;
                 case State.Attack:
-                    Face(toP, dt * 0.5f);
-                    if (!hitDone && t > 0.55f)
+                    Face(toP, dt * 0.35f);   // committed: he cannot track you through the swing
+                    if (!hitDone && t > windUp)
                     {
                         hitDone = true; Sfx.Play("titan_step", transform.position + transform.forward * height * 0.4f, attackKind == Pose.Stomp ? 0.35f : 0.6f, 1f, 260f);
                         Vector3 hitCenter = transform.position + transform.forward * height * 0.38f + Vector3.up * (attackKind == Pose.Stomp ? height * 0.06f : height * 0.45f);
                         float r = attackKind == Pose.Stomp ? height * 0.24f : height * 0.3f;   // stomp reaches ~3.6 m around the foot, swipe ~4.5 m around the hand
                         if (attackKind == Pose.Stomp) Fx?.Stomp(new Vector3(hitCenter.x, transform.position.y, hitCenter.z), toP); else Fx?.Swipe(hitCenter);
-                        if (Vector3.Distance(pl.position, hitCenter) < r) (playerCtrl as ODMHit)?.Hit(this, attackKind == Pose.Stomp ? stompDamage : swipeDamage);
+                        bool inArc = InFront(toP, 0.25f);   // behind or beside him you are safe: that is where the nape is
+                        if (inArc && Vector3.Distance(pl.position, hitCenter) < r) (playerCtrl as ODMHit)?.Hit(this, attackKind == Pose.Stomp ? stompDamage : swipeDamage);
                         else playerCtrl.SendMessage("TakeHitIfInside", new object[] { hitCenter, r, attackKind == Pose.Stomp ? stompDamage : swipeDamage }, SendMessageOptions.DontRequireReceiver);
                     }
-                    if (t > 1.6f) { Current = State.Chase; cooldown = 1.2f; }
+                    if (t > attackLength) { Current = State.Chase; cooldown = attackCooldown; }
                     break;
                 case State.Stagger:
                     if (t > 1.1f) { Current = State.Chase; cooldown = 0.6f; }
@@ -82,6 +92,7 @@ namespace Proxies
             }
         }
         Pose attackKind; bool hitDone; bool endShown;
+        bool InFront(Vector3 toP, float minDot) { var f = transform.forward; f.y = 0f; toP.y = 0f; if (toP.sqrMagnitude < 0.01f) return true; return Vector3.Dot(f.normalized, toP.normalized) > minDot; }
         static readonly float[] probeAngles = { 0f, -35f, 35f, -70f, 70f, -110f, 110f };
         /// <summary>Obstacle avoidance: a fat sphere cast at chest height; the first clear direction wins, else stay put.</summary>
         Vector3 Steer(Vector3 want, float step)

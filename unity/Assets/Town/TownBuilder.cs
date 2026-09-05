@@ -382,10 +382,10 @@ namespace Town
                 float y0 = row * course, y1 = Mathf.Min(H - 0.4f, y0 + course);
                 if (y1 - y0 < 0.3f) break;
                 int band = Mathf.Clamp((int)(y0 / 12.5f), 0, 3);
-                var kb = wallGroup.Get(mats.WallBlock(band), Matrix4x4.identity);
                 float x = -X + (row % 2 == 0 ? 0f : -1.6f);
                 while (x < X)
                 {
+                    var kb = wallGroup.Get(mats.WallBlock(band, wr.Next(3)), Matrix4x4.identity);   // three shades so the blocks read individually
                     float w = 2.4f + (float)wr.NextDouble() * 2.0f;
                     float xa = Mathf.Max(-X, x), xb = Mathf.Min(X, x + w);
                     x += w;

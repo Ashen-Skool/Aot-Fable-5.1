@@ -23,10 +23,10 @@ namespace Town
         public float mainHalf = 4.5f;
 
         // column x ranges (mirrored to -x) and row z ranges
-        static readonly float[] ColMin = { 4.5f, 32.5f, 60.5f, 88.5f };
-        const float ColWidth = 22f;
-        static readonly float[] RowMin = { -86f, -44f, -4f, 36f, 76f };
-        static readonly float[] RowMax = { -50f, -10f, 30f, 70f, 108f };
+        public static readonly float[] ColMin = { 4.5f, 32.5f, 60.5f, 88.5f };
+        public const float ColWidth = 22f;
+        public static readonly float[] RowMin = { -86f, -44f, -4f, 36f, 76f };
+        public static readonly float[] RowMax = { -50f, -10f, 30f, 70f, 108f };
 
         public static TownLayout Build(int seed)
         {

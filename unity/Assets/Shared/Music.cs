@@ -7,7 +7,9 @@ namespace Shared
     public static class Music
     {
         const float FadeSeconds = 2.5f, Volume = 0.55f;
-        static AudioSource a, b; static string current; static MusicTicker ticker;
+        static AudioSource a, b; static string current; static MusicTicker ticker; static float duckUntil, duck = 1f;
+        /// <summary>Drop the music for a beat (a hit, a cut).</summary>
+        public static void Duck(float seconds) { duckUntil = Mathf.Max(duckUntil, Time.unscaledTime + seconds); }
 
         public static void Set(string name)
         {
@@ -34,7 +36,8 @@ namespace Shared
             void Update()
             {
                 float step = Time.unscaledDeltaTime / FadeSeconds;   // keeps fading while the title pauses the clock
-                if (a != null && a.clip != null) a.volume = Mathf.MoveTowards(a.volume, Volume, step);
+                duck = Mathf.MoveTowards(duck, Time.unscaledTime < duckUntil ? 0.35f : 1f, Time.unscaledDeltaTime * (Time.unscaledTime < duckUntil ? 8f : 1.5f));
+                if (a != null && a.clip != null) a.volume = Mathf.MoveTowards(a.volume, Volume * duck, Mathf.Max(step, Time.unscaledDeltaTime * 2f));
                 if (b != null && b.isPlaying) { b.volume = Mathf.MoveTowards(b.volume, 0f, step); if (b.volume <= 0f) b.Stop(); }
             }
         }

@@ -81,12 +81,13 @@ namespace Town
             return Textured("plaster" + tint + "s" + shade, "Plaster007", 3.5f, PlasterTint[tint] * Shade[shade], 0.08f, 0.8f);
         }
         /// <summary>Wall block material per height band; lower bands are hazed toward the fog colour so the base reads far and huge.</summary>
-        public Material WallBlock(int band)
+        public Material WallBlock(int band, int shade = 1)
         {
-            band = Mathf.Clamp(band, 0, 3);
+            band = Mathf.Clamp(band, 0, 3); shade = Mathf.Clamp(shade, 0, 2);
             float haze = new[] { 0.34f, 0.22f, 0.1f, 0f }[band];
-            var tint = Color.Lerp(new Color(0.74f, 0.72f, 0.66f), FogColor, haze);
-            return Textured("wallBlock" + band, "Rock030", 4.6f, tint, 0.06f, 1.1f);
+            var tint = Color.Lerp(new Color(0.74f, 0.72f, 0.66f), FogColor, haze) * new[] { 0.86f, 1f, 1.1f }[shade];
+            tint.a = 1f;
+            return Textured("wallBlock" + band + "s" + shade, "Rock030", 4.6f, tint, 0.06f, 1.1f);
         }
         public Material Mortar => Plain("mortar", new Color(0.26f, 0.25f, 0.23f), 0.05f);
         public Material WallStain => Textured("wallStain", "Rock030", 3.1f, new Color(0.3f, 0.29f, 0.26f), 0.04f, 0.6f);

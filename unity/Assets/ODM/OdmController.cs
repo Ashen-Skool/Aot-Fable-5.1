@@ -567,14 +567,17 @@ namespace ODM
             if (bodyHit != null) { bodyHit.Hit("body", rb.position); Shared.Sfx.Play("titan_hit", rb.position, 0.9f, 0.7f); }
         }
         public void Hit(Proxies.TitanBrain from, float damage) => TakeHit(from.transform.position, damage);
+        float hitGrace;   // seconds of invulnerability after a hit so one swing never chains into another
         public void TakeHit(Vector3 from, float damage)
         {
-            if (Health <= 0f) return;
+            if (Health <= 0f || Time.time < hitGrace) return;
+            hitGrace = Time.time + 1.6f;
             Health = Mathf.Max(0f, Health - damage); hitFlash = 0.35f; Shared.Sfx.Play("player_hit", rb.position, 0.8f, 1f);
             Vector3 away = (rb.position - from); away.y = 0f; away = away.sqrMagnitude > 0.01f ? away.normalized : -AimDir;
-            rb.linearVelocity = away * 22f + Vector3.up * 12f; Grounded = false;
+            rb.linearVelocity = away * 13f + Vector3.up * 7f; Grounded = false;
             if (Hook == HookState.Attached) { hookLatched = false; Detach(); }
-            landPoseTimer = 0f; slashTimer = 0f; staggerTimer = 0.9f;
+            landPoseTimer = 0f; slashTimer = 0f; staggerTimer = 0.5f;
+            Shared.Music.Duck(0.5f);
             var camT = GetComponent<OdmCameraTarget>(); if (camT != null) camT.Hit();
             if (Health <= 0f) deathTimer = 2.5f;
         }

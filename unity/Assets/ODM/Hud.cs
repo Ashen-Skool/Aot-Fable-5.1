@@ -14,7 +14,7 @@ namespace ODM
         static Font bebas, oswald; static bool fontsTried;
         static GUIStyle sTitle, sBig, sNum, sLabel, sSmall, sPrompt, sPop;
         static Texture2D vignette, ring;
-        static float playStart = -1f, helpFade = 1f;
+        static float playStart = -1f, helpFade = 1f, fpsAcc, fpsShown; static int fpsN;
 
         static void Init()
         {
@@ -193,6 +193,12 @@ namespace ODM
                 sSmall.alignment = TextAnchor.MiddleLeft;
             }
             if (!GameInput.CursorCaptured) Text(new Rect(0, cy + 40f * s, W, 24f * s), "CLICK TO CAPTURE THE MOUSE", Sized(sPrompt, 22f), new Color(1f, 1f, 1f, 0.8f));
+            // frame rate, tiny, top right, so a build's cost is always visible
+            fpsAcc += Time.unscaledDeltaTime; fpsN++;
+            if (fpsAcc > 0.5f) { fpsShown = fpsN / fpsAcc; fpsAcc = 0f; fpsN = 0; }
+            var sf = Sized(sSmall, 12f); sf.alignment = TextAnchor.UpperRight;
+            Text(new Rect(W - 120f * s, 10f * s, 100f * s, 16f * s), fpsShown.ToString("0") + " FPS", sf, new Color(1f, 1f, 1f, fpsShown < 50f ? 0.9f : 0.35f), 1f);
+            sSmall.alignment = TextAnchor.MiddleLeft;
 
             var over = Ctx.Get<string>("gameOver");
             if (!string.IsNullOrEmpty(over)) Ending(c, over, W, H, s);

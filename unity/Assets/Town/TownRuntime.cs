@@ -49,6 +49,7 @@ namespace Town
             if (stubTitan != null && stubTitan.GetComponent<Renderer>() != null && stubTitan.GetComponent<MeshFilter>() != null)
                 foreach (var r in stubTitan.GetComponentsInChildren<Renderer>()) r.enabled = false;
             Ground();
+            TownDressing.Build(layout, Info, Root.transform, Materials);
             Atmosphere(Ctx.Get<Light>("light"));
             Debug.Log("[Town] built seed=" + seed + " houses=" + Info.houseCount + " rooftops=" + Info.rooftops.Count + " in " + t0.ElapsedMilliseconds + " ms");
             return Info;

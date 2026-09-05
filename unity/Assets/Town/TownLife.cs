@@ -20,6 +20,7 @@ namespace Town
             var rng = new System.Random(Ctx.Has("seed") ? Ctx.Get<int>("seed") : 42);
             Smoke(info, root, rng);
             Dust(root);
+            Mist(info, root);
             Birds(root, new Vector3(info.square.center.x, 46f, info.square.center.y), 26f, 7, 0.9f);
             Birds(root, new Vector3(info.square.center.x - 70f, 58f, info.wallZ - 40f), 34f, 5, -0.7f);
         }
@@ -86,7 +87,7 @@ namespace Town
                 var col = ps.colorOverLifetime; col.enabled = true;
                 var g = new Gradient();
                 g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
-                          new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(0.16f, 0.12f), new GradientAlphaKey(0.08f, 0.6f), new GradientAlphaKey(0f, 1f) });
+                          new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(0.22f, 0.12f), new GradientAlphaKey(0.11f, 0.6f), new GradientAlphaKey(0f, 1f) });
                 col.color = g;
                 var rot = ps.rotationOverLifetime; rot.enabled = true; rot.z = new ParticleSystem.MinMaxCurve(-0.25f, 0.25f);
                 var noise = ps.noise; noise.enabled = true; noise.strength = 0.35f; noise.frequency = 0.18f; noise.scrollSpeed = 0.15f;
@@ -121,6 +122,33 @@ namespace Town
                       new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.2f), new GradientAlphaKey(1f, 0.8f), new GradientAlphaKey(0f, 1f) });
             col.color = g;
             ps.Simulate(8f, true, true); ps.Play();
+        }
+
+        /// <summary>A low bank of mist drifting through the streets: big, faint, slow billboards in the fog colour.</summary>
+        static void Mist(TownInfo info, Transform root)
+        {
+            var b = info.bounds;
+            var ps = NewSystem(root, "Mist", new Vector3(b.center.x, 1.6f, b.center.z));
+            var main = ps.main;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(18f, 30f);
+            main.startSpeed = 0.15f;
+            main.startSize = new ParticleSystem.MinMaxCurve(14f, 26f);
+            var fc = TownMaterials.FogColor; main.startColor = new Color(fc.r, fc.g, fc.b, 0.07f);
+            main.startRotation = new ParticleSystem.MinMaxCurve(0f, 6.28f);
+            main.maxParticles = 160;
+            var em = ps.emission; em.rateOverTime = 6f;
+            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(b.size.x, 2.5f, b.size.z);
+            var vel = ps.velocityOverLifetime; vel.enabled = true; vel.space = ParticleSystemSimulationSpace.World;
+            var wind = Quaternion.Euler(0f, TownRuntime.SunAzimuth + 100f, 0f) * Vector3.forward;
+            vel.x = new ParticleSystem.MinMaxCurve(wind.x * 0.3f, wind.x * 0.6f); vel.y = new ParticleSystem.MinMaxCurve(0f, 0.02f); vel.z = new ParticleSystem.MinMaxCurve(wind.z * 0.3f, wind.z * 0.6f);
+            var col = ps.colorOverLifetime; col.enabled = true;
+            var g = new Gradient();
+            g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                      new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.25f), new GradientAlphaKey(1f, 0.75f), new GradientAlphaKey(0f, 1f) });
+            col.color = g;
+            var rot = ps.rotationOverLifetime; rot.enabled = true; rot.z = new ParticleSystem.MinMaxCurve(-0.03f, 0.03f);
+            ps.Simulate(30f, true, true); ps.Play();
         }
 
         static void Birds(Transform root, Vector3 centre, float radius, int count, float dir)
