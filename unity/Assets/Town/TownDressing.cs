@@ -50,11 +50,14 @@ namespace Town
             // a wide grass floor under everything, a step below the town's paving so it never z-fights
             var floor = GameObject.CreatePrimitive(PrimitiveType.Plane); floor.name = "Outskirts_Floor"; floor.transform.SetParent(root, false);
             floor.transform.position = new Vector3(b.center.x, -0.08f, b.center.z); floor.transform.localScale = new Vector3(160f, 1f, 160f);
-            floor.GetComponent<Renderer>().sharedMaterial = mats.Textured("grassFloor", "Ground103", 9f, new Color(0.28f, 0.32f, 0.2f), 0.05f, 0.8f);
+            var floorMat = mats.Textured("grassFloor", "Ground103", 9f, new Color(0.2f, 0.24f, 0.14f), 0.05f, 0.8f);
+            var floorScale = new Vector2(1600f / 9f, 1600f / 9f);   // the plane's UVs span 0..1 over 1600 m: tile every 9 m
+            floorMat.SetTextureScale("_BaseMap", floorScale); floorMat.SetTextureScale("_BumpMap", floorScale);
+            floor.GetComponent<Renderer>().sharedMaterial = floorMat;
             Object.Destroy(floor.GetComponent<Collider>());
             // ring of hills: a radial mesh from just outside the boundary out to the horizon, rising with noise and distance
             const int rings = 14, segs = 72;
-            float r0 = Mathf.Max(b.extents.x, b.extents.z) + 24f, r1 = 520f;
+            float r0 = Mathf.Max(b.extents.x, b.extents.z) + 24f, r1 = 460f;
             var verts = new List<Vector3>((rings + 1) * (segs + 1)); var uvs = new List<Vector2>(); var tris = new List<int>();
             float nx = (float)rng.NextDouble() * 100f, nz = (float)rng.NextDouble() * 100f;
             for (int i = 0; i <= rings; i++)
@@ -65,9 +68,9 @@ namespace Town
                     float a = j / (float)segs * Mathf.PI * 2f;
                     float x = b.center.x + Mathf.Cos(a) * r, z = b.center.z + Mathf.Sin(a) * r;
                     float n = Mathf.PerlinNoise(nx + x * 0.004f, nz + z * 0.004f) * 0.7f + Mathf.PerlinNoise(nx + x * 0.015f, nz + z * 0.015f) * 0.3f;
-                    float rise = i == 0 ? -0.1f : Mathf.Lerp(0f, 95f, Mathf.Pow(t, 0.9f)) * (0.4f + n) + (i == 1 ? 0f : 3f * n);
+                    float rise = i == 0 ? -0.1f : Mathf.Lerp(0f, 150f, Mathf.Pow(t, 0.85f)) * (0.3f + 1.1f * n) + (i == 1 ? 0f : 3f * n);
                     if (z > L.wallZ1 - 40f && i < 4) rise = Mathf.Min(rise, 2f);   // flat outside the gate
-                    verts.Add(new Vector3(x, rise, z)); uvs.Add(new Vector2(x * 0.02f, z * 0.02f));
+                    verts.Add(new Vector3(x, rise, z)); uvs.Add(new Vector2(x / 14f, z / 14f));   // 1 UV unit per texture tile
                 }
             }
             for (int i = 0; i < rings; i++) for (int j = 0; j < segs; j++)
@@ -79,7 +82,7 @@ namespace Town
             mesh.SetVertices(verts); mesh.SetUVs(0, uvs); mesh.SetTriangles(tris, 0); mesh.RecalculateNormals(); mesh.RecalculateBounds();
             var hills = new GameObject("Hills"); hills.transform.SetParent(root, false);
             hills.AddComponent<MeshFilter>().sharedMesh = mesh;
-            hills.AddComponent<MeshRenderer>().sharedMaterial = mats.Textured("hills", "Ground103", 14f, new Color(0.17f, 0.23f, 0.15f), 0.04f, 0.6f);
+            hills.AddComponent<MeshRenderer>().sharedMaterial = mats.Textured("hills", "Ground103", 1f, new Color(0.15f, 0.2f, 0.13f), 0.04f, 0.6f);
             // treeline: dark cones on the first hill rings, merged into one mesh
             var kTree = new MeshKit(); var kTrunk = new MeshKit();
             int placed = 0;
