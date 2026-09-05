@@ -37,6 +37,7 @@ namespace Town
                     var go = new GameObject(name + "_" + kv.Key.name); go.transform.SetParent(parent, false); go.layer = layer;
                     go.AddComponent<MeshFilter>().sharedMesh = kv.Value.Build(name);
                     var r = go.AddComponent<MeshRenderer>(); r.sharedMaterial = kv.Key;
+                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;   // signs, gutters, pigeons: not worth a shadow pass
                 }
             }
         }
@@ -53,7 +54,7 @@ namespace Town
             var floorMat = mats.TexturedSimple("grassFloor", "Ground103", 9f, new Color(0.08f, 0.1f, 0.06f));   // Simple Lit: no sky reflection at grazing angles
             var floorScale = new Vector2(1600f / 9f, 1600f / 9f);   // the plane's UVs span 0..1 over 1600 m: tile every 9 m
             floorMat.SetTextureScale("_BaseMap", floorScale);
-            floor.GetComponent<Renderer>().sharedMaterial = floorMat;
+            floor.GetComponent<Renderer>().sharedMaterial = floorMat; floor.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             Object.Destroy(floor.GetComponent<Collider>());
             // ring of hills: a radial mesh from just outside the boundary out to the horizon, rising with noise and distance
             const int rings = 14, segs = 72;
@@ -82,7 +83,7 @@ namespace Town
             mesh.SetVertices(verts); mesh.SetUVs(0, uvs); mesh.SetTriangles(tris, 0); mesh.RecalculateNormals(); mesh.RecalculateBounds();
             var hills = new GameObject("Hills"); hills.transform.SetParent(root, false);
             hills.AddComponent<MeshFilter>().sharedMesh = mesh;
-            hills.AddComponent<MeshRenderer>().sharedMaterial = mats.TexturedSimple("hills", "Ground103", 1f, new Color(0.08f, 0.11f, 0.07f));
+            var hr = hills.AddComponent<MeshRenderer>(); hr.sharedMaterial = mats.TexturedSimple("hills", "Ground103", 1f, new Color(0.08f, 0.11f, 0.07f)); hr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             // treeline: dark cones on the first hill rings, merged into one mesh
             var kTree = new MeshKit(); var kTrunk = new MeshKit();
             int placed = 0;
@@ -99,9 +100,9 @@ namespace Town
                 placed++;
             }
             var tgo = new GameObject("Treeline"); tgo.transform.SetParent(root, false);
-            tgo.AddComponent<MeshFilter>().sharedMesh = kTree.Build("Treeline"); tgo.AddComponent<MeshRenderer>().sharedMaterial = mats.Plain("treeDark", new Color(0.06f, 0.11f, 0.08f), 0.02f);
+            tgo.AddComponent<MeshFilter>().sharedMesh = kTree.Build("Treeline"); var tr = tgo.AddComponent<MeshRenderer>(); tr.sharedMaterial = mats.Plain("treeDark", new Color(0.06f, 0.11f, 0.08f), 0.02f); tr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             var trgo = new GameObject("Trunks"); trgo.transform.SetParent(root, false);
-            trgo.AddComponent<MeshFilter>().sharedMesh = kTrunk.Build("Trunks"); trgo.AddComponent<MeshRenderer>().sharedMaterial = mats.Plain("trunk", new Color(0.22f, 0.16f, 0.11f), 0.05f);
+            trgo.AddComponent<MeshFilter>().sharedMesh = kTrunk.Build("Trunks"); var trr = trgo.AddComponent<MeshRenderer>(); trr.sharedMaterial = mats.Plain("trunk", new Color(0.22f, 0.16f, 0.11f), 0.05f); trr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
         static float SampleHills(Mesh m, Vector3 c, float r0, float r1, int rings, int segs, float x, float z)
