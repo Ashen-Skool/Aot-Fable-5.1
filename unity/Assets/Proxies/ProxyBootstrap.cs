@@ -63,7 +63,9 @@ namespace Proxies
             var mikasaModel = PerfToggles.Off("chars") ? null : Characters.CharacterModel.TryDress(mikasa.gameObject, "Characters/Mikasa", MikasaProxy.Height);
             if (mikasaModel != null) { Ctx.Set("mikasaPoser", (IPoser)mikasaModel); Ctx.Set("mikasaModel", mikasaModel); }
             var bossModel = PerfToggles.Off("chars") ? null : Characters.CharacterModel.TryDress(boss.gameObject, "Characters/Titan", TitanProxy.BossHeight);
-            if (bossModel != null) { Ctx.Set("bossPoser", (IPoser)bossModel); Ctx.Set("bossModel", bossModel); bossModel.SetPose(Pose.Idle); }
+            if (bossModel != null) { bossModel.isTitan = true; Ctx.Set("bossPoser", (IPoser)bossModel); Ctx.Set("bossModel", bossModel); bossModel.SetPose(Pose.Idle); }
+            Characters.CharacterModel.TitanHandRollDeg = Bootstrap.ArgInt("-handRoll", (int)Characters.CharacterModel.TitanHandRollDeg);
+            if (Bootstrap.Arg("-softLock", null) != null || System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-softLock") >= 0) TitanBrain.SoftLock = true;
             Ctx.Set("bossBrain", TitanBrain.Attach(boss.gameObject, TitanProxy.BossHeight));
             CannonPlacer.Ensure(); // the town registers its rooftops after this runs; the placer waits for them
             var orbit = Ctx.Get<OrbitCamera>("orbit");

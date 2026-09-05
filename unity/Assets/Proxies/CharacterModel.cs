@@ -182,6 +182,19 @@ namespace Characters
         float plantY; bool plantInit;
         void LateUpdate()
         {
+            LateUpdateInner();
+            if (isTitan && Mathf.Abs(TitanHandRollDeg) > 0.01f && animator != null && animator.isHuman)
+            {
+                foreach (var (hand, arm) in new[] { (HumanBodyBones.RightHand, HumanBodyBones.RightLowerArm), (HumanBodyBones.LeftHand, HumanBodyBones.LeftLowerArm) })
+                {
+                    var h = animator.GetBoneTransform(hand); var a = animator.GetBoneTransform(arm); if (h == null || a == null) continue;
+                    var axis = (h.position - a.position).normalized;
+                    h.rotation = Quaternion.AngleAxis(TitanHandRollDeg * (hand == HumanBodyBones.LeftHand ? -1f : 1f), axis) * h.rotation;
+                }
+            }
+        }
+        void LateUpdateInner()
+        {
             if (!Paused || fade < 1f) Tick(Time.deltaTime);
             PlantFeet();
             TrackBlades();
@@ -213,6 +226,9 @@ namespace Characters
         public static float FistRollDeg = 0f;
         /// <summary>0 = blades follow the hands (attacks, flight); 1 = hanging down along the legs at rest. The player controller drives it.</summary>
         public static float BladeRest = 0f;
+        /// <summary>Wrist roll (degrees, around the forearm) applied to the Titan's hands after animation: the Meshy rig plays every clip palms-out.</summary>
+        public static float TitanHandRollDeg = 0f;
+        public bool isTitan;
         /// <summary>Twin ODM blades (Resources/Props/Blade) in gloved fists (Resources/Props/Fist), aligned from the geometry.</summary>
         void AddBlades(float height)
         {
