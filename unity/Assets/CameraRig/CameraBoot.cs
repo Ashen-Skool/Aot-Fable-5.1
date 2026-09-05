@@ -34,6 +34,7 @@ namespace AotCamera
             var orbit = Ctx.Get<OrbitCamera>("orbit");
             if (orbit != null) orbit.enabled = false;
             Ctx.Set(CameraRig.CtxName, rig);
+            if (!Application.isBatchMode && !RunningTests() && string.IsNullOrEmpty(piece)) rig.TitleOrbit();   // the title screen opens on the orbit, not on her back
             if (!capturingOther && !RunningTests() && Ctx.Get<ICameraTarget>(ICameraTarget.CtxName) == null && Object.FindFirstObjectByType<DemoTarget>() == null)
             {
                 var demo = DemoTarget.Create();

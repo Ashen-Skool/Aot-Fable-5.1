@@ -194,8 +194,8 @@ namespace ODM
             helpFade = played < 14f ? 1f : Mathf.Clamp01(1f - (played - 14f) / 2f);
             if (helpFade > 0.01f)
             {
-                var sh = Sized(sSmall, 13f); sh.alignment = TextAnchor.UpperRight;
-                Text(new Rect(W - 460f * s, 30f * s, 420f * s, 90f * s),
+                var sh = Sized(sSmall, 13f); sh.alignment = TextAnchor.UpperLeft;
+                Text(new Rect(36f * s, 30f * s, 520f * s, 90f * s),
                     "WASD move · MOUSE aim · SPACE hook / release · SHIFT gas\nLMB slash · E cannon · ESC frees the mouse\nfist roll [ ]  " + Characters.CharacterModel.FistRollDeg.ToString("0") + "°",
                     sh, new Color(1f, 1f, 1f, 0.7f * helpFade), 1f);
                 sSmall.alignment = TextAnchor.MiddleLeft;
@@ -227,7 +227,6 @@ namespace ODM
             Ctx.Set("titleHold", true);
             if (!orbitStarted) { orbitStarted = true; var rig = Ctx.Get<Component>("cameraRig"); if (rig != null) rig.SendMessage("TitleOrbit", SendMessageOptions.DontRequireReceiver); }
             Box(0, 0, W, H, new Color(0.02f, 0.02f, 0.03f, 0.42f));
-            Box(0, H * 0.30f - 10f * s, W, 2f * s, new Color(1f, 1f, 1f, 0.25f));
             Text(new Rect(0, H * 0.30f, W, 120f * s), "AOT FABLE 5.1", Sized(sTitle, 110f), Color.white, 4f);
             var sub = Sized(sLabel, 18f); sub.alignment = TextAnchor.MiddleCenter;
             Text(new Rect(0, H * 0.30f + 122f * s, W, 30f * s), "SHIGANSHINA DISTRICT   ·   ONE TITAN   ·   CUT THE NAPE", sub, new Color(1f, 0.85f, 0.55f));
