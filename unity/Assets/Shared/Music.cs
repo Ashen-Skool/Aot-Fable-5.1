@@ -17,6 +17,7 @@ namespace Shared
             current = name;
             var clip = Resources.Load<AudioClip>("Audio/Music/" + name);
             EnsureSources();
+            if (clip != null && a != null && a.clip == clip && a.isPlaying) return;   // same track under a new name (title -> battle): keep playing
             var incoming = b; b = a; a = incoming;             // a = now playing, b = fading out
             a.clip = clip; a.volume = 0f;
             if (clip != null) a.Play(); else a.Stop();
