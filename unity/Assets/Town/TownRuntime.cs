@@ -122,7 +122,7 @@ namespace Town
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = TownMaterials.FogColor;
-            RenderSettings.fogDensity = 0.0021f;
+            RenderSettings.fogDensity = 0.0023f;
             QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
             DynamicGI.UpdateEnvironment();
             Grade();

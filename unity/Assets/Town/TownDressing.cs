@@ -50,7 +50,7 @@ namespace Town
             // a wide grass floor under everything, a step below the town's paving so it never z-fights
             var floor = GameObject.CreatePrimitive(PrimitiveType.Plane); floor.name = "Outskirts_Floor"; floor.transform.SetParent(root, false);
             floor.transform.position = new Vector3(b.center.x, -0.08f, b.center.z); floor.transform.localScale = new Vector3(160f, 1f, 160f);
-            var floorMat = mats.Textured("grassFloor", "Ground103", 9f, new Color(0.2f, 0.24f, 0.14f), 0.05f, 0.8f);
+            var floorMat = mats.Textured("grassFloor", "Ground103", 9f, new Color(0.11f, 0.14f, 0.08f), 0.02f, 0.8f);   // dark: a flat rough plane at a grazing angle picks up the whole sky
             var floorScale = new Vector2(1600f / 9f, 1600f / 9f);   // the plane's UVs span 0..1 over 1600 m: tile every 9 m
             floorMat.SetTextureScale("_BaseMap", floorScale); floorMat.SetTextureScale("_BumpMap", floorScale);
             floor.GetComponent<Renderer>().sharedMaterial = floorMat;
@@ -82,17 +82,17 @@ namespace Town
             mesh.SetVertices(verts); mesh.SetUVs(0, uvs); mesh.SetTriangles(tris, 0); mesh.RecalculateNormals(); mesh.RecalculateBounds();
             var hills = new GameObject("Hills"); hills.transform.SetParent(root, false);
             hills.AddComponent<MeshFilter>().sharedMesh = mesh;
-            hills.AddComponent<MeshRenderer>().sharedMaterial = mats.Textured("hills", "Ground103", 1f, new Color(0.15f, 0.2f, 0.13f), 0.04f, 0.6f);
+            hills.AddComponent<MeshRenderer>().sharedMaterial = mats.Textured("hills", "Ground103", 1f, new Color(0.1f, 0.14f, 0.09f), 0.02f, 0.6f);
             // treeline: dark cones on the first hill rings, merged into one mesh
             var kTree = new MeshKit(); var kTrunk = new MeshKit();
             int placed = 0;
-            for (int n = 0; n < 900 && placed < 420; n++)
+            for (int n = 0; n < 4000 && placed < 1500; n++)
             {
-                float a = (float)rng.NextDouble() * Mathf.PI * 2f; float r = r0 + 4f + (float)rng.NextDouble() * 160f;
+                float a = (float)rng.NextDouble() * Mathf.PI * 2f; float r = r0 + 3f + Mathf.Pow((float)rng.NextDouble(), 0.7f) * 240f;
                 float x = b.center.x + Mathf.Cos(a) * r, z = b.center.z + Mathf.Sin(a) * r;
                 if (z > L.wallZ0 - 8f) continue;
                 float y = SampleHills(mesh, b.center, r0, r1, rings, segs, x, z);
-                float h = R(rng, 7f, 13f), w = h * R(rng, 0.28f, 0.4f);
+                float h = R(rng, 8f, 18f), w = h * R(rng, 0.26f, 0.38f);
                 kTree.Cylinder(new Vector3(x, y + h * 0.15f, z), w, h * 0.85f, 6, Quaternion.identity, true, 0.05f);
                 kTree.Cylinder(new Vector3(x, y + h * 0.45f, z), w * 0.75f, h * 0.55f, 6, Quaternion.identity, true, 0.05f);
                 kTrunk.Cylinder(new Vector3(x, y - 0.5f, z), w * 0.12f, h * 0.25f, 5);
