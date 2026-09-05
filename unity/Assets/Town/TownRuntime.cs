@@ -122,11 +122,12 @@ namespace Town
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = TownMaterials.FogColor;
-            RenderSettings.fogDensity = 0.0026f;
+            RenderSettings.fogDensity = 0.0021f;
             QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
             DynamicGI.UpdateEnvironment();
             Grade();
             TownLife.Build(Info, Root.transform);
+            AmbientBed.Ensure(Ctx.Get<Camera>("camera"));
         }
 
         /// <summary>Global volume: ACES tonemapping, bloom for the sun and lit windows, warm highlights over cool shadows, a soft vignette.</summary>

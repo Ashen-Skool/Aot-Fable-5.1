@@ -54,7 +54,7 @@ namespace Town
             Object.Destroy(floor.GetComponent<Collider>());
             // ring of hills: a radial mesh from just outside the boundary out to the horizon, rising with noise and distance
             const int rings = 14, segs = 72;
-            float r0 = Mathf.Max(b.extents.x, b.extents.z) + 24f, r1 = 900f;
+            float r0 = Mathf.Max(b.extents.x, b.extents.z) + 24f, r1 = 520f;
             var verts = new List<Vector3>((rings + 1) * (segs + 1)); var uvs = new List<Vector2>(); var tris = new List<int>();
             float nx = (float)rng.NextDouble() * 100f, nz = (float)rng.NextDouble() * 100f;
             for (int i = 0; i <= rings; i++)
@@ -65,7 +65,7 @@ namespace Town
                     float a = j / (float)segs * Mathf.PI * 2f;
                     float x = b.center.x + Mathf.Cos(a) * r, z = b.center.z + Mathf.Sin(a) * r;
                     float n = Mathf.PerlinNoise(nx + x * 0.004f, nz + z * 0.004f) * 0.7f + Mathf.PerlinNoise(nx + x * 0.015f, nz + z * 0.015f) * 0.3f;
-                    float rise = i == 0 ? -0.1f : Mathf.Lerp(0f, 110f, Mathf.Pow(t, 1.6f)) * (0.35f + n) + (i == 1 ? 0f : 4f * n);
+                    float rise = i == 0 ? -0.1f : Mathf.Lerp(0f, 70f, Mathf.Pow(t, 1.5f)) * (0.35f + n) + (i == 1 ? 0f : 3f * n);
                     if (z > L.wallZ1 - 40f && i < 4) rise = Mathf.Min(rise, 2f);   // flat outside the gate
                     verts.Add(new Vector3(x, rise, z)); uvs.Add(new Vector2(x * 0.02f, z * 0.02f));
                 }
@@ -79,13 +79,13 @@ namespace Town
             mesh.SetVertices(verts); mesh.SetUVs(0, uvs); mesh.SetTriangles(tris, 0); mesh.RecalculateNormals(); mesh.RecalculateBounds();
             var hills = new GameObject("Hills"); hills.transform.SetParent(root, false);
             hills.AddComponent<MeshFilter>().sharedMesh = mesh;
-            hills.AddComponent<MeshRenderer>().sharedMaterial = mats.Textured("hills", "Ground103", 14f, new Color(0.36f, 0.4f, 0.26f), 0.04f, 0.6f);
+            hills.AddComponent<MeshRenderer>().sharedMaterial = mats.Textured("hills", "Ground103", 14f, new Color(0.22f, 0.28f, 0.17f), 0.04f, 0.6f);
             // treeline: dark cones on the first hill rings, merged into one mesh
             var kTree = new MeshKit(); var kTrunk = new MeshKit();
             int placed = 0;
             for (int n = 0; n < 900 && placed < 420; n++)
             {
-                float a = (float)rng.NextDouble() * Mathf.PI * 2f; float r = r0 + 6f + (float)rng.NextDouble() * 150f;
+                float a = (float)rng.NextDouble() * Mathf.PI * 2f; float r = r0 + 6f + (float)rng.NextDouble() * 200f;
                 float x = b.center.x + Mathf.Cos(a) * r, z = b.center.z + Mathf.Sin(a) * r;
                 if (z > L.wallZ0 - 8f) continue;
                 float y = SampleHills(mesh, b.center, r0, r1, rings, segs, x, z);
@@ -96,7 +96,7 @@ namespace Town
                 placed++;
             }
             var tgo = new GameObject("Treeline"); tgo.transform.SetParent(root, false);
-            tgo.AddComponent<MeshFilter>().sharedMesh = kTree.Build("Treeline"); tgo.AddComponent<MeshRenderer>().sharedMaterial = mats.Plain("treeDark", new Color(0.12f, 0.19f, 0.12f), 0.05f);
+            tgo.AddComponent<MeshFilter>().sharedMesh = kTree.Build("Treeline"); tgo.AddComponent<MeshRenderer>().sharedMaterial = mats.Plain("treeDark", new Color(0.08f, 0.14f, 0.09f), 0.05f);
             var trgo = new GameObject("Trunks"); trgo.transform.SetParent(root, false);
             trgo.AddComponent<MeshFilter>().sharedMesh = kTrunk.Build("Trunks"); trgo.AddComponent<MeshRenderer>().sharedMaterial = mats.Plain("trunk", new Color(0.22f, 0.16f, 0.11f), 0.05f);
         }
@@ -114,8 +114,8 @@ namespace Town
         // ---------------------------------------------------------------- streets
         static void Streets(TownLayout L, TownInfo info, Group g, TownMaterials mats, System.Random rng)
         {
-            var kGut = g.Get(mats.Plain("gutter", new Color(0.16f, 0.17f, 0.17f), 0.55f));
-            var kPud = g.Get(mats.Plain("puddle", new Color(0.09f, 0.11f, 0.13f), 0.96f, 0.1f));
+            var kGut = g.Get(mats.Textured("gutter", "PavingStones131", 1.6f, new Color(0.3f, 0.3f, 0.29f), 0.12f, 1f));   // a shade darker than the paving, matte
+            var kPud = g.Get(mats.Plain("puddle", new Color(0.12f, 0.13f, 0.14f), 0.78f, 0.05f));   // wet and dark, not a mirror
             var kDirt = g.Get(mats.Textured("dirtPatch", "Ground103", 2.2f, new Color(0.4f, 0.33f, 0.24f), 0.04f, 0.5f));
             var kHay = g.Get(mats.Straw);
             var kMoss = g.Get(mats.Textured("moss", "Ground103", 1.6f, new Color(0.34f, 0.42f, 0.22f), 0.05f, 0.6f));
@@ -124,19 +124,19 @@ namespace Town
             const float gy = 0.02f;
             void Strip(Vector3 a, Vector3 b, float w, MeshKit k) { var d = (b - a).normalized; var s = Vector3.Cross(Vector3.up, d) * (w * 0.5f); k.Quad(a - s, b - s, b + s, a + s); }
             // main street gutter, broken by the square
-            Strip(new Vector3(0, gy, zMin - 6f), new Vector3(0, gy, L.square.yMin), 0.7f, kGut);
-            Strip(new Vector3(0, gy, L.square.yMax), new Vector3(0, gy, L.wallZ0 - 2f), 0.7f, kGut);
+            Strip(new Vector3(0, gy, zMin - 6f), new Vector3(0, gy, L.square.yMin), 0.4f, kGut);
+            Strip(new Vector3(0, gy, L.square.yMax), new Vector3(0, gy, L.wallZ0 - 2f), 0.4f, kGut);
             // cross streets between the rows, side streets between the columns
             for (int r = 0; r < TownLayout.RowMin.Length - 1; r++)
             {
                 float z = (TownLayout.RowMax[r] + TownLayout.RowMin[r + 1]) * 0.5f;
-                Strip(new Vector3(-xMax, gy, z), new Vector3(xMax, gy, z), 0.6f, kGut);
+                Strip(new Vector3(-xMax, gy, z), new Vector3(xMax, gy, z), 0.35f, kGut);
             }
             for (int c = 0; c < TownLayout.ColMin.Length - 1; c++)
             {
                 float x = (TownLayout.ColMin[c] + TownLayout.ColWidth + TownLayout.ColMin[c + 1]) * 0.5f;
-                Strip(new Vector3(x, gy, zMin), new Vector3(x, gy, zMax), 0.6f, kGut);
-                Strip(new Vector3(-x, gy, zMin), new Vector3(-x, gy, zMax), 0.6f, kGut);
+                Strip(new Vector3(x, gy, zMin), new Vector3(x, gy, zMax), 0.35f, kGut);
+                Strip(new Vector3(-x, gy, zMin), new Vector3(-x, gy, zMax), 0.35f, kGut);
             }
             // puddles, dirt, hay along the streets (never inside the square, never on the main axis where she runs)
             var streetX = new List<float> { 0f };
