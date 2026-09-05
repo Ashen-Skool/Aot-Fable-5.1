@@ -174,9 +174,13 @@ namespace ODM
             if (cannons != null && cam != null)
             {
                 var sm = Sized(sSmall, 13f); sm.alignment = TextAnchor.MiddleCenter;
-                foreach (var cn in cannons)
+                // only the two nearest: five labels at once was clutter
+                var near = new System.Collections.Generic.List<Proxies.Cannon>();
+                foreach (var cn in cannons) if (cn != null) near.Add(cn);
+                near.Sort((p, q) => Vector3.Distance(c.transform.position, p.transform.position).CompareTo(Vector3.Distance(c.transform.position, q.transform.position)));
+                for (int ci = 0; ci < Mathf.Min(2, near.Count); ci++)
                 {
-                    if (cn == null) continue;
+                    var cn = near[ci];
                     Vector3 wp = cn.transform.position + Vector3.up * 2.5f; Vector3 sp = cam.WorldToScreenPoint(wp);
                     bool behind = sp.z < 0f; if (behind) { sp.x = W - sp.x; sp.y = H - sp.y; }
                     float sx = Mathf.Clamp(sp.x, 60f * s, W - 60f * s), sy = Mathf.Clamp(H - sp.y, 120f * s, H - 160f * s);   // below the help and the Titan bar

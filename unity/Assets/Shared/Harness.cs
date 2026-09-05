@@ -57,6 +57,12 @@ namespace Shared
                 if (FrameTimingManager.GetLatestTimings(1, timings) > 0) { cpuMain += timings[0].cpuMainThreadFrameTime; cpuRender += timings[0].cpuRenderThreadFrameTime; gpu += timings[0].gpuFrameTime; tn++; }
                 if (acc >= 2f)
                 {
+                    var rig = Ctx.Get<Component>("cameraRig");
+                    if (rig != null)
+                    {
+                        var ty = rig.GetType();
+                        Debug.Log("[Cam] blur=" + ty.GetProperty("BlurIntensity")?.GetValue(rig) + " fov=" + ty.GetProperty("Fov")?.GetValue(rig) + " mode=" + ty.GetProperty("Mode")?.GetValue(rig) + " trauma=" + ty.GetProperty("Trauma")?.GetValue(rig) + " lines=" + (ty.GetProperty("Lines")?.GetValue(rig) as Component)?.GetType().GetProperty("Intensity")?.GetValue(ty.GetProperty("Lines")?.GetValue(rig)) + " pos=" + rig.transform.position.ToString("0.00"));
+                    }
                     Debug.Log("[FPS] " + (n / acc).ToString("0.0") + " avg over " + acc.ToString("0.0") + " s at t=" + t.ToString("0")
                         + (tn > 0 ? "  main=" + (cpuMain / tn).ToString("0.0") + "ms render=" + (cpuRender / tn).ToString("0.0") + "ms gpu=" + (gpu / tn).ToString("0.0") + "ms" : ""));
                     acc = 0f; n = 0; cpuMain = cpuRender = gpu = 0; tn = 0;

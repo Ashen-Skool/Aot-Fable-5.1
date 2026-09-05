@@ -144,9 +144,14 @@ namespace ODM
         }
 
         // ---------- speed / landing visuals ----------
-        static Material Transparent(Material m, Color c)
+        /// <summary>Alpha-blended unlit material that survives a build: cloned from Resources/Materials/Particles (URP Particles/Unlit,
+        /// set transparent by ProjectSetup). Runtime keyword flips on Unlit.mat were stripped in builds and rendered opaque white.</summary>
+        static Material Transparent(Material fallback, Color c)
         {
-            m.SetColor("_BaseColor", c);
+            var b = Resources.Load<Material>("Materials/Particles");
+            var m = b != null ? new Material(b) : fallback;
+            m.SetColor("_BaseColor", c); if (m.HasProperty("_Color")) m.SetColor("_Color", c);
+            if (b != null) return m;
             m.SetFloat("_Surface", 1f);
             m.SetFloat("_Blend", 0f);
             m.SetFloat("_ZWrite", 0f);
@@ -176,7 +181,7 @@ namespace ODM
             for (int g = 0; g < ghostCount; g++)
             {
                 float a = ghostBaseAlpha * (1f - g / (float)ghostCount);
-                ghostMats[g] = Transparent(Mats.Lit(Color.white, 0f), new Color(0.35f, 0.4f, 0.5f, a));
+                ghostMats[g] = Transparent(Mats.Unlit(Color.white), new Color(0.35f, 0.4f, 0.5f, a * 0.6f));
                 for (int b = 0; b < n; b++)
                 {
                     var go = new GameObject("Ghost_" + g + "_" + bodyTfs[b].name);
@@ -202,15 +207,15 @@ namespace ODM
             trail.textureMode = LineTextureMode.Stretch;
             trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             trail.receiveShadows = false;
-            trail.sharedMaterial = Transparent(Mats.Unlit(Color.white), new Color(0.85f, 0.9f, 1f, 0.55f));
+            trail.sharedMaterial = Transparent(Mats.Unlit(Color.white), new Color(0.85f, 0.9f, 1f, 0.3f));
             var grad = new Gradient();
             grad.SetKeys(
                 new[] { new GradientColorKey(new Color(0.9f, 0.93f, 1f), 0f), new GradientColorKey(new Color(0.6f, 0.7f, 0.9f), 1f) },
-                new[] { new GradientAlphaKey(0.6f, 0f), new GradientAlphaKey(0.25f, 0.4f), new GradientAlphaKey(0f, 1f) });
+                new[] { new GradientAlphaKey(0.3f, 0f), new GradientAlphaKey(0.12f, 0.4f), new GradientAlphaKey(0f, 1f) });
             trail.colorGradient = grad;
             var wc = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(0.5f, 0.55f), new Keyframe(1f, 0f));
             trail.widthCurve = wc;
-            trail.widthMultiplier = 0.9f;
+            trail.widthMultiplier = 0.4f;
             trail.enabled = false;
 
             // touchdown dust
@@ -254,8 +259,8 @@ namespace ODM
             gm.simulationSpace = ParticleSystemSimulationSpace.World;
             gm.startLifetime = new ParticleSystem.MinMaxCurve(0.18f, 0.32f);
             gm.startSpeed = new ParticleSystem.MinMaxCurve(1f, 3f);
-            gm.startSize = new ParticleSystem.MinMaxCurve(0.18f, 0.34f);
-            gm.startColor = new Color(0.95f, 0.97f, 1f, 0.5f);
+            gm.startSize = new ParticleSystem.MinMaxCurve(0.14f, 0.26f);
+            gm.startColor = new Color(0.95f, 0.97f, 1f, 0.32f);
             gm.maxParticles = 256;
             var gem = gasPuff.emission; gem.enabled = false;
             var gsh = gasPuff.shape; gsh.enabled = true; gsh.shapeType = ParticleSystemShapeType.Sphere; gsh.radius = 0.2f;
@@ -361,7 +366,7 @@ namespace ODM
                     trailPts[i] = pos + back * (0.4f + len * f);
                 }
                 trail.SetPositions(trailPts);
-                trail.widthMultiplier = 0.5f + 0.7f * k;
+                trail.widthMultiplier = 0.25f + 0.3f * k;
                 trail.enabled = true;
                 int n = bodyTfs.Length;
                 float spacing = 0.02f * sp + 0.25f;
@@ -836,7 +841,7 @@ namespace ODM
                 Vector3 back = -(v.sqrMagnitude > 1f ? v.normalized : LookDir);
                 for (int j = 0; j < 2; j++)
                 {
-                    var ep = new ParticleSystem.EmitParams { position = (j == 0 ? socketL.position : socketR.position) + back * 0.35f, velocity = back * 9f + Random.insideUnitSphere * 1.5f, startSize = Random.Range(0.22f, 0.4f) };
+                    var ep = new ParticleSystem.EmitParams { position = (j == 0 ? socketL.position : socketR.position) + back * 0.35f, velocity = back * 9f + Random.insideUnitSphere * 1.5f, startSize = Random.Range(0.14f, 0.28f) };
                     gasPuff.Emit(ep, 2);
                 }
             }
