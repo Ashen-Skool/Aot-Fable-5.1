@@ -19,16 +19,20 @@ def make_inplace(arm, act, clip):
     sc = bpy.context.scene
     def world(f):
         sc.frame_set(f); return (arm.matrix_world @ hips.matrix).translation.copy()
-    w0, w1 = world(f0), world(f1)
-    drift = (w1 - w0); drift.z = 0.0          # Blender world: Z up; horizontal drift only
-    if drift.length < 0.05: arm.animation_data.action = None; print("INPLACE", clip, "no drift"); return
-    n = max(1, f1 - f0)
+    w0 = world(f0)
+    disp = {f: (world(f) - w0) for f in range(f0, f1 + 1)}
+    for d in disp.values(): d.z = 0.0                       # Blender world: Z up; horizontal only
+    fmax = max(disp, key=lambda f: disp[f].length)
+    if disp[fmax].length < 0.3: arm.animation_data.action = None; print("INPLACE", clip, "no drift"); return
+    axis = disp[fmax].normalized()
     for f in range(f0, f1 + 1):
         sc.frame_set(f)
         m = arm.matrix_world @ hips.matrix
-        corr = m.copy(); corr.translation = m.translation - drift * ((f - f0) / n)
+        along = (m.translation - w0); along.z = 0.0
+        corr = m.copy(); corr.translation = m.translation - axis * along.dot(axis)   # strip the travel, keep the sway and the bob
         hips.matrix = arm.matrix_world.inverted() @ corr
         hips.keyframe_insert("location", frame=f)
+    drift = disp[fmax]
     arm.animation_data.action = None
     print("INPLACE", clip, "removed drift", tuple(round(v, 2) for v in drift))
 for clip in clips:
