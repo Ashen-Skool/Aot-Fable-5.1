@@ -50,7 +50,7 @@ namespace Town
             // a wide grass floor under everything, a step below the town's paving so it never z-fights
             var floor = GameObject.CreatePrimitive(PrimitiveType.Plane); floor.name = "Outskirts_Floor"; floor.transform.SetParent(root, false);
             floor.transform.position = new Vector3(b.center.x, -0.08f, b.center.z); floor.transform.localScale = new Vector3(160f, 1f, 160f);
-            floor.GetComponent<Renderer>().sharedMaterial = mats.Textured("grassFloor", "Ground103", 9f, new Color(0.42f, 0.46f, 0.3f), 0.05f, 0.8f);
+            floor.GetComponent<Renderer>().sharedMaterial = mats.Textured("grassFloor", "Ground103", 9f, new Color(0.28f, 0.32f, 0.2f), 0.05f, 0.8f);
             Object.Destroy(floor.GetComponent<Collider>());
             // ring of hills: a radial mesh from just outside the boundary out to the horizon, rising with noise and distance
             const int rings = 14, segs = 72;
@@ -59,13 +59,13 @@ namespace Town
             float nx = (float)rng.NextDouble() * 100f, nz = (float)rng.NextDouble() * 100f;
             for (int i = 0; i <= rings; i++)
             {
-                float t = i / (float)rings; float r = Mathf.Lerp(r0, r1, t * t);
+                float t = i / (float)rings; float r = Mathf.Lerp(r0, r1, t);
                 for (int j = 0; j <= segs; j++)
                 {
                     float a = j / (float)segs * Mathf.PI * 2f;
                     float x = b.center.x + Mathf.Cos(a) * r, z = b.center.z + Mathf.Sin(a) * r;
                     float n = Mathf.PerlinNoise(nx + x * 0.004f, nz + z * 0.004f) * 0.7f + Mathf.PerlinNoise(nx + x * 0.015f, nz + z * 0.015f) * 0.3f;
-                    float rise = i == 0 ? -0.1f : Mathf.Lerp(0f, 70f, Mathf.Pow(t, 1.5f)) * (0.35f + n) + (i == 1 ? 0f : 3f * n);
+                    float rise = i == 0 ? -0.1f : Mathf.Lerp(0f, 95f, Mathf.Pow(t, 0.9f)) * (0.4f + n) + (i == 1 ? 0f : 3f * n);
                     if (z > L.wallZ1 - 40f && i < 4) rise = Mathf.Min(rise, 2f);   // flat outside the gate
                     verts.Add(new Vector3(x, rise, z)); uvs.Add(new Vector2(x * 0.02f, z * 0.02f));
                 }
@@ -79,13 +79,13 @@ namespace Town
             mesh.SetVertices(verts); mesh.SetUVs(0, uvs); mesh.SetTriangles(tris, 0); mesh.RecalculateNormals(); mesh.RecalculateBounds();
             var hills = new GameObject("Hills"); hills.transform.SetParent(root, false);
             hills.AddComponent<MeshFilter>().sharedMesh = mesh;
-            hills.AddComponent<MeshRenderer>().sharedMaterial = mats.Textured("hills", "Ground103", 14f, new Color(0.22f, 0.28f, 0.17f), 0.04f, 0.6f);
+            hills.AddComponent<MeshRenderer>().sharedMaterial = mats.Textured("hills", "Ground103", 14f, new Color(0.17f, 0.23f, 0.15f), 0.04f, 0.6f);
             // treeline: dark cones on the first hill rings, merged into one mesh
             var kTree = new MeshKit(); var kTrunk = new MeshKit();
             int placed = 0;
             for (int n = 0; n < 900 && placed < 420; n++)
             {
-                float a = (float)rng.NextDouble() * Mathf.PI * 2f; float r = r0 + 6f + (float)rng.NextDouble() * 200f;
+                float a = (float)rng.NextDouble() * Mathf.PI * 2f; float r = r0 + 4f + (float)rng.NextDouble() * 160f;
                 float x = b.center.x + Mathf.Cos(a) * r, z = b.center.z + Mathf.Sin(a) * r;
                 if (z > L.wallZ0 - 8f) continue;
                 float y = SampleHills(mesh, b.center, r0, r1, rings, segs, x, z);
@@ -96,7 +96,7 @@ namespace Town
                 placed++;
             }
             var tgo = new GameObject("Treeline"); tgo.transform.SetParent(root, false);
-            tgo.AddComponent<MeshFilter>().sharedMesh = kTree.Build("Treeline"); tgo.AddComponent<MeshRenderer>().sharedMaterial = mats.Plain("treeDark", new Color(0.08f, 0.14f, 0.09f), 0.05f);
+            tgo.AddComponent<MeshFilter>().sharedMesh = kTree.Build("Treeline"); tgo.AddComponent<MeshRenderer>().sharedMaterial = mats.Plain("treeDark", new Color(0.06f, 0.11f, 0.08f), 0.02f);
             var trgo = new GameObject("Trunks"); trgo.transform.SetParent(root, false);
             trgo.AddComponent<MeshFilter>().sharedMesh = kTrunk.Build("Trunks"); trgo.AddComponent<MeshRenderer>().sharedMaterial = mats.Plain("trunk", new Color(0.22f, 0.16f, 0.11f), 0.05f);
         }
@@ -104,7 +104,7 @@ namespace Town
         static float SampleHills(Mesh m, Vector3 c, float r0, float r1, int rings, int segs, float x, float z)
         {
             float r = Vector2.Distance(new Vector2(x, z), new Vector2(c.x, c.z));
-            float t = Mathf.Sqrt(Mathf.Clamp01((r - r0) / (r1 - r0)));
+            float t = Mathf.Clamp01((r - r0) / (r1 - r0));
             int i = Mathf.Clamp(Mathf.RoundToInt(t * rings), 0, rings);
             float a = Mathf.Atan2(z - c.z, x - c.x); if (a < 0f) a += Mathf.PI * 2f;
             int j = Mathf.Clamp(Mathf.RoundToInt(a / (Mathf.PI * 2f) * segs), 0, segs);
@@ -115,7 +115,7 @@ namespace Town
         static void Streets(TownLayout L, TownInfo info, Group g, TownMaterials mats, System.Random rng)
         {
             var kGut = g.Get(mats.Textured("gutter", "PavingStones131", 1.6f, new Color(0.3f, 0.3f, 0.29f), 0.12f, 1f));   // a shade darker than the paving, matte
-            var kPud = g.Get(mats.Plain("puddle", new Color(0.12f, 0.13f, 0.14f), 0.78f, 0.05f));   // wet and dark, not a mirror
+            var kPud = g.Get(mats.Plain("puddle", new Color(0.07f, 0.08f, 0.09f), 0.42f, 0f));   // a dark wet patch; a mirror just reads as a white disc from above
             var kDirt = g.Get(mats.Textured("dirtPatch", "Ground103", 2.2f, new Color(0.4f, 0.33f, 0.24f), 0.04f, 0.5f));
             var kHay = g.Get(mats.Straw);
             var kMoss = g.Get(mats.Textured("moss", "Ground103", 1.6f, new Color(0.34f, 0.42f, 0.22f), 0.05f, 0.6f));
