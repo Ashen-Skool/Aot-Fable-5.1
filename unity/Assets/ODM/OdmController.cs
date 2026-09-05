@@ -501,6 +501,7 @@ namespace ODM
         {
             if (cam == null) { cam = Ctx.Get<Camera>("camera"); if (cam == null) cam = Camera.main; }
             if (Scripted) return;
+            if (Ctx.Get<bool>("autoPause")) { Ctx.Set("autoPause", false); Paused = true; Time.timeScale = 0f; }
             if (TitleDone && GameInput.Escape && !InputHeld && string.IsNullOrEmpty(Ctx.Get<string>("gameOver"))) { Paused = !Paused; Time.timeScale = Paused ? 0f : 1f; }
             if (Paused && UnityEngine.Input.GetMouseButtonDown(0)) { Paused = false; Time.timeScale = 1f; }
             GameInput.UpdateCursor();
@@ -523,7 +524,8 @@ namespace ODM
             liveInput.reel = hookLatched && Hook == HookState.Attached;
             liveInput.boost = UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift);
             liveInput.hasAim = false;
-            if (UnityEngine.Input.GetMouseButtonDown(0) && slashTimer <= 0.15f)
+            bool autoSlash = Ctx.Get<bool>("autoSlash"); if (autoSlash) Ctx.Set("autoSlash", false);
+            if ((UnityEngine.Input.GetMouseButtonDown(0) || autoSlash) && slashTimer <= 0.15f)
             {
                 slashAirborne = !Grounded; slashHitTimer = 0.25f; Shared.Sfx.Play("slash", rb.position, Random.Range(1.5f, 1.9f), 0.7f);
                 if (Harness.Active) Debug.Log("[Slash] t=" + Time.time.ToString("0.00") + " grounded=" + Grounded + " focused=" + Application.isFocused);
