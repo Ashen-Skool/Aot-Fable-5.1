@@ -55,7 +55,7 @@ namespace Town
             // hundreds of per-cell, per-material renderers, each submitted again for every shadow cascade, made the game
             // draw-call bound (26 fps on the Studio). Static batching folds them into per-material batches; nothing here moves.
             var t1 = System.Diagnostics.Stopwatch.StartNew();
-            StaticBatchingUtility.Combine(Root);
+            // StaticBatchingUtility.Combine(Root);   // produced corrupt giant grey planes across the map (user screenshot); vsync was the real cost anyway
             Debug.Log("[Town] static batched in " + t1.ElapsedMilliseconds + " ms");
             Debug.Log("[Town] built seed=" + seed + " houses=" + Info.houseCount + " rooftops=" + Info.rooftops.Count + " in " + t0.ElapsedMilliseconds + " ms");
             return Info;
