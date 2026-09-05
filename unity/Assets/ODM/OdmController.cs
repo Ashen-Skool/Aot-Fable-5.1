@@ -596,7 +596,7 @@ namespace ODM
         public bool InputHeld => !TitleDone || Time.unscaledTime < Ctx.Get<float>("introUntil");
         void OnGUI()
         {
-            if (Scripted || Application.isBatchMode) return;
+            if (Scripted || Application.isBatchMode || PerfToggles.Off("hud")) return;
             Hud.Draw(this, cam);
         }
 

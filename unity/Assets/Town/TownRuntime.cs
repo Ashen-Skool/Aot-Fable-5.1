@@ -109,7 +109,7 @@ namespace Town
                 sun.transform.rotation = Quaternion.LookRotation(SunDirection(), Vector3.up);
                 sun.color = new Color(1f, 0.76f, 0.52f);
                 sun.intensity = 3.0f;
-                sun.shadows = LightShadows.Soft;
+                sun.shadows = PerfToggles.Off("shadows") ? LightShadows.None : LightShadows.Soft;
                 sun.shadowStrength = 0.92f;
                 sun.shadowBias = 0.02f;
                 sun.shadowNormalBias = 0.3f;
