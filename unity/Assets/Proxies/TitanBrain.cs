@@ -26,7 +26,7 @@ namespace Proxies
         public static TitanBrain Attach(GameObject host, float height)
         {
             var b = host.GetComponent<TitanBrain>() ?? host.AddComponent<TitanBrain>();
-            b.height = height; b.walkSpeed = height * 0.45f; b.sprintSpeed = height * 0.8f; b.attackRange = height * 0.62f;   // ~9 m for the 15 m boss: he has to actually reach you
+            b.height = height; b.walkSpeed = height * 0.45f; b.sprintSpeed = height * 0.65f; b.attackRange = height * 0.62f;   // ~9 m for the 15 m boss: he has to actually reach you
             b.spawnPos = host.transform.position;
             // a kinematic body: without one, every collider on him is a "static" collider that moves each frame and PhysX re-bakes it
             var rb = host.GetComponent<Rigidbody>() ?? host.AddComponent<Rigidbody>(); rb.isKinematic = true; rb.useGravity = false;
