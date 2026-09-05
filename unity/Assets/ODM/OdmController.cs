@@ -330,9 +330,9 @@ namespace ODM
                 }
                 var go = new GameObject("BladeTrail"); go.transform.SetParent(bladeRoots[i], false); go.transform.localPosition = new Vector3(0f, 0f, ext * 0.95f);
                 var t = go.AddComponent<TrailRenderer>();
-                t.time = 0.26f; t.startWidth = 0.32f; t.endWidth = 0.02f; t.minVertexDistance = 0.02f; t.numCapVertices = 3; t.alignment = LineAlignment.View;
-                t.sharedMaterial = Transparent(Mats.Unlit(Color.white), new Color(1.7f, 1.9f, 2.4f, 0.85f));
-                var g = new Gradient(); g.SetKeys(new[] { new GradientColorKey(new Color(1f, 1f, 1f), 0f), new GradientColorKey(new Color(0.6f, 0.8f, 1f), 1f) }, new[] { new GradientAlphaKey(0.9f, 0f), new GradientAlphaKey(0f, 1f) });
+                t.time = 0.2f; t.startWidth = 0.13f; t.endWidth = 0.02f; t.minVertexDistance = 0.02f; t.numCapVertices = 3; t.alignment = LineAlignment.View;
+                t.sharedMaterial = Transparent(Mats.Unlit(Color.white), new Color(1.05f, 1.15f, 1.35f, 0.5f));
+                var g = new Gradient(); g.SetKeys(new[] { new GradientColorKey(new Color(1f, 1f, 1f), 0f), new GradientColorKey(new Color(0.6f, 0.8f, 1f), 1f) }, new[] { new GradientAlphaKey(0.55f, 0f), new GradientAlphaKey(0f, 1f) });
                 t.colorGradient = g; t.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; t.receiveShadows = false; t.emitting = false;
                 bladeTrails[i] = t;
             }
