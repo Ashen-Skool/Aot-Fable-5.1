@@ -10,6 +10,7 @@ namespace Shared
     public class Harness : MonoBehaviour
     {
         static bool restarted; static Harness inst;
+        public static bool Active => inst != null;
         float quitAt = -1f, restartAt = -1f, autoStart = -1f, autoKill = -1f; bool fps; float acc; int n; float t0; bool counted, started, killed;
         float[] shotAt = new float[0]; int shotIdx; string shotDir;
         readonly FrameTiming[] timings = new FrameTiming[1]; double cpuMain, cpuRender, gpu; int tn;

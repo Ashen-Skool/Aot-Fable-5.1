@@ -517,6 +517,7 @@ namespace ODM
             if (UnityEngine.Input.GetMouseButtonDown(0) && slashTimer <= 0.15f)
             {
                 slashAirborne = !Grounded; slashHitTimer = 0.25f; Shared.Sfx.Play("slash", rb.position, Random.Range(1.5f, 1.9f), 0.7f);
+                if (Harness.Active) Debug.Log("[Slash] t=" + Time.time.ToString("0.00") + " grounded=" + Grounded + " focused=" + Application.isFocused);
                 var model = Ctx.Get<Characters.CharacterModel>("mikasaModel");
                 slashTimer = model != null ? Mathf.Min(1.6f, model.Attack(slashAirborne)) : (Grounded ? 1.1f : 0.8f);
                 slashPoseSet = model != null; // the model already plays the clip; UpdatePose must not restart it

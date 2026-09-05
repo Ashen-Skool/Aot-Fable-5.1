@@ -74,6 +74,8 @@ namespace ODM
                 return;
             }
             if (playStart < 0f) playStart = Time.unscaledTime;
+            var over = Ctx.Get<string>("gameOver");
+            if (!string.IsNullOrEmpty(over)) { Music.Set("ending"); Ending(c, over, W, H, s); return; }   // the card alone, nothing bleeding through
             var brain = Ctx.Get<Proxies.TitanBrain>("bossBrain");
             Music.Set(brain != null && brain.Current == Proxies.TitanBrain.State.Dead ? "ending" : "battle");
             HudEvents.Prune();
@@ -177,7 +179,7 @@ namespace ODM
                     if (cn == null) continue;
                     Vector3 wp = cn.transform.position + Vector3.up * 2.5f; Vector3 sp = cam.WorldToScreenPoint(wp);
                     bool behind = sp.z < 0f; if (behind) { sp.x = W - sp.x; sp.y = H - sp.y; }
-                    float sx = Mathf.Clamp(sp.x, 60f * s, W - 60f * s), sy = Mathf.Clamp(H - sp.y, 60f * s, H - 160f * s);
+                    float sx = Mathf.Clamp(sp.x, 60f * s, W - 60f * s), sy = Mathf.Clamp(H - sp.y, 120f * s, H - 160f * s);   // below the help and the Titan bar
                     float dist = Vector3.Distance(c.transform.position, cn.transform.position);
                     var col = new Color(1f, 0.8f, 0.3f, behind ? 0.45f : 0.9f);
                     var keep = GUI.matrix; GUIUtility.RotateAroundPivot(45f, new Vector2(sx, sy));
@@ -208,8 +210,6 @@ namespace ODM
             Text(new Rect(W - 120f * s, 10f * s, 100f * s, 16f * s), fpsShown.ToString("0") + " FPS", sf, new Color(1f, 1f, 1f, fpsShown < 50f ? 0.9f : 0.35f), 1f);
             sSmall.alignment = TextAnchor.MiddleLeft;
 
-            var over = Ctx.Get<string>("gameOver");
-            if (!string.IsNullOrEmpty(over)) Ending(c, over, W, H, s);
         }
 
         static void Chip(float x, float y, float w, string label, bool on, float s)

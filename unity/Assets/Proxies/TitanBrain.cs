@@ -58,6 +58,7 @@ namespace Proxies
                         // the telegraph: a warning at the spot he is about to hit, a grunt, a shiver through the camera
                         Vector3 warn = transform.position + transform.forward * height * 0.38f + Vector3.up * (attackKind == Pose.Stomp ? height * 0.1f : height * 0.45f);
                         HudEvents.Add(warn, attackKind == Pose.Stomp ? "STOMP" : "SWIPE", new Color(1f, 0.3f, 0.2f), 1.2f);
+                        if (Harness.Active) Debug.Log("[TitanAttack] " + attackKind + " dist=" + distFlat.ToString("0.0") + " t=" + Time.time.ToString("0.00"));
                         Sfx.Play("titan_step", transform.position + Vector3.up * height * 0.8f, 0.25f, 0.9f, 260f);
                         if (attackKind == Pose.Swipe) Invoke(nameof(SwipeWhoosh), windUp - 0.25f);
                         Fx?.Step(distFlat * 0.5f);
@@ -143,6 +144,7 @@ namespace Proxies
             if (Current == State.Dead) return 0f;
             float dmg = zone == "cannon" ? 40f : zone == "Zone_Nape" ? (Current == State.Kneel ? 100f : 40f) : zone.StartsWith("Zone_Hamstring") ? 18f : zone.StartsWith("Zone_") ? 12f : 6f;
             HP = Mathf.Max(0f, HP - dmg); Sfx.Play("titan_hit", transform.position + Vector3.up * height * 0.5f, 0.5f, 1f, 200f);
+            if (Harness.Active) Debug.Log("[TitanHit] zone=" + zone + " dmg=" + dmg + " hp=" + HP + " state=" + Current + " t=" + Time.time.ToString("0.00"));
             // presentation: steam and a red spray at the cut, a number, a beat of hit-stop on the heavy ones
             Vector3 at = ZonePos(zone, from);
             bool nape = zone == "Zone_Nape", ham = zone.StartsWith("Zone_Hamstring");
