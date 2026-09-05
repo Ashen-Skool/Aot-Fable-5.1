@@ -57,6 +57,21 @@ namespace Town
             return m;
         }
 
+        /// <summary>Simple Lit (Blinn-Phong, no environment reflection): for big flat ground seen at grazing angles, where URP Lit turns milky with reflected sky.</summary>
+        public Material TexturedSimple(string key, string set, float tile, Color tint)
+        {
+            if (cache.TryGetValue(key, out var m)) return m;
+            var b = Resources.Load<Material>("Materials/SimpleLit");
+            m = b != null ? new Material(b) : Mats.Lit(tint); m.name = key;
+            var col = Tex(set, "color");
+            if (col != null) { m.SetTexture("_BaseMap", col); m.mainTexture = col; m.SetTextureScale("_BaseMap", new Vector2(1f / tile, 1f / tile)); }
+            m.SetColor("_BaseColor", tint);
+            if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", 0f);
+            if (m.HasProperty("_SpecColor")) m.SetColor("_SpecColor", Color.black);
+            cache[key] = m;
+            return m;
+        }
+
         public Material Plain(string key, Color c, float smooth = 0.2f, float metal = 0f)
         {
             if (cache.TryGetValue(key, out var m)) return m;
