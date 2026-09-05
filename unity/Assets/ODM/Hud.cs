@@ -1,5 +1,6 @@
 using Shared;
 using UnityEngine;
+using UnityEngine.Video;
 
 namespace ODM
 {
@@ -15,6 +16,28 @@ namespace ODM
         static GUIStyle sTitle, sBig, sNum, sLabel, sSmall, sPrompt, sPop;
         static Texture2D vignette, ring;
         static float playStart = -1f, helpFade = 1f, fpsAcc, fpsShown; static int fpsN; static bool orbitStarted;
+        static VideoPlayer titleVideo; static RenderTexture titleRt; static bool videoTried;
+        /// <summary>The title backdrop: StreamingAssets/title.mp4 looping into a render texture (falls back to the live orbit if missing).</summary>
+        static Texture TitleVideo()
+        {
+            if (!videoTried)
+            {
+                videoTried = true;
+                var path = System.IO.Path.Combine(Application.streamingAssetsPath, "title.mp4");
+                if (System.IO.File.Exists(path))
+                {
+                    var go = new GameObject("TitleVideo"); Object.DontDestroyOnLoad(go);
+                    titleRt = new RenderTexture(1920, 1080, 0);
+                    titleVideo = go.AddComponent<VideoPlayer>();
+                    titleVideo.playOnAwake = false; titleVideo.isLooping = true; titleVideo.source = VideoSource.Url; titleVideo.url = path;
+                    titleVideo.renderMode = VideoRenderMode.RenderTexture; titleVideo.targetTexture = titleRt; titleVideo.audioOutputMode = VideoAudioOutputMode.None;
+                    titleVideo.aspectRatio = VideoAspectRatio.FitOutside; titleVideo.Play();
+                }
+            }
+            if (titleVideo != null && !titleVideo.isPlaying && titleVideo.isPrepared) titleVideo.Play();
+            return titleVideo != null && titleVideo.isPrepared ? titleRt : null;
+        }
+        static void StopTitleVideo() { if (titleVideo != null) { titleVideo.Stop(); Object.Destroy(titleVideo.gameObject); titleVideo = null; } }
 
         static void Init()
         {
@@ -211,7 +234,7 @@ namespace ODM
                 Box(0, 0, W, H, new Color(0f, 0f, 0f, 0.55f));
                 Text(new Rect(0, cy - 70f * s, W, 80f * s), "PAUSED", Sized(sTitle, 72f), Color.white, 3f);
                 Text(new Rect(0, cy + 10f * s, W, 34f * s), "CLICK OR ESC  RESUME      R  RESTART      CMD-Q  QUIT", Sized(sPrompt, 26f), new Color(1f, 1f, 1f, 0.85f));
-                if (UnityEngine.Input.GetKeyDown(KeyCode.R) && !Reboot.Restarting) { OdmController.Paused = false; playStart = -1f; orbitStarted = false; OdmController.TitleDone = false; Reboot.Now(); }
+                if (UnityEngine.Input.GetKeyDown(KeyCode.R) && !Reboot.Restarting) { OdmController.Paused = false; playStart = -1f; orbitStarted = false; OdmController.TitleDone = false; videoTried = false; Reboot.Now(); }
             }
             else if (!GameInput.CursorCaptured) Text(new Rect(0, H - 40f * s, W, 22f * s), "CLICK TO CAPTURE THE MOUSE  ·  ESC PAUSES", Sized(sSmall, 14f), new Color(1f, 1f, 1f, 0.7f), 1f);
             // frame rate, tiny, top right, so a build's cost is always visible
@@ -237,17 +260,24 @@ namespace ODM
             Time.timeScale = 1f;
             Ctx.Set("titleHold", true);
             if (!orbitStarted) { orbitStarted = true; var rig = Ctx.Get<Component>("cameraRig"); if (rig != null) rig.SendMessage("TitleOrbit", SendMessageOptions.DontRequireReceiver); }
-            Box(0, 0, W, H, new Color(0.02f, 0.02f, 0.03f, 0.42f));
+            var vid = TitleVideo();
+            if (vid != null)
+            {
+                // cover the screen, keep the aspect
+                float va = 2912f / 1280f, sa = W / H; float vw = sa > va ? W : H * va, vh = sa > va ? W / va : H;
+                GUI.DrawTexture(new Rect((W - vw) * 0.5f, (H - vh) * 0.5f, vw, vh), vid, ScaleMode.StretchToFill);
+            }
+            Box(0, 0, W, H, new Color(0.02f, 0.02f, 0.03f, vid != null ? 0.3f : 0.42f));
             Text(new Rect(0, H * 0.30f, W, 120f * s), "AOT FABLE 5.1", Sized(sTitle, 110f), Color.white, 4f);
             var sub = Sized(sLabel, 18f); sub.alignment = TextAnchor.MiddleCenter;
             Text(new Rect(0, H * 0.30f + 122f * s, W, 30f * s), "SHIGANSHINA DISTRICT   ·   ONE TITAN   ·   CUT THE NAPE", sub, new Color(1f, 0.85f, 0.55f));
             Text(new Rect(0, H * 0.30f + 170f * s, W, 80f * s), "WASD move   ·   Mouse aim   ·   Space hook / release   ·   Shift gas   ·   LMB slash   ·   E fire a cannon\nHook a tower, get above him, cut both hamstrings, then the nape.", sub, new Color(1f, 1f, 1f, 0.75f));
             sLabel.alignment = TextAnchor.MiddleLeft;
             float pulse = 0.6f + 0.4f * Mathf.Sin(Time.unscaledTime * 3f);
-            Text(new Rect(0, H * 0.30f + 280f * s, W, 40f * s), "CLICK TO BEGIN", Sized(sPrompt, 34f), new Color(1f, 1f, 1f, pulse));
-            if (UnityEngine.Input.GetMouseButtonDown(0) || UnityEngine.Input.GetKeyDown(KeyCode.Space) || UnityEngine.Input.GetKeyDown(KeyCode.Return) || Ctx.Get<bool>("autoStart"))
+            Text(new Rect(0, H * 0.30f + 280f * s, W, 40f * s), "PRESS ANY KEY", Sized(sPrompt, 34f), new Color(1f, 1f, 1f, pulse));
+            if (UnityEngine.Input.anyKeyDown || Ctx.Get<bool>("autoStart"))
             {
-                Ctx.Set("autoStart", false);
+                Ctx.Set("autoStart", false); StopTitleVideo();
                 OdmController.TitleDone = true; Time.timeScale = 1f; Sfx.Play("ui", c.transform.position, 1f, 0.6f);
                 Ctx.Set("titleHold", false); Ctx.Set("introUntil", Time.unscaledTime + 2.6f);
                 var rig = Ctx.Get<Component>("cameraRig"); if (rig != null) rig.SendMessage("BeginIntroDive", SendMessageOptions.DontRequireReceiver);
@@ -264,7 +294,7 @@ namespace ODM
             sLabel.alignment = TextAnchor.MiddleLeft;
             float pulse = 0.6f + 0.4f * Mathf.Sin(Time.unscaledTime * 3f);
             Text(new Rect(0, cy + 44f * s, W, 40f * s), "R  PLAY AGAIN      CMD-Q  QUIT", Sized(sPrompt, 30f), new Color(1f, 1f, 1f, pulse));
-            if (UnityEngine.Input.GetKeyDown(KeyCode.R) && !Reboot.Restarting) { playStart = -1f; orbitStarted = false; OdmController.TitleDone = false; Reboot.Now(); }
+            if (UnityEngine.Input.GetKeyDown(KeyCode.R) && !Reboot.Restarting) { playStart = -1f; orbitStarted = false; OdmController.TitleDone = false; videoTried = false; Reboot.Now(); }
         }
     }
 }
