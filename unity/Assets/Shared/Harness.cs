@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Profiling;
 
 namespace Shared
 {
@@ -9,7 +10,8 @@ namespace Shared
     public class Harness : MonoBehaviour
     {
         static bool restarted; static Harness inst;
-        float quitAt = -1f, restartAt = -1f; bool fps; float acc; int n; float t0;
+        float quitAt = -1f, restartAt = -1f; bool fps; float acc; int n; float t0; bool counted;
+        readonly FrameTiming[] timings = new FrameTiming[1]; double cpuMain, cpuRender, gpu; int tn;
 
         public static void Ensure()
         {
@@ -28,7 +30,26 @@ namespace Shared
             if (fps)
             {
                 acc += Time.unscaledDeltaTime; n++;
-                if (acc >= 2f) { Debug.Log("[FPS] " + (n / acc).ToString("0.0") + " avg over " + acc.ToString("0.0") + " s at t=" + t.ToString("0")); acc = 0f; n = 0; }
+                FrameTimingManager.CaptureFrameTimings();
+                if (FrameTimingManager.GetLatestTimings(1, timings) > 0) { cpuMain += timings[0].cpuMainThreadFrameTime; cpuRender += timings[0].cpuRenderThreadFrameTime; gpu += timings[0].gpuFrameTime; tn++; }
+                if (acc >= 2f)
+                {
+                    Debug.Log("[FPS] " + (n / acc).ToString("0.0") + " avg over " + acc.ToString("0.0") + " s at t=" + t.ToString("0")
+                        + (tn > 0 ? "  main=" + (cpuMain / tn).ToString("0.0") + "ms render=" + (cpuRender / tn).ToString("0.0") + "ms gpu=" + (gpu / tn).ToString("0.0") + "ms" : ""));
+                    acc = 0f; n = 0; cpuMain = cpuRender = gpu = 0; tn = 0;
+                }
+                if (!counted && t > 4f)
+                {
+                    counted = true; long verts = 0, tris = 0; int renderers = 0, casters = 0;
+                    foreach (var mf in Object.FindObjectsByType<MeshFilter>(FindObjectsSortMode.None))
+                    {
+                        if (mf.sharedMesh == null) continue; var r = mf.GetComponent<Renderer>(); if (r == null || !r.enabled) continue;
+                        verts += mf.sharedMesh.vertexCount; tris += mf.sharedMesh.triangles.Length / 3; renderers++;
+                        if (r.shadowCastingMode != UnityEngine.Rendering.ShadowCastingMode.Off) casters++;
+                    }
+                    foreach (var sk in Object.FindObjectsByType<SkinnedMeshRenderer>(FindObjectsSortMode.None)) { if (sk.sharedMesh != null) { verts += sk.sharedMesh.vertexCount; tris += sk.sharedMesh.triangles.Length / 3; renderers++; } }
+                    Debug.Log("[Scene] renderers=" + renderers + " shadowCasters=" + casters + " verts=" + verts + " tris=" + tris + " vsync=" + QualitySettings.vSyncCount + " target=" + Application.targetFrameRate + " msaa=" + QualitySettings.antiAliasing);
+                }
             }
             if (restartAt >= 0f && t >= restartAt && !restarted)
             {

@@ -32,6 +32,7 @@ namespace Town
         public static TownInfo Ensure()
         {
             if (Root != null) return Info;
+            if (PerfToggles.Off("town")) return null;
             var boot = Bootstrap.Ensure();
             int seed = Ctx.Has("seed") ? Ctx.Get<int>("seed") : boot.seed;
             var t0 = System.Diagnostics.Stopwatch.StartNew();

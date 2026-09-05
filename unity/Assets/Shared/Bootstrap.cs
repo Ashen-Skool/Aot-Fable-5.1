@@ -72,6 +72,7 @@ namespace Shared
             BuildPlaceholders();
             if (CharacterFactory != null) CharacterFactory(this);
             else { BuildMikasa(); BuildTitan(); }
+            QualitySettings.vSyncCount = 0; Application.targetFrameRate = -1;
             Harness.Ensure();
             PerfToggles.ApplyPipeline(cam);
             Debug.Log("[Bootstrap] built, seed=" + seed);
