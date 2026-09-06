@@ -63,6 +63,9 @@ NAPEFINAL_UP = dict(NAPERIDE); NAPEFINAL_UP.update({"LeftArm": (-165, 0, -30), "
 NAPEFINAL_DOWN = dict(NAPERIDE); NAPEFINAL_DOWN.update({"LeftArm": (-35, 0, -8), "LeftForeArm": (-12, 0, 0), "LeftHand": (-30, 0, 0), "RightArm": (-35, 0, 8), "RightForeArm": (-12, 0, 0), "RightHand": (-30, 0, 0), "Spine02": (34, 0, 0), "Spine01": (26, 0, 0), "neck": (-4, 0, 0)})
 
 CLIPS = {
+    "pL":  (30, False, [(0, {"LeftArm": (0, 0, 60)}), (9, {"LeftArm": (0, 0, 60)}), (10, {"LeftArm": (0, 0, -60)}), (19, {"LeftArm": (0, 0, -60)}), (20, {"LeftArm": (60, 0, 0)}), (29, {"LeftArm": (60, 0, 0)}), (30, {"LeftArm": (-60, 0, 0)})]),
+    "pR":  (30, False, [(0, {"RightArm": (0, 0, 60)}), (9, {"RightArm": (0, 0, 60)}), (10, {"RightArm": (0, 0, -60)}), (19, {"RightArm": (0, 0, -60)}), (20, {"RightArm": (60, 0, 0)}), (29, {"RightArm": (60, 0, 0)}), (30, {"RightArm": (-60, 0, 0)})]),
+    "pF":  (30, False, [(0, {"LeftForeArm": (0, 0, 60)}), (9, {"LeftForeArm": (0, 0, 60)}), (10, {"LeftForeArm": (0, 0, -60)}), (19, {"LeftForeArm": (0, 0, -60)}), (20, {"RightForeArm": (0, 0, 60)}), (29, {"RightForeArm": (0, 0, 60)}), (30, {"RightForeArm": (0, 0, -60)})]),
     "probe2":    (30, False, [(0, {"LeftForeArm": (-70, 0, 0), "RightForeArm": (0, 0, 70), "Spine02": (30, 0, 0), "LeftFoot": (-40, 0, 0)}), (15, {"LeftForeArm": (-70, 0, 0), "RightForeArm": (0, 0, 70), "Spine02": (30, 0, 0), "LeftFoot": (-40, 0, 0)}), (16, {"LeftForeArm": (0, 0, -70), "RightForeArm": (70, 0, 0), "Spine02": (0, 0, 30), "LeftFoot": (40, 0, 0), "Hips": (-30, 0, 0)}), (30, {"LeftForeArm": (0, 0, -70), "RightForeArm": (70, 0, 0), "Spine02": (0, 0, 30), "LeftFoot": (40, 0, 0), "Hips": (-30, 0, 0)})]),
     "probe":     (30, False, [(0, {"LeftArm": (70, 0, 0), "RightArm": (0, 0, 70), "LeftUpLeg": (0, 0, 40)}), (15, {"LeftArm": (0, 70, 0), "RightArm": (0, 0, -70), "LeftUpLeg": (0, 40, 0)}), (30, {"LeftArm": (0, 0, 70), "RightArm": (-70, 0, 0), "LeftUpLeg": (40, 0, 0)})]),
     "wallperch": (60, True, breathe(WALLPERCH)),
@@ -105,6 +108,7 @@ def build(arm, name, length, loop, keys):
     return act
 
 def render_strip(arm, name, length, n=5):
+    if name.startswith('p') and len(name) == 2: n = 4
     sc = bpy.context.scene; sc.frame_start = 0; sc.frame_end = length
     objs = [o for o in bpy.data.objects if o.type == "MESH"]
     pts = [o.matrix_world @ mathutils.Vector(c) for o in objs for c in o.bound_box]
