@@ -49,6 +49,20 @@ namespace ODM
             GUI.DrawTexture(new Rect((W - vw) * 0.5f, (H - vh) * 0.5f, vw, vh), vid, ScaleMode.StretchToFill);
         }
 
+        static Texture2D ringTex;
+        static Texture2D RingTex()
+        {
+            if (ringTex != null) return ringTex;
+            int n = 64; ringTex = new Texture2D(n, n, TextureFormat.RGBA32, false); ringTex.wrapMode = TextureWrapMode.Clamp;
+            for (int y = 0; y < n; y++) for (int x = 0; x < n; x++)
+            {
+                float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(n / 2f, n / 2f)) / (n / 2f);
+                float a = Mathf.Clamp01(1f - Mathf.Abs(d - 0.82f) / 0.12f);
+                ringTex.SetPixel(x, y, new Color(1f, 1f, 1f, a));
+            }
+            ringTex.Apply(); return ringTex;
+        }
+
         static void Init()
         {
             if (sTitle != null) return;

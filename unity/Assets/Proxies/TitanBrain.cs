@@ -203,7 +203,7 @@ namespace Proxies
             (Poser as Characters.CharacterModel)?.ShakeHead(0.6f);
             HudEvents.Add(at, n >= StabsToKill ? "NAPE" : (n + " / " + StabsToKill), new Color(1f, 0.85f, 0.3f), n >= StabsToKill ? 1.8f : 1.3f);
             HitStop.Do(n >= StabsToKill ? 0.14f : 0.06f);
-            Sfx.PlayClip(Synth.Squelch(), at, 1f, n >= StabsToKill ? 0.8f : Random.Range(0.95f, 1.1f), 200f);
+            Sfx.PlayClip(Synth.Squelch(), at, n >= StabsToKill ? 0.8f : Random.Range(0.95f, 1.1f), 1f, 200f);
             Sfx.Play("titan_hit", at, 0.5f, 0.9f, 200f);
             if (n % 2 == 1) Roar();
             if (Current != State.Kneel && Current != State.Stagger) { Current = State.Stagger; t = 0.5f; Set(Pose.Stagger); }
