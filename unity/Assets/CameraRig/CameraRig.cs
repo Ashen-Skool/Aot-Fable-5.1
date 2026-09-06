@@ -54,6 +54,11 @@ namespace AotCamera
         public float rideHeight = 2.2f;             // and above it, looking down at the nape
         public float rideHeadingBlend = 1f;         // heading follows his facing (mouse offset still free)
 
+        [Header("Wall perch")]
+        public float perchDistance = 4.5f;          // her back is to the wall: the camera has to be out in the air in front of her
+        public float perchHeight = 0.9f;
+        public float perchYawDeg = 30f;             // a three-quarter view: face-on to a flat wall reads as a texture swatch
+
         [Header("Punch")]
         public float punchDistance = 0.45f;         // metres the camera lunges at full punch
         public float punchPitchDeg = 2.2f;
@@ -408,11 +413,14 @@ namespace AotCamera
             // Free flight (no cables, not locked): the mouse IS the heading. Never pull it toward the velocity or the body:
             // the velocity is itself turning toward the look (OdmController.airTurnRate) and a heading that chases the
             // velocity re-centres the view faster than the body can follow, so a 180 turn snapped back to straight ahead.
+            bool perched = (Target.State & CameraTargetState.Perched) != 0;
             bool riding = (Target.State & CameraTargetState.Riding) != 0;
             ridingNow = riding;   // the Titan carries her: his colliders must not shove the camera in (ResolveCollision)
             bool airborne = !riding && Lock == null && (Target.State & CameraTargetState.Flying) != 0;
             // on the nape she is parented to him: the heading tracks his facing so the camera stays behind the neck
-            if (riding) { var rf = Target.Forward; rf.y = 0f; if (rf.sqrMagnitude > 1e-4f) want = Vector3.Slerp(headingDir, rf.normalized, rideHeadingBlend); }
+            // perched: she faces the wall, so her forward is the way the camera has to look; the camera itself hangs out in the air
+            if (perched) { var pf = Target.Forward; pf.y = 0f; if (pf.sqrMagnitude > 1e-4f) want = Quaternion.AngleAxis(perchYawDeg, Vector3.up) * pf.normalized; }
+            else if (riding) { var rf = Target.Forward; rf.y = 0f; if (rf.sqrMagnitude > 1e-4f) want = Vector3.Slerp(headingDir, rf.normalized, rideHeadingBlend); }
             else if (airborne) { want = headingDir; want.y *= 0.5f; }   // yaw untouched, pitch eases back to the horizon (hooked or free)
             else if (Speed > 2f) want = Vector3.Slerp(want, v / Speed, Mathf.Clamp01((Speed - 2f) / 8f) * Mathf.Clamp01((Speed - 6f) / 6f));
             if (want.sqrMagnitude < 1e-4f) want = headingDir;
@@ -432,12 +440,12 @@ namespace AotCamera
             right = Vector3.Cross(Vector3.up, orbit).normalized;
             orbit = Quaternion.AngleAxis(-mousePitch, right) * orbit;
 
-            float dist = riding ? rideDistance : Mathf.Lerp(distanceIdle, distanceFast, speed01);
-            if (!riding && (Target.State & CameraTargetState.Boosting) != 0) dist *= boostDistanceMul;
-            float height = riding ? rideHeight : Mathf.Lerp(heightIdle, heightFast, speed01);
+            float dist = perched ? perchDistance : riding ? rideDistance : Mathf.Lerp(distanceIdle, distanceFast, speed01);
+            if (!riding && !perched && (Target.State & CameraTargetState.Boosting) != 0) dist *= boostDistanceMul;
+            float height = perched ? perchHeight : riding ? rideHeight : Mathf.Lerp(heightIdle, heightFast, speed01);
             // when the heading already pitches down the orbit is above the target: drop the extra height so the view stays shallow
             float downFrac = Mathf.Clamp01(-orbit.y / Mathf.Sin(maxHeadingDiveDeg * Mathf.Deg2Rad));
-            if (!riding) height *= 1f - 0.6f * downFrac;
+            if (!riding && !perched) height *= 1f - 0.6f * downFrac;
             float shoulder = Lock != null ? lockShoulder : shoulderRight;   // centered in free flight, over-the-shoulder only when locked on a titan
             return pivot - orbit * dist + right * shoulder + Vector3.up * height;
         }

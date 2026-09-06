@@ -91,15 +91,42 @@ namespace ODM
         public int Stabs { get; private set; }
         public bool FinalBlow => finalTimer > 0f || finalSent;
         public int StabsToKill => rideBrain != null ? rideBrain.StabsToKill : 5;
-        Vector3 perchPos; Quaternion perchRot; float perchT;
+        Vector3 perchPos, perchOut; Quaternion perchRot; float perchT;
         Proxies.TitanBrain rideBrain; float stabTimer, finalTimer; bool finalSent; float rideLog;
+
+        /// <summary>True while the cables are in a wall face (no ledge to mantle): the reel ends in <see cref="EnterPerch"/>.</summary>
+        bool WallAnchor => Hook == HookState.Attached && hookReal && Mathf.Abs(hookNormal.y) < 0.35f;
+
+        /// <summary>-autoPerch N: sweep for the nearest tall wall or tower face and hook it, so a headless run ends on the perch.</summary>
+        void AutoPerch()
+        {
+            Vector3 eye = rb.position + Vector3.up * 0.6f;
+            Vector3 bestDir = Vector3.zero; float bestD = float.MaxValue; Vector3 bestPoint = Vector3.zero;
+            for (int a = 0; a < 24; a++)
+                for (int p = 0; p < 3; p++)
+                {
+                    var dir = Quaternion.Euler(-(14f + p * 13f), a * 15f, 0f) * Vector3.forward;
+                    if (!Physics.Raycast(eye, dir, out var h, hookRange, OdmLayers.HookMask, QueryTriggerInteraction.Ignore)) continue;
+                    if (Mathf.Abs(h.normal.y) >= 0.35f || h.point.y < eye.y + 6f || h.distance >= bestD) continue;
+                    bestD = h.distance; bestDir = dir; bestPoint = h.point;
+                }
+            if (bestDir == Vector3.zero) { Debug.Log("[Perch] autoPerch: no wall face in range"); return; }
+            if (Hook == HookState.Attached) Detach();
+            hookLatched = true; wantVirtual = false; prevHook = true; hookRetry = 0f;
+            var right = Vector3.Cross(Vector3.up, bestDir).normalized;
+            bool ok = TryHook(eye, bestDir, right, rb.linearVelocity);
+            Debug.Log("[Perch] autoPerch hook=" + ok + " at " + bestPoint.ToString("0.0") + " dist=" + bestD.ToString("0.0") + " normal=" + hookNormal.ToString("0.00"));
+        }
 
         void EnterPerch()
         {
             Hook = HookState.Attached; SetCablesVisible(true);
             Vector3 n = new Vector3(hookNormal.x, 0, hookNormal.z); if (n.sqrMagnitude < 1e-3f) n = -transform.forward; n.Normalize();
             perchPos = Anchor + n * 0.55f + Vector3.down * 1.9f;      // hips a little off the wall, the feet planted on it below the anchor
-            perchRot = Quaternion.LookRotation(n, Vector3.up);          // back to the wall, facing out
+            // She faces the wall: the authored wallperch pose is a deep crouch with the knees drawn up and the feet forward,
+            // so her feet only land on the face if forward points into it. perchOut is the way back out into the air.
+            perchOut = n;
+            perchRot = Quaternion.LookRotation(-n, Vector3.up);
             RopeLength = Vector3.Distance(perchPos, Anchor);
             rb.linearVelocity = Vector3.zero; rb.isKinematic = true; rb.position = perchPos; rb.rotation = perchRot;
             Perched = true; perchT = 0f; Grounded = false; Reeling = false; hookLatched = false; Speed = 0f;
@@ -116,8 +143,16 @@ namespace ODM
         {
             Perched = false; rb.isKinematic = false; rb.position = perchPos;
             Detach();
-            Vector3 n = perchRot * Vector3.forward;
-            Vector3 dir = LookDir; if (Vector3.Dot(dir, n) < 0.15f) dir = (n + Vector3.up * 0.3f).normalized;   // never launch into the wall
+            Vector3 n = perchOut;
+            // never launch into the wall: keep whatever of the look runs along the face (the camera is out in front, so the
+            // raw look points back at the wall) and add the outward normal
+            Vector3 dir = LookDir;
+            float into = Vector3.Dot(dir, n);
+            if (into < 0.15f)
+            {
+                var tangent = dir - n * into;
+                dir = tangent.sqrMagnitude > 1e-4f ? (tangent.normalized + n * 0.8f).normalized : (n + Vector3.up * 0.3f).normalized;
+            }
             rb.linearVelocity = kick ? dir * 17f + Vector3.up * 4f : n * 2.5f + Vector3.down * 1f;
             if (kick) { Gas = Mathf.Max(0f, Gas - hopGas * 0.5f); if (gasPuff != null) { gasPuff.transform.position = rb.position; gasPuff.Emit(10); } }
             if (Harness.Active) Debug.Log("[Perch] exit kick=" + kick);
@@ -595,18 +630,23 @@ namespace ODM
             var mv = GameInput.Move;
             liveInput.moveX = mv.x;
             liveInput.moveY = mv.y;
-            if (Perched && UnityEngine.Input.GetKeyDown(KeyCode.Space)) { ExitPerch(false); }
-            if (Riding && UnityEngine.Input.GetKeyDown(KeyCode.Space)) { ExitRide(true); }
+            // Space off a perch or the nape has to be consumed: the hook toggle below would otherwise read the same press and
+            // fire a fresh virtual anchor in the frame she let go.
+            bool spaceDown = UnityEngine.Input.GetKeyDown(KeyCode.Space);
+            if (Perched && spaceDown) { ExitPerch(false); spaceDown = false; }
+            if (Riding && spaceDown) { ExitRide(true); spaceDown = false; }
+            if (Ctx.Get<bool>("autoPerch")) { Ctx.Set("autoPerch", false); AutoPerch(); }
             if (Ctx.Get<bool>("autoRide")) { Ctx.Set("autoRide", false); var b = Ctx.Get<Proxies.TitanBrain>("bossBrain"); if (b != null) { b.HP = Mathf.Min(b.HP, b.HPMax * b.napePhaseAt); EnterRide(b); } }
             // Space toggles the hooks: press = fire at the crosshair (a virtual anchor if nothing is there) and get pulled
             // in; press again = release and fall. Shift = gas burst. The pull is automatic while hooked.
-            if (UnityEngine.Input.GetKeyDown(KeyCode.Space))
+            if (spaceDown)
             {
                 if (Hook == HookState.Attached) hookLatched = false;
                 else { hookLatched = true; wantVirtual = true; prevHook = false; hookRetry = 0.3f; } // fresh press every time, never a dead latch
             }
             if (hookLatched && Hook == HookState.None && hookRetry <= 0f) hookLatched = false; // self-heal: a latch with no hook is meaningless
-            if (Hook == HookState.Attached && Vector3.Distance(rb.position, Anchor) < 3.5f) hookLatched = false; // arrived
+            // arrived. A wall face is the exception: the latch has to hold to reelDetach or the reel never reaches EnterPerch.
+            if (Hook == HookState.Attached && Vector3.Distance(rb.position, Anchor) < 3.5f && !WallAnchor) hookLatched = false;
             liveInput.hook = hookLatched;
             liveInput.reel = hookLatched && Hook == HookState.Attached;
             liveInput.boost = UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift);

@@ -5,14 +5,14 @@ namespace Shared
 {
     /// <summary>
     /// Command-line self-checks for a built player: -quitAfter N (seconds), -autoRestart N (calls Reboot.Now at N s, once),
-    /// -autoStabs N (N LMB presses 0.6 s apart starting at -autoSlash: the whole nape kill),
+    /// -autoStabs N (N LMB presses 0.6 s apart starting at -autoSlash: the whole nape kill), -autoPerch N (hook the nearest wall face),
     /// -fpslog (average frame rate to the log every 2 s). Lets a headless run prove things the editor tests cannot.
     /// </summary>
     public class Harness : MonoBehaviour
     {
         static bool restarted; static Harness inst;
         public static bool Active => inst != null;
-        float quitAt = -1f, restartAt = -1f, autoStart = -1f, autoKill = -1f, autoFly = -1f, autoSlash = -1f, autoPause = -1f, autoRide = -1f; bool titanLog; Transform hips; bool fps; float acc; int n; float t0; bool counted, started, killed, flew, slashed, paused, rode;
+        float quitAt = -1f, restartAt = -1f, autoStart = -1f, autoKill = -1f, autoFly = -1f, autoSlash = -1f, autoPause = -1f, autoRide = -1f, autoPerch = -1f; bool titanLog; Transform hips; bool fps; float acc; int n; float t0; bool counted, started, killed, flew, slashed, paused, rode, perched;
         float[] shotAt = new float[0]; int shotIdx; string shotDir;
         int autoStabs; int stabsSent, presses; float nextStabAt; public float stabGap = 0.6f;
         readonly FrameTiming[] timings = new FrameTiming[1]; double cpuMain, cpuRender, gpu; int tn;
@@ -22,13 +22,13 @@ namespace Shared
             if (inst != null) return;
             float q = Bootstrap.ArgInt("-quitAfter", -1), r = Bootstrap.ArgInt("-autoRestart", -1);
             bool f = Bootstrap.Arg("-fpslog", null) != null || System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-fpslog") >= 0;
-            float a = Bootstrap.ArgInt("-autoStart", -1); float k = Bootstrap.ArgInt("-autoKill", -1); float fl = Bootstrap.ArgInt("-autoFly", -1); float sl = Bootstrap.ArgInt("-autoSlash", -1); float pa = Bootstrap.ArgInt("-autoPause", -1); float ri = Bootstrap.ArgInt("-autoRide", -1);
+            float a = Bootstrap.ArgInt("-autoStart", -1); float k = Bootstrap.ArgInt("-autoKill", -1); float fl = Bootstrap.ArgInt("-autoFly", -1); float sl = Bootstrap.ArgInt("-autoSlash", -1); float pa = Bootstrap.ArgInt("-autoPause", -1); float ri = Bootstrap.ArgInt("-autoRide", -1); float pe = Bootstrap.ArgInt("-autoPerch", -1);
             int stabs = Bootstrap.ArgInt("-autoStabs", 0);
             string shots = Bootstrap.Arg("-screenshotAt"); string dir = Bootstrap.Arg("-shotDir", "shots/play");
             bool tl = System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-titanLog") >= 0;
-            if (q < 0f && r < 0f && !f && a < 0f && k < 0f && fl < 0f && sl < 0f && pa < 0f && stabs <= 0 && !tl && shots == null) return;
+            if (q < 0f && r < 0f && !f && a < 0f && k < 0f && fl < 0f && sl < 0f && pa < 0f && pe < 0f && stabs <= 0 && !tl && shots == null) return;
             var go = new GameObject("Harness"); DontDestroyOnLoad(go);
-            inst = go.AddComponent<Harness>(); inst.quitAt = q; inst.restartAt = restarted ? -1f : r; inst.fps = f; inst.t0 = Time.realtimeSinceStartup; inst.autoStart = a; inst.autoKill = k; inst.autoFly = fl; inst.autoSlash = sl; inst.autoPause = pa; inst.autoRide = ri; inst.autoStabs = stabs; inst.nextStabAt = sl; inst.shotDir = dir; inst.titanLog = tl;
+            inst = go.AddComponent<Harness>(); inst.quitAt = q; inst.restartAt = restarted ? -1f : r; inst.fps = f; inst.t0 = Time.realtimeSinceStartup; inst.autoStart = a; inst.autoKill = k; inst.autoFly = fl; inst.autoSlash = sl; inst.autoPause = pa; inst.autoRide = ri; inst.autoStabs = stabs; inst.nextStabAt = sl; inst.autoPerch = pe; inst.shotDir = dir; inst.titanLog = tl;
             if (shots != null) { var parts = shots.Split(','); inst.shotAt = new float[parts.Length]; for (int i = 0; i < parts.Length; i++) float.TryParse(parts[i], out inst.shotAt[i]); System.IO.Directory.CreateDirectory(dir); }
             Debug.Log("[Harness] quitAfter=" + q + " autoRestart=" + r + " fpslog=" + f);
         }
@@ -67,6 +67,7 @@ namespace Shared
             else if (autoStabs <= 0 && autoSlash >= 0f && !slashed && t >= autoSlash) { slashed = true; Ctx.Set("autoSlash", true); }
             if (autoPause >= 0f && !paused && t >= autoPause) { paused = true; Ctx.Set("autoPause", true); }
             if (autoRide >= 0f && !rode && t >= autoRide) { rode = true; Ctx.Set("autoRide", true); Debug.Log("[Harness] autoRide at t=" + t.ToString("0.0")); }
+            if (autoPerch >= 0f && !perched && t >= autoPerch) { perched = true; Ctx.Set("autoPerch", true); Debug.Log("[Harness] autoPerch at t=" + t.ToString("0.0")); }
             if (autoFly >= 0f && !flew && t >= autoFly) { flew = true; Ctx.Set("autoFly", true); Debug.Log("[Harness] autoFly at t=" + t.ToString("0.0")); }
             if (autoKill >= 0f && !killed && t >= autoKill)
             {

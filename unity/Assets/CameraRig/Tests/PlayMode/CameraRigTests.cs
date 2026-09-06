@@ -241,6 +241,20 @@ public class CameraRigTests
         Assert.That(d.y, Is.GreaterThan(1.5f), "and above the nape");
     }
 
+    /// <summary>Perched on a wall face she faces the wall, so the camera has to swing out in front of her instead of
+    /// backing into the stone.</summary>
+    [UnityTest]
+    public IEnumerator PerchPutsTheCameraInFrontOfHer()
+    {
+        target.Velocity = Vector3.zero;
+        target.State = CameraTargetState.Flying | CameraTargetState.Perched;
+        yield return null; yield return null;
+        yield return WaitRealtime(1.2f);
+        var d = rig.transform.position - target.Position;
+        Assert.That(Vector3.Dot(d, target.Forward), Is.LessThan(-1f), "she faces the wall, so the camera hangs behind her, out in the air");
+        Assert.That(d.magnitude, Is.GreaterThan(rig.perchDistance * 0.6f));
+    }
+
     /// <summary>A stab punch lunges the camera along its view, then springs back within a fifth of a second.</summary>
     [UnityTest]
     public IEnumerator PunchLungesAlongTheViewThenReturns()

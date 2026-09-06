@@ -13,6 +13,7 @@ namespace Shared.Cam
         Boosting = 1 << 2,   // gas boost: the camera kicks its FOV 70 -> 95 while set
         Hit = 1 << 3,
         Hooked = 1 << 4,     // cables attached: the rig leaves the heading to the rope, otherwise free flight is absolute mouse control        // took an impact this frame (set for at least one frame)
+        Perched = 1 << 6,    // clinging to a wall face: the camera swings out in front of her, the wall is behind her
         Riding = 1 << 5,     // on the Titan's nape: the rig pulls back and up so the nape reads instead of sitting inside his back
     }
 
