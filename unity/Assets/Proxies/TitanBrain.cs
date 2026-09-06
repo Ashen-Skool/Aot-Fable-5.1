@@ -132,17 +132,35 @@ namespace Proxies
             float r = height * 0.16f; Vector3 origin = transform.position + Vector3.up * height * 0.45f;
             float look = Mathf.Max(step * 8f, height * 0.5f);
             int mask = ~(1 << gameObject.layer);
-            bool Clear(Vector3 d) => !Physics.SphereCast(origin, r, d, out var h, look, mask, QueryTriggerInteraction.Ignore) || h.collider.transform.root == transform.root || h.collider.GetComponentInParent<Rigidbody>() != null;
+            float Free(Vector3 d)
+            {
+                if (!Physics.SphereCast(origin, r, d, out var h, look, mask, QueryTriggerInteraction.Ignore)) return look;
+                if (h.collider.transform.root == transform.root || h.collider.GetComponentInParent<Rigidbody>() != null) return look;
+                return h.distance;
+            }
+            bool Clear(Vector3 d) => Free(d) >= look;
             // hysteresis: keep the last chosen direction while it is still clear, so he does not zigzag between probes every frame
             Vector3 chosen = Vector3.zero;
             if (steerHold > 0f && steerDir.sqrMagnitude > 0.5f && Vector3.Dot(steerDir, want) > 0.3f && Clear(steerDir)) chosen = steerDir;
             else
             {
+                float bestFree = 0f; Vector3 best = Vector3.zero;
                 for (int i = 0; i < probeAngles.Length; i++)
                 {
                     var d = Quaternion.AngleAxis(probeAngles[i], Vector3.up) * want;
-                    if (Clear(d)) { chosen = d; steerHold = 0.6f; break; }
+                    float f = Free(d);
+                    if (f >= look) { chosen = d; steerHold = 0.6f; break; }
+                    if (f > bestFree) { bestFree = f; best = d; }
                 }
+                // boxed in (an alley, a corner between houses): take the longest opening instead of standing still,
+                // and after a while just shoulder through: a 15 m Titan is not stopped by a cottage
+                if (chosen.sqrMagnitude < 0.5f)
+                {
+                    stuckT += Time.deltaTime;
+                    if (bestFree > height * 0.15f) { chosen = best; steerHold = 0.3f; }
+                    else if (stuckT > 2f) { chosen = want; steerHold = 0.3f; Fx?.Step(0f); }
+                }
+                else stuckT = 0f;
             }
             steerHold -= Time.deltaTime;
             if (chosen.sqrMagnitude < 0.5f) return Vector3.zero;
@@ -171,7 +189,7 @@ namespace Proxies
         /// <summary>Mikasa is on the back of his neck: he runs and thrashes, cannot attack, and each stab takes a fifth of the last quarter.</summary>
         public bool Ridden;
         public int StabsToKill = 5;
-        float wanderSign = 1f, wanderT;
+        float wanderSign = 1f, wanderT, stuckT;
         public Vector3 NapeWorld() => Fx != null ? Fx.NapePos() : transform.position + Vector3.up * height * 0.85f;
         /// <summary>One stab from the rider. Returns true when this was the killing one (the caller plays the final plunge, then NapeKill).</summary>
         public bool Stab(int n)

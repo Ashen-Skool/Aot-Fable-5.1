@@ -215,7 +215,10 @@ namespace ODM
             Riding = false; if (rideBrain != null) rideBrain.Ridden = false;
             rb.isKinematic = false;
             Vector3 back = rideBrain != null ? -rideBrain.transform.forward : -transform.forward;
-            rb.linearVelocity = jump ? back * 9f + Vector3.up * 7f : back * 3f + Vector3.up * 3f;
+            rb.linearVelocity = jump ? back * 9f + Vector3.up * 7f : back * 6f + Vector3.up * 9f;
+            // off the neck with a flip (the plain Fly frame looked stiff on the way down), then the landing takes over
+            var model = Ctx.Get<Characters.CharacterModel>("mikasaModel");
+            if (model != null) { model.PlayClip("spinjump"); kickTimer = 0.9f; }
             rideBrain = null; stabTimer = 0f; finalTimer = 0f;
         }
 

@@ -10,7 +10,7 @@ namespace Proxies
     public class TitanFx : MonoBehaviour
     {
         public float height = 15f;
-        ParticleSystem steam, dust, rubble, sparks;
+        ParticleSystem steam, dust, rubble, sparks, drops;
         Transform nape; float plume; float plumeWant; AudioSource steamSrc; AudioLowPassFilter steamLp;
         TitanBrain brain;
         /// <summary>True while Mikasa rides the nape: the camera is metres from the steam, so it is emitted small and short.</summary>
@@ -73,12 +73,17 @@ namespace Proxies
               var col = rubble.collision; col.enabled = true; col.type = ParticleSystemCollisionType.World; col.bounce = 0.2f; col.dampen = 0.4f; col.lifetimeLoss = 0.1f;
               var r = rubble.GetComponent<ParticleSystemRenderer>(); r.renderMode = ParticleSystemRenderMode.Mesh; r.mesh = cubeMesh; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
               var sh = rubble.shape; sh.shapeType = ParticleSystemShapeType.Hemisphere; sh.radius = 1f; }
-            // blood, not sparks: HDR orange at 1.5 m read as a cartoon starburst under bloom (the nape kill filled the frame with bars)
-            sparks = Sys("TitanBlood", Mats.Unlit(new Color(1.1f, 0.09f, 0.07f)));
-            { var m = sparks.main; m.startLifetime = new ParticleSystem.MinMaxCurve(0.25f, 0.5f); m.startSpeed = new ParticleSystem.MinMaxCurve(5f, 11f); m.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.13f); m.gravityModifier = 1.1f;
-              var c = sparks.colorOverLifetime; c.enabled = true; c.color = Fade(1f, 0.9f, 0f);
-              var r = sparks.GetComponent<ParticleSystemRenderer>(); r.renderMode = ParticleSystemRenderMode.Stretch; r.velocityScale = 0.035f; r.lengthScale = 1.2f;
-              var sh = sparks.shape; sh.shapeType = ParticleSystemShapeType.Sphere; sh.radius = 0.3f; }
+            // blood: soft dark-red puffs thrown out of the cut in a cone (billboards, not stretched bars), plus heavier drops that fall
+            sparks = Sys("TitanBlood", PuffMat());
+            { var m = sparks.main; m.startLifetime = new ParticleSystem.MinMaxCurve(0.35f, 0.7f); m.startSpeed = new ParticleSystem.MinMaxCurve(3f, 8f); m.startSize = new ParticleSystem.MinMaxCurve(0.18f, 0.45f); m.gravityModifier = 1.2f; m.startColor = new Color(0.55f, 0.03f, 0.02f, 0.9f); m.startRotation = new ParticleSystem.MinMaxCurve(0f, 6.28f);
+              var c = sparks.colorOverLifetime; c.enabled = true; c.color = Fade(1f, 0.8f, 0f);
+              var sz = sparks.sizeOverLifetime; sz.enabled = true; sz.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 0.6f), new Keyframe(0.3f, 1f), new Keyframe(1f, 1.6f)));
+              var r = sparks.GetComponent<ParticleSystemRenderer>(); r.renderMode = ParticleSystemRenderMode.Billboard; r.sortMode = ParticleSystemSortMode.YoungestInFront;
+              var sh = sparks.shape; sh.shapeType = ParticleSystemShapeType.Cone; sh.angle = 32f; sh.radius = 0.12f; }
+            drops = Sys("TitanBloodDrops", Mats.Unlit(new Color(0.45f, 0.02f, 0.02f)));
+            { var m = drops.main; m.startLifetime = new ParticleSystem.MinMaxCurve(0.6f, 1.2f); m.startSpeed = new ParticleSystem.MinMaxCurve(5f, 12f); m.startSize = new ParticleSystem.MinMaxCurve(0.04f, 0.09f); m.gravityModifier = 1.6f;
+              var r = drops.GetComponent<ParticleSystemRenderer>(); r.renderMode = ParticleSystemRenderMode.Stretch; r.velocityScale = 0.02f; r.lengthScale = 1.5f;
+              var sh = drops.shape; sh.shapeType = ParticleSystemShapeType.Cone; sh.angle = 40f; sh.radius = 0.1f; }
             steamSrc = NoiseLoop.Source(gameObject, NoiseLoop.White(), 1f, 140f, out steamLp); if (steamLp != null) steamLp.cutoffFrequency = 1400f;
         }
 
@@ -103,8 +108,12 @@ namespace Proxies
             var ep = new ParticleSystem.EmitParams { position = pos, applyShapeToPosition = true };
             if (ride) { ep.startSize = 0.8f; ep.startLifetime = 0.8f; }
             steam.Emit(ep, Mathf.RoundToInt((10 + 26 * strength) * (ride ? 0.35f : 1f)));
-            var sp = new ParticleSystem.EmitParams { position = pos, applyShapeToPosition = true };   // the red spray is the stab's read: never shrunk
-            sparks.Emit(sp, Mathf.RoundToInt(8 + 18 * strength));
+            // the spray leaves the cut away from his body and a little upward (the cone systems point along their transform)
+            Vector3 outDir = pos - (transform.position + Vector3.up * height * 0.5f); outDir.y = 0f;
+            if (outDir.sqrMagnitude < 1e-3f) outDir = -transform.forward; outDir = (outDir.normalized + Vector3.up * 0.7f).normalized;
+            sparks.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(outDir)); drops.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(outDir));
+            var sp = new ParticleSystem.EmitParams { applyShapeToPosition = true };   // the red spray is the stab's read: never shrunk
+            sparks.Emit(sp, Mathf.RoundToInt(10 + 22 * strength)); drops.Emit(sp, Mathf.RoundToInt(6 + 16 * strength));
             Shake(0.25f + 0.45f * strength);
             plume = Mathf.Max(plume, (ride ? 0.2f : 0.6f) * strength);
         }
@@ -154,6 +163,6 @@ namespace Proxies
             if (steamSrc != null) { steamSrc.transform.position = transform.position; steamSrc.volume = Mathf.Clamp01(plume * 0.35f); }
         }
 
-        void OnDestroy() { foreach (var p in new[] { steam, dust, rubble, sparks }) if (p != null) Destroy(p.gameObject); }
+        void OnDestroy() { foreach (var p in new[] { steam, dust, rubble, sparks, drops }) if (p != null) Destroy(p.gameObject); }
     }
 }
