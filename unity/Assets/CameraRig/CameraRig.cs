@@ -419,7 +419,9 @@ namespace AotCamera
             bool airborne = !riding && Lock == null && (Target.State & CameraTargetState.Flying) != 0;
             // on the nape she is parented to him: the heading tracks his facing so the camera stays behind the neck
             // perched: she faces the wall, so her forward is the way the camera has to look; the camera itself hangs out in the air
-            if (perched) { var pf = Target.Forward; pf.y = 0f; if (pf.sqrMagnitude > 1e-4f) want = Quaternion.AngleAxis(perchYawDeg, Vector3.up) * pf.normalized; }
+            // perched: her back is to the wall and she faces the street, so the camera hangs out in the air in front of her looking back at
+            // her and the wall (the heading points from the camera toward the wall = against her forward)
+            if (perched) { var pf = -Target.Forward; pf.y = 0f; if (pf.sqrMagnitude > 1e-4f) want = Quaternion.AngleAxis(perchYawDeg, Vector3.up) * pf.normalized; }
             else if (riding) { var rf = Target.Forward; rf.y = 0f; if (rf.sqrMagnitude > 1e-4f) want = Vector3.Slerp(headingDir, rf.normalized, rideHeadingBlend); }
             else if (airborne) { want = headingDir; want.y *= 0.5f; }   // yaw untouched, pitch eases back to the horizon (hooked or free)
             else if (Speed > 2f) want = Vector3.Slerp(want, v / Speed, Mathf.Clamp01((Speed - 2f) / 8f) * Mathf.Clamp01((Speed - 6f) / 6f));

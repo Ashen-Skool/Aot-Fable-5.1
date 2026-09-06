@@ -251,7 +251,7 @@ public class CameraRigTests
         yield return null; yield return null;
         yield return WaitRealtime(1.2f);
         var d = rig.transform.position - target.Position;
-        Assert.That(Vector3.Dot(d, target.Forward), Is.LessThan(-1f), "she faces the wall, so the camera hangs behind her, out in the air");
+        Assert.That(Vector3.Dot(d, target.Forward), Is.GreaterThan(1f), "her back is to the wall and she faces the street: the camera hangs out in front of her, looking back at her");
         Assert.That(d.magnitude, Is.GreaterThan(rig.perchDistance * 0.6f));
     }
 
