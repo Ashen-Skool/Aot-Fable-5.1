@@ -151,11 +151,11 @@ namespace Town
             var adj = prof.Add<ColorAdjustments>(true);
             adj.postExposure.Override(0.4f);
             adj.saturation.Override(10f);
-            adj.contrast.Override(10f);
+            adj.contrast.Override(6f);      // 10 crushed the shadow side of the towers to black: they filled half the frame with nothing
             var wb = prof.Add<WhiteBalance>(true);
             wb.temperature.Override(8f);
             var smh = prof.Add<ShadowsMidtonesHighlights>(true);
-            smh.shadows.Override(new Vector4(0.92f, 0.96f, 1.08f, 0f));
+            smh.shadows.Override(new Vector4(0.92f, 0.96f, 1.08f, 0.13f));   // w = lift: stone reads in shadow instead of going flat black
             smh.highlights.Override(new Vector4(1.06f, 1.0f, 0.92f, 0f));
             var bloom = prof.Add<Bloom>(true);
             bloom.threshold.Override(0.95f);

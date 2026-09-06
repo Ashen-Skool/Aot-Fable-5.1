@@ -188,9 +188,24 @@ namespace Characters
         }
 
         float plantY; bool plantInit;
+        /// <summary>A stab in the nape: the head snaps side to side for a moment. Driven by TitanBrain.Stab.</summary>
+        public void ShakeHead(float seconds = 0.6f) { headShake = seconds; headShakeMax = Mathf.Max(0.05f, seconds); }
+        float headShake, headShakeMax;
+
         void LateUpdate()
         {
             LateUpdateInner();
+            if (headShake > 0f && animator != null && animator.isHuman)
+            {
+                headShake -= Time.deltaTime;
+                var head = animator.GetBoneTransform(HumanBodyBones.Head);
+                if (head != null)
+                {
+                    float k = Mathf.Clamp01(headShake / headShakeMax);
+                    float deg = 12f * k * Mathf.Sin(Time.time * 6f * 2f * Mathf.PI);
+                    head.rotation = Quaternion.AngleAxis(deg, head.up) * head.rotation;
+                }
+            }
             if (isTitan && Mathf.Abs(TitanHandRollDeg) > 0.01f && animator != null && animator.isHuman)
             {
                 foreach (var (hand, arm) in new[] { (HumanBodyBones.RightHand, HumanBodyBones.RightLowerArm), (HumanBodyBones.LeftHand, HumanBodyBones.LeftLowerArm) })

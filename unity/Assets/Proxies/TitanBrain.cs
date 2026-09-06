@@ -182,6 +182,7 @@ namespace Proxies
             Vector3 at = NapeWorld();
             Fx?.HitBurst(at, 0.8f);
             Fx?.CameraPunch(n >= StabsToKill ? 0.9f : 0.6f);
+            (Poser as Characters.CharacterModel)?.ShakeHead(0.6f);
             HudEvents.Add(at, n >= StabsToKill ? "NAPE" : (n + " / " + StabsToKill), new Color(1f, 0.85f, 0.3f), n >= StabsToKill ? 1.8f : 1.3f);
             HitStop.Do(n >= StabsToKill ? 0.14f : 0.06f);
             Sfx.Play("titan_hit", at, 0.8f, 0.9f, 200f);
