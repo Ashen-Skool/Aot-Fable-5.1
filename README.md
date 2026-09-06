@@ -84,7 +84,21 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
 - Particles: the puff texture is a shipped asset `Resources/Particles/soft.png` (was generated at runtime and came out as grey
   squares in the build); soft particles are off on `Particles.mat`. `ProjectSetup` writes both.
 
-**Open items:** user to confirm the grey squares are gone with smoke/dust/mist on (fallback: ship with them off by default);
+- Nape phase (`TitanBrain.NapePhase`, HP <= 25%): ordinary hits stop at the 25% floor; below it only an airborne slash on his upper
+  half lands, and it puts Mikasa ON HIS NECK (`OdmController.EnterRide`): kinematic, parented each physics step to `TitanBrain.NapeWorld()`,
+  he runs blind and swerves (`Ridden`), each LMB = `RideStab` (`TitanBrain.Stab`, a fifth of the last quarter, HUD dots), the fifth
+  plays the final plunge then `NapeKill` -> `Hud.Cutscene` (StreamingAssets/nape.mp4, the user's titan-fight clip, 7 s, Space skips)
+  -> `FinishNapeKill` -> kill cam -> YOU WON. Space jumps off. `-autoRide N` + `-autoSlash N` drive it from the harness.
+- Wall perch: a real hook into a wall face (|normal.y| < 0.35) with no ledge to mantle ends the reel in `EnterPerch`: back to the wall,
+  feet on it below the anchor, cables stay up. LMB leaps into the air attack, Shift launches toward the look, Space drops.
+- Hand-keyed Mikasa clips `wallperch`, `naperide`, `napestab`, `napefinal` come from `tools/author_clips.py` (Blender, pose-bone eulers
+  with side-aware helpers; the arm/elbow/leg axes of this rig were measured with the pL/pR/pF probes in that file), exported as GLBs into
+  `assets/characters/mikasa/rig` and merged by `tools/merge_clips.py` (28 clips, height 1.70). Poses: `Perch/Ride/Stab/Final` in `IPoser`,
+  mapped in `CharacterModel.Map`, with procedural twins in `ProceduralPoser` for the proxy rig. `wallkick` is not authored yet.
+- Camera: airborne heading (hooked or free) is the mouse's alone; the dutch reads the velocity yaw rate.
+
+**Open items:** wallkick clip; the perch needs a play-test (position offsets 0.55 m out / 1.9 m down from the anchor); the ride camera
+sits inside the nape steam; user to confirm the grey squares are gone with smoke/dust/mist on (fallback: ship with them off by default);
 building destruction is rubble/dust only; attic hatches skipped; fist roll and Titan wrist numbers from the user; draw/sheathe pose;
 the tower grid visually swallows the town from above (cannons live there, his call); outskirt ground lifts toward the fog from above.
 
