@@ -669,6 +669,8 @@ namespace ODM
             if (Perched && spaceDown) { ExitPerch(false); spaceDown = false; }
             if (Riding && spaceDown) { ExitRide(true); spaceDown = false; }
             if (Ctx.Get<bool>("autoPerch")) { Ctx.Set("autoPerch", false); AutoPerch(); }
+            int px = Ctx.Get<int>("perchExit");
+            if (px > 0) { Ctx.Set("perchExit", 0); if (!Perched) Debug.Log("[Perch] perchExit " + px + " but not perched"); else if (px == 2) { ExitPerch(true); Debug.Log("[Perch] exit shift"); } else if (px == 3) { ExitPerch(false); Debug.Log("[Perch] exit space"); } else { ExitPerch(true); Debug.Log("[Perch] exit lmb"); } }
             if (Ctx.Get<bool>("autoRide")) { Ctx.Set("autoRide", false); var b = Ctx.Get<Proxies.TitanBrain>("bossBrain"); if (b != null) { b.HP = Mathf.Min(b.HP, b.HPMax * b.napePhaseAt); EnterRide(b); } }
             // Space toggles the hooks: press = fire at the crosshair (a virtual anchor if nothing is there) and get pulled
             // in; press again = release and fall. Shift = gas burst. The pull is automatic while hooked.
