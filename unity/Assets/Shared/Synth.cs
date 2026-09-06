@@ -5,7 +5,7 @@ namespace Shared
     /// <summary>Synthesized one-shots the asset kit lacks: a blade/arm whoosh and a Titan roar.</summary>
     public static class Synth
     {
-        static AudioClip whoosh, roar;
+        static AudioClip whoosh, roar, squelch;
         const int SR = 22050;
 
         public static AudioClip Whoosh()
@@ -22,6 +22,27 @@ namespace Shared
                 d[i] = Mathf.Clamp(lp * env * 2.2f, -1f, 1f);
             }
             whoosh = AudioClip.Create("whoosh", n, 1, SR, false); whoosh.SetData(d, 0); return whoosh;
+        }
+
+        /// <summary>A blade going into flesh: a low thud with a short wet burst of filtered noise on top.</summary>
+        public static AudioClip Squelch()
+        {
+            if (squelch != null) return squelch;
+            float dur = 0.42f; int n = (int)(SR * dur); var d = new float[n]; var rng = new System.Random(11); float lp = 0f, bp = 0f, phase = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)SR, u = t / dur;
+                float thudEnv = Mathf.Exp(-t * 26f);
+                float f = 90f * Mathf.Exp(-t * 9f) + 38f;                       // pitch drops fast: the impact
+                phase += f / SR; if (phase > 1f) phase -= 1f;
+                float thud = Mathf.Sin(phase * 6.283f) * thudEnv;
+                float w = (float)(rng.NextDouble() * 2 - 1);
+                lp += (w - lp) * 0.18f; bp += (lp - bp) * 0.05f;                 // band-limited noise: the wet part
+                float wetEnv = Mathf.Clamp01(t * 60f) * Mathf.Exp(-t * 11f) * (0.6f + 0.4f * Mathf.Sin(t * 210f));
+                float v = thud * 1.1f + (lp - bp) * wetEnv * 1.6f;
+                d[i] = Mathf.Clamp(v * 1.3f / (1f + Mathf.Abs(v)), -1f, 1f) * (1f - u * 0.2f);
+            }
+            squelch = AudioClip.Create("squelch", n, 1, SR, false); squelch.SetData(d, 0); return squelch;
         }
 
         public static AudioClip Roar()

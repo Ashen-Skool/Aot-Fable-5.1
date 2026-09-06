@@ -246,6 +246,21 @@ namespace ODM
                 }
                 sSmall.alignment = TextAnchor.MiddleLeft;
             }
+            // nape marker: where to hook and cut once he is at a quarter
+            if (brain != null && brain.NapePhase && !c.Riding && cam != null && brain.Current != Proxies.TitanBrain.State.Dead)
+            {
+                Vector3 wp = brain.NapeWorld(); Vector3 sp = cam.WorldToScreenPoint(wp);
+                bool behind = sp.z < 0f; if (behind) { sp.x = W - sp.x; sp.y = H - sp.y; }
+                float sx = Mathf.Clamp(sp.x, 60f * s, W - 60f * s), sy = Mathf.Clamp(H - sp.y, 120f * s, H - 160f * s);
+                float pulse = 0.75f + 0.25f * Mathf.Sin(Time.unscaledTime * 6f);
+                float ring = (18f + 6f * Mathf.Sin(Time.unscaledTime * 6f)) * s;
+                var col = new Color(1f, 0.82f, 0.25f, (behind ? 0.5f : 1f) * pulse);
+                GUI.color = col; GUI.DrawTexture(new Rect(sx - ring, sy - ring, ring * 2f, ring * 2f), RingTex()); GUI.color = Color.white;
+                var sm = Sized(sSmall, 14f); sm.alignment = TextAnchor.MiddleCenter;
+                float dist = Vector3.Distance(c.transform.position, wp);
+                Text(new Rect(sx - 80f * s, sy + ring + 2f * s, 160f * s, 18f * s), "NAPE  " + dist.ToString("0") + " M", sm, col, 1f);
+                sSmall.alignment = TextAnchor.MiddleLeft;
+            }
             var prompt = Ctx.Get<string>("cannonPrompt");
             if (!string.IsNullOrEmpty(prompt)) { Text(new Rect(0, cy + 80f * s, W, 40f * s), prompt.ToUpperInvariant(), Sized(sPrompt, 30f), new Color(1f, 0.9f, 0.6f)); Ctx.Set("cannonPrompt", ""); }
 
