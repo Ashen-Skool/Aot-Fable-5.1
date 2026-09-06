@@ -49,18 +49,18 @@ def pose(hips=0, spine=(0, 0, 0), neck=0, head=0, thighF=0, thighO=0, kneeF=0, f
     }
 
 # Wall perch: back to the wall, feet planted flat on it, knees bent, hips low, torso leaning out, blades low and ready.
-WALLPERCH = pose(hips=18, spine=(8, 6, 4), neck=14, head=6, thighF=80, thighO=8, kneeF=95, footF=-25, armF=(20, 20), armR=(-30, -30), elbow=(25, 25), hand=(-10, -10))
+WALLPERCH = pose(hips=-12, spine=(6, 4, 2), neck=10, head=6, thighF=-38, thighO=10, kneeF=105, footF=-45, armF=(12, 12), armR=(-30, -30), elbow=(18, 18), hand=(-10, -10))
 # Kick-off: sink deeper, then explode off the wall legs straight, arms forward with the blades.
-WALLKICK_A = pose(hips=24, spine=(12, 8, 4), neck=14, head=6, thighF=100, thighO=8, kneeF=125, footF=-30, armF=(10, 10), armR=(-35, -35), elbow=(30, 30))
+WALLKICK_A = pose(hips=-18, spine=(10, 6, 2), neck=10, head=6, thighF=-20, thighO=10, kneeF=135, footF=-50, armF=(5, 5), armR=(-35, -35), elbow=(25, 25))
 WALLKICK_B = pose(hips=6, spine=(14, 10, 6), neck=10, head=6, thighF=10, thighO=6, kneeF=10, footF=25, armF=(70, 70), armR=(-20, -20), elbow=(20, 20))
 # Nape ride: kneeling on the back of his neck, hunched, left blade buried low, right blade raised over the head.
-NAPERIDE = pose(hips=-20, spine=(16, 14, 10), neck=18, head=10, thighF=100, thighO=14, kneeF=130, footF=30, armF=(60, 120), armR=(-10, 20), elbow=(15, 70), hand=(-20, -20))
+NAPERIDE = pose(hips=-18, spine=(14, 10, 6), neck=16, head=8, thighF=70, thighO=16, kneeF=135, footF=35, armF=(65, 165), armR=(-8, 22), elbow=(8, 22), hand=(-25, -15))
 # Stab: the right arm cocks, then plunges down in front, the torso dips with it, then returns to the ride pose.
-NAPESTAB_COCK = pose(hips=-20, spine=(8, 8, 6), neck=22, head=10, thighF=100, thighO=14, kneeF=130, footF=30, armF=(60, 150), armR=(-10, 30), elbow=(15, 80), hand=(-20, -20))
-NAPESTAB_HIT  = pose(hips=-20, spine=(30, 24, 14), neck=6, head=4, thighF=100, thighO=14, kneeF=130, footF=30, armF=(60, 40), armR=(-10, -5), elbow=(15, 15), hand=(-20, -35))
+NAPESTAB_COCK = pose(hips=-18, spine=(6, 4, 2), neck=22, head=10, thighF=70, thighO=16, kneeF=135, footF=35, armF=(65, 185), armR=(-8, 28), elbow=(8, 35), hand=(-25, -15))
+NAPESTAB_HIT  = pose(hips=-18, spine=(30, 22, 12), neck=4, head=2, thighF=70, thighO=16, kneeF=135, footF=35, armF=(65, 55), armR=(-8, -4), elbow=(8, 6), hand=(-25, -40))
 # Final blow: both blades up, both plunge, hold buried.
-NAPEFINAL_UP   = pose(hips=-20, spine=(2, 2, 2), neck=28, head=12, thighF=100, thighO=14, kneeF=130, footF=30, armF=(150, 150), armR=(30, 30), elbow=(80, 80), hand=(-20, -20))
-NAPEFINAL_DOWN = pose(hips=-20, spine=(34, 26, 14), neck=2, head=2, thighF=100, thighO=14, kneeF=130, footF=30, armF=(40, 40), armR=(-5, -5), elbow=(12, 12), hand=(-35, -35))
+NAPEFINAL_UP   = pose(hips=-18, spine=(0, 0, 0), neck=28, head=12, thighF=70, thighO=16, kneeF=135, footF=35, armF=(185, 185), armR=(28, 28), elbow=(35, 35), hand=(-15, -15))
+NAPEFINAL_DOWN = pose(hips=-18, spine=(34, 26, 14), neck=0, head=0, thighF=70, thighO=16, kneeF=135, footF=35, armF=(50, 50), armR=(-4, -4), elbow=(6, 6), hand=(-40, -40))
 
 CLIPS = {
     "pL":  (30, False, [(0, {"LeftArm": (0, 0, 60)}), (9, {"LeftArm": (0, 0, 60)}), (10, {"LeftArm": (0, 0, -60)}), (19, {"LeftArm": (0, 0, -60)}), (20, {"LeftArm": (60, 0, 0)}), (29, {"LeftArm": (60, 0, 0)}), (30, {"LeftArm": (-60, 0, 0)})]),
