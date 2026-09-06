@@ -54,6 +54,11 @@ namespace AotCamera
         public float rideHeight = 2.2f;             // and above it, looking down at the nape
         public float rideHeadingBlend = 1f;         // heading follows his facing (mouse offset still free)
 
+        [Header("Punch")]
+        public float punchDistance = 0.45f;         // metres the camera lunges at full punch
+        public float punchPitchDeg = 2.2f;
+        public float punchReturnTime = 0.11f;
+
         [Header("Target lock")]
         /// <summary>World transform the chase frame keeps in view (the Titan). Null = plain chase. Ctx "cameraLockTarget" is used when this is null.</summary>
         public Transform lockTarget;
@@ -136,6 +141,7 @@ namespace AotCamera
         MotionBlur blur;
         Volume volume;
         bool snapNext = true;
+        float punch, punchVel;
         bool ridingNow; Transform rideIgnore;
         Transform RideIgnore { get { if (rideIgnore == null) { var b = Ctx.Get<Component>("bossBrain"); if (b != null) rideIgnore = b.transform; } return rideIgnore; } }
         CameraTargetState prevState;
@@ -187,6 +193,10 @@ namespace AotCamera
         // ---------------------------------------------------------------- public API
 
         public void Shake(float trauma) => shake.Add(trauma);
+
+        /// <summary>A short camera punch: the rig lunges along its own forward and tips up, then springs back.
+        /// Used on a nape stab, where a shake alone reads as noise but a lunge reads as impact.</summary>
+        public void Punch(float amount) { punch = Mathf.Clamp01(punch + amount); }
 
         /// <summary>Slow-motion orbit around a world point (the nape) for killCamDuration real seconds, then snap back to chase.</summary>
         public void KillCam(Vector3 point)
@@ -362,6 +372,15 @@ namespace AotCamera
             shake.Update(udt);
             transform.position += transform.rotation * shake.PosOffset;
             transform.rotation *= Quaternion.Euler(shake.RotOffset);
+
+            // punch: a lunge along the view, springing back inside a fifth of a second
+            if (punch > 1e-4f || punchVel != 0f)
+            {
+                transform.position += transform.rotation * Vector3.forward * (punchDistance * punch);
+                transform.rotation *= Quaternion.Euler(-punchPitchDeg * punch, 0f, 0f);
+                punch = Mathf.SmoothDamp(punch, 0f, ref punchVel, punchReturnTime, Mathf.Infinity, udt);
+                if (punch < 1e-4f) { punch = 0f; punchVel = 0f; }
+            }
 
             // motion blur from speed (real URP post effect); a little during the slow-mo orbit
             if (blur != null)

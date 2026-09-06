@@ -155,7 +155,7 @@ namespace ODM
             Shared.Sfx.Play("slash", rb.position, 1.6f, 0.8f);
             if (kill) { finalTimer = 0.9f; model?.SetPose(Shared.Rigs.Pose.Final, true); }
             else { stabTimer = 0.5f; model?.SetPose(Shared.Rigs.Pose.Stab, true); }
-            if (Harness.Active) Debug.Log("[Ride] stab " + Stabs + (kill ? " KILL" : ""));
+            if (Harness.Active) Debug.Log("[Ride] stab " + Stabs + (kill ? " KILL" : "") + " clip=" + (model != null ? model.ActiveClipName : "-"));
         }
         void ExitRide(bool jump)
         {

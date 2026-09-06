@@ -115,6 +115,10 @@ namespace Characters
             return idx;
         }
 
+        /// <summary>Name of the clip actually playing. The pose map falls back to alternates when a take is missing
+        /// from the FBX meta, so the harness logs this to prove e.g. napestab is the real clip.</summary>
+        public string ActiveClipName => active >= 0 && active < ports.Count ? ports[active].GetAnimationClip().name : "-";
+
         public void SetPose(Pose pose) => SetPose(pose, false);
         /// <summary>force: restart the clip even if it is already the current pose (a second stab).</summary>
         public void SetPose(Pose pose, bool force)

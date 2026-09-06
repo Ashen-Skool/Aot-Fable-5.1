@@ -241,6 +241,25 @@ public class CameraRigTests
         Assert.That(d.y, Is.GreaterThan(1.5f), "and above the nape");
     }
 
+    /// <summary>A stab punch lunges the camera along its view, then springs back within a fifth of a second.</summary>
+    [UnityTest]
+    public IEnumerator PunchLungesAlongTheViewThenReturns()
+    {
+        target.Velocity = Vector3.zero;
+        yield return null; yield return null;
+        yield return WaitRealtime(0.5f);
+        var settled = rig.transform.position;
+        var fwd = rig.transform.forward;
+
+        rig.Punch(1f);
+        yield return null;
+        float along = Vector3.Dot(rig.transform.position - settled, fwd);
+        Assert.That(along, Is.GreaterThan(rig.punchDistance * 0.5f), "the punch pushes the camera forward");
+
+        yield return WaitRealtime(0.6f);
+        Assert.That(Vector3.Distance(rig.transform.position, settled), Is.LessThan(0.05f), "and it springs back");
+    }
+
     [Test]
     public void FrameAtPutsThePointWhereAsked()
     {

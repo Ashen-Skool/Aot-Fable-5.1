@@ -73,10 +73,11 @@ namespace Proxies
               var col = rubble.collision; col.enabled = true; col.type = ParticleSystemCollisionType.World; col.bounce = 0.2f; col.dampen = 0.4f; col.lifetimeLoss = 0.1f;
               var r = rubble.GetComponent<ParticleSystemRenderer>(); r.renderMode = ParticleSystemRenderMode.Mesh; r.mesh = cubeMesh; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
               var sh = rubble.shape; sh.shapeType = ParticleSystemShapeType.Hemisphere; sh.radius = 1f; }
-            sparks = Sys("TitanBlood", Mats.Unlit(new Color(1.8f, 0.35f, 0.25f)));
-            { var m = sparks.main; m.startLifetime = new ParticleSystem.MinMaxCurve(0.3f, 0.7f); m.startSpeed = new ParticleSystem.MinMaxCurve(6f, 14f); m.startSize = new ParticleSystem.MinMaxCurve(0.08f, 0.2f); m.gravityModifier = 0.8f;
+            // blood, not sparks: HDR orange at 1.5 m read as a cartoon starburst under bloom (the nape kill filled the frame with bars)
+            sparks = Sys("TitanBlood", Mats.Unlit(new Color(1.1f, 0.09f, 0.07f)));
+            { var m = sparks.main; m.startLifetime = new ParticleSystem.MinMaxCurve(0.25f, 0.5f); m.startSpeed = new ParticleSystem.MinMaxCurve(5f, 11f); m.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.13f); m.gravityModifier = 1.1f;
               var c = sparks.colorOverLifetime; c.enabled = true; c.color = Fade(1f, 0.9f, 0f);
-              var r = sparks.GetComponent<ParticleSystemRenderer>(); r.renderMode = ParticleSystemRenderMode.Stretch; r.velocityScale = 0.06f; r.lengthScale = 1.5f;
+              var r = sparks.GetComponent<ParticleSystemRenderer>(); r.renderMode = ParticleSystemRenderMode.Stretch; r.velocityScale = 0.035f; r.lengthScale = 1.2f;
               var sh = sparks.shape; sh.shapeType = ParticleSystemShapeType.Sphere; sh.radius = 0.3f; }
             steamSrc = NoiseLoop.Source(gameObject, NoiseLoop.White(), 1f, 140f, out steamLp); if (steamLp != null) steamLp.cutoffFrequency = 1400f;
         }
@@ -88,6 +89,9 @@ namespace Proxies
         }
         public Vector3 NapePos() { var n = Nape(); if (n == null) return transform.position + Vector3.up * height * 0.85f; var c = n.GetComponent<Collider>(); return c != null ? c.bounds.center : n.position; }
         static Transform FindDeep(Transform t, string name) { if (t.name == name) return t; for (int i = 0; i < t.childCount; i++) { var r = FindDeep(t.GetChild(i), name); if (r != null) return r; } return null; }
+
+        /// <summary>A stab-sized camera lunge (CameraRig.Punch); the shake alone read as noise on the nape.</summary>
+        public void CameraPunch(float amount) { var rig = Ctx.Get<Component>("cameraRig"); if (rig != null) rig.SendMessage("Punch", amount, SendMessageOptions.DontRequireReceiver); }
 
         static void Shake(float trauma) { var rig = Ctx.Get<Component>("cameraRig"); if (rig != null) rig.SendMessage("Shake", trauma, SendMessageOptions.DontRequireReceiver); }
 
