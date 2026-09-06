@@ -92,7 +92,7 @@ namespace ODM
         public bool FinalBlow => finalTimer > 0f || finalSent;
         public int StabsToKill => rideBrain != null ? rideBrain.StabsToKill : 5;
         Vector3 perchPos; Quaternion perchRot; float perchT;
-        Proxies.TitanBrain rideBrain; float stabTimer, finalTimer; bool finalSent;
+        Proxies.TitanBrain rideBrain; float stabTimer, finalTimer; bool finalSent; float rideLog;
 
         void EnterPerch()
         {
@@ -142,6 +142,7 @@ namespace ODM
             Vector3 pos = rideBrain.NapeWorld() - tt.forward * 0.35f + Vector3.up * 0.15f;
             rb.MovePosition(pos); rb.MoveRotation(tt.rotation);
             Speed = 0f;
+            if (Harness.Active) { rideLog -= dt; if (rideLog <= 0f) { rideLog = 0.5f; Debug.Log("[RideDbg] her=" + rb.position.ToString("0.0") + " nape=" + rideBrain.NapeWorld().ToString("0.0") + " titan=" + tt.position.ToString("0.0") + " fwd=" + tt.forward.ToString("0.00")); } }
             stabTimer -= dt;
             if (finalTimer > 0f) { finalTimer -= dt; if (finalTimer <= 0f && !finalSent) { finalSent = true; rideBrain.NapeKill(rb.position); } }
         }

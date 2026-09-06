@@ -12,6 +12,9 @@ namespace Proxies
         public float height = 15f;
         ParticleSystem steam, dust, rubble, sparks;
         Transform nape; float plume; float plumeWant; AudioSource steamSrc; AudioLowPassFilter steamLp;
+        TitanBrain brain;
+        /// <summary>True while Mikasa rides the nape: the camera is metres from the steam, so it is emitted small and short.</summary>
+        public bool Ridden { get { if (brain == null) brain = GetComponent<TitanBrain>(); return brain != null && brain.Ridden; } }
         static Texture2D soft; static Material puffMat;
 
         public static TitanFx Attach(GameObject host, float height)
@@ -92,11 +95,14 @@ namespace Proxies
         public void HitBurst(Vector3 pos, float strength)
         {
             if (Application.isBatchMode) return;
+            bool ride = Ridden;
             var ep = new ParticleSystem.EmitParams { position = pos, applyShapeToPosition = true };
-            steam.Emit(ep, Mathf.RoundToInt(10 + 26 * strength));
-            sparks.Emit(ep, Mathf.RoundToInt(8 + 18 * strength));
+            if (ride) { ep.startSize = 0.8f; ep.startLifetime = 0.8f; }
+            steam.Emit(ep, Mathf.RoundToInt((10 + 26 * strength) * (ride ? 0.35f : 1f)));
+            var sp = new ParticleSystem.EmitParams { position = pos, applyShapeToPosition = true };   // the red spray is the stab's read: never shrunk
+            sparks.Emit(sp, Mathf.RoundToInt(8 + 18 * strength));
             Shake(0.25f + 0.45f * strength);
-            plume = Mathf.Max(plume, 0.6f * strength);
+            plume = Mathf.Max(plume, (ride ? 0.2f : 0.6f) * strength);
         }
 
         /// <summary>Continuous steam off the nape (kneel, death).</summary>
@@ -138,6 +144,7 @@ namespace Proxies
             if (plume > 0.02f && Time.frameCount % 3 == 0)
             {
                 var ep = new ParticleSystem.EmitParams { position = NapePos(), applyShapeToPosition = true };
+                if (Ridden) { ep.startSize = 0.8f; ep.startLifetime = 0.8f; }
                 steam.Emit(ep, Mathf.CeilToInt(plume * 1.5f));
             }
             if (steamSrc != null) { steamSrc.transform.position = transform.position; steamSrc.volume = Mathf.Clamp01(plume * 0.35f); }

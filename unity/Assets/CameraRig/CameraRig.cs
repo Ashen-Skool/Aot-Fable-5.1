@@ -49,6 +49,11 @@ namespace AotCamera
         public float minCollisionDistance = 0.6f;
         public LayerMask collisionMask = ~0;
 
+        [Header("Nape ride")]
+        public float rideDistance = 5f;             // she is on a 15 m Titan's neck: 3.2 m puts the camera inside his back
+        public float rideHeight = 2.2f;             // and above it, looking down at the nape
+        public float rideHeadingBlend = 1f;         // heading follows his facing (mouse offset still free)
+
         [Header("Target lock")]
         /// <summary>World transform the chase frame keeps in view (the Titan). Null = plain chase. Ctx "cameraLockTarget" is used when this is null.</summary>
         public Transform lockTarget;
@@ -131,6 +136,8 @@ namespace AotCamera
         MotionBlur blur;
         Volume volume;
         bool snapNext = true;
+        bool ridingNow; Transform rideIgnore;
+        Transform RideIgnore { get { if (rideIgnore == null) { var b = Ctx.Get<Component>("bossBrain"); if (b != null) rideIgnore = b.transform; } return rideIgnore; } }
         CameraTargetState prevState;
         // kill cam
         Vector3 killPoint; float killT, killYaw0, savedTimeScale = 1f, savedFixedDt = 1f / 60f;
@@ -382,8 +389,12 @@ namespace AotCamera
             // Free flight (no cables, not locked): the mouse IS the heading. Never pull it toward the velocity or the body:
             // the velocity is itself turning toward the look (OdmController.airTurnRate) and a heading that chases the
             // velocity re-centres the view faster than the body can follow, so a 180 turn snapped back to straight ahead.
-            bool airborne = Lock == null && (Target.State & CameraTargetState.Flying) != 0;
-            if (airborne) { want = headingDir; want.y *= 0.5f; }   // yaw untouched, pitch eases back to the horizon (hooked or free)
+            bool riding = (Target.State & CameraTargetState.Riding) != 0;
+            ridingNow = riding;   // the Titan carries her: his colliders must not shove the camera in (ResolveCollision)
+            bool airborne = !riding && Lock == null && (Target.State & CameraTargetState.Flying) != 0;
+            // on the nape she is parented to him: the heading tracks his facing so the camera stays behind the neck
+            if (riding) { var rf = Target.Forward; rf.y = 0f; if (rf.sqrMagnitude > 1e-4f) want = Vector3.Slerp(headingDir, rf.normalized, rideHeadingBlend); }
+            else if (airborne) { want = headingDir; want.y *= 0.5f; }   // yaw untouched, pitch eases back to the horizon (hooked or free)
             else if (Speed > 2f) want = Vector3.Slerp(want, v / Speed, Mathf.Clamp01((Speed - 2f) / 8f) * Mathf.Clamp01((Speed - 6f) / 6f));
             if (want.sqrMagnitude < 1e-4f) want = headingDir;
             want.Normalize();
@@ -402,12 +413,12 @@ namespace AotCamera
             right = Vector3.Cross(Vector3.up, orbit).normalized;
             orbit = Quaternion.AngleAxis(-mousePitch, right) * orbit;
 
-            float dist = Mathf.Lerp(distanceIdle, distanceFast, speed01);
-            if ((Target.State & CameraTargetState.Boosting) != 0) dist *= boostDistanceMul;
-            float height = Mathf.Lerp(heightIdle, heightFast, speed01);
+            float dist = riding ? rideDistance : Mathf.Lerp(distanceIdle, distanceFast, speed01);
+            if (!riding && (Target.State & CameraTargetState.Boosting) != 0) dist *= boostDistanceMul;
+            float height = riding ? rideHeight : Mathf.Lerp(heightIdle, heightFast, speed01);
             // when the heading already pitches down the orbit is above the target: drop the extra height so the view stays shallow
             float downFrac = Mathf.Clamp01(-orbit.y / Mathf.Sin(maxHeadingDiveDeg * Mathf.Deg2Rad));
-            height *= 1f - 0.6f * downFrac;
+            if (!riding) height *= 1f - 0.6f * downFrac;
             float shoulder = Lock != null ? lockShoulder : shoulderRight;   // centered in free flight, over-the-shoulder only when locked on a titan
             return pivot - orbit * dist + right * shoulder + Vector3.up * height;
         }
@@ -536,6 +547,7 @@ namespace AotCamera
                 if (h.distance <= 0f) continue;
                 if (root != null && h.transform.IsChildOf(root)) continue;
                 if (Lock != null && h.transform.IsChildOf(Lock)) continue;
+                if (ridingNow && RideIgnore != null && h.transform.IsChildOf(RideIgnore)) continue;
                 if (h.distance < best) best = h.distance;
             }
             if (best >= len) return to;

@@ -223,6 +223,24 @@ public class CameraRigTests
         Assert.That(rig.Trauma, Is.EqualTo(0f).Within(1e-3f), "trauma decays");
     }
 
+    /// <summary>The nape ride: the chase distance opens up so the camera is not inside the Titan's back and steam.</summary>
+    [UnityTest]
+    public IEnumerator RidingPullsTheCameraBackAndUp()
+    {
+        target.Velocity = Vector3.zero;
+        target.State = CameraTargetState.Flying;
+        yield return null; yield return null;
+        yield return WaitRealtime(0.6f);
+        float chase = Vector3.Distance(rig.transform.position, target.Position);
+
+        target.State = CameraTargetState.Flying | CameraTargetState.Riding;
+        yield return WaitRealtime(1.2f);
+        var d = rig.transform.position - target.Position;
+        Assert.That(d.magnitude, Is.GreaterThan(chase + 1.5f), "riding pulls the camera back");
+        Assert.That(new Vector2(d.x, d.z).magnitude, Is.GreaterThan(rig.rideDistance * 0.7f), "roughly the ride distance behind her");
+        Assert.That(d.y, Is.GreaterThan(1.5f), "and above the nape");
+    }
+
     [Test]
     public void FrameAtPutsThePointWhereAsked()
     {
