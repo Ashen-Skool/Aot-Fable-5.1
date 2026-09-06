@@ -54,13 +54,13 @@ WALLPERCH = pose(hips=-12, spine=(6, 4, 2), neck=10, head=6, thighF=-38, thighO=
 WALLKICK_A = pose(hips=-18, spine=(10, 6, 2), neck=10, head=6, thighF=-20, thighO=10, kneeF=135, footF=-50, armF=(5, 5), armR=(-35, -35), elbow=(25, 25))
 WALLKICK_B = pose(hips=6, spine=(14, 10, 6), neck=10, head=6, thighF=10, thighO=6, kneeF=10, footF=25, armF=(70, 70), armR=(-20, -20), elbow=(20, 20))
 # Nape ride: kneeling on the back of his neck, hunched, left blade buried low, right blade raised over the head.
-NAPERIDE = pose(hips=-18, spine=(14, 10, 6), neck=16, head=8, thighF=70, thighO=16, kneeF=135, footF=35, armF=(50, 25), armR=(-25, 130), elbow=(5, 30), hand=(-25, -15))
+NAPERIDE = pose(hips=-18, spine=(14, 10, 6), neck=16, head=8, thighF=70, thighO=16, kneeF=135, footF=35, armF=(30, 15), armR=(-38, 165), elbow=(5, 25), hand=(-25, -15))
 # Stab: the right arm cocks, then plunges down in front, the torso dips with it, then returns to the ride pose.
-NAPESTAB_COCK = pose(hips=-18, spine=(6, 4, 2), neck=22, head=10, thighF=70, thighO=16, kneeF=135, footF=35, armF=(50, 10), armR=(-25, 150), elbow=(5, 45), hand=(-25, -15))
-NAPESTAB_HIT  = pose(hips=-18, spine=(30, 22, 12), neck=4, head=2, thighF=70, thighO=16, kneeF=135, footF=35, armF=(50, 55), armR=(-25, -20), elbow=(5, 6), hand=(-25, -40))
+NAPESTAB_COCK = pose(hips=-18, spine=(6, 4, 2), neck=22, head=10, thighF=70, thighO=16, kneeF=135, footF=35, armF=(30, 5), armR=(-38, 180), elbow=(5, 40), hand=(-25, -15))
+NAPESTAB_HIT  = pose(hips=-18, spine=(30, 22, 12), neck=4, head=2, thighF=70, thighO=16, kneeF=135, footF=35, armF=(30, 40), armR=(-38, -30), elbow=(5, 6), hand=(-25, -40))
 # Final blow: both blades up, both plunge, hold buried.
-NAPEFINAL_UP   = pose(hips=-18, spine=(0, 0, 0), neck=28, head=12, thighF=70, thighO=16, kneeF=135, footF=35, armF=(10, 10), armR=(150, 150), elbow=(45, 45), hand=(-15, -15))
-NAPEFINAL_DOWN = pose(hips=-18, spine=(34, 26, 14), neck=0, head=0, thighF=70, thighO=16, kneeF=135, footF=35, armF=(55, 55), armR=(-20, -20), elbow=(6, 6), hand=(-40, -40))
+NAPEFINAL_UP   = pose(hips=-18, spine=(0, 0, 0), neck=28, head=12, thighF=70, thighO=16, kneeF=135, footF=35, armF=(5, 5), armR=(180, 180), elbow=(40, 40), hand=(-15, -15))
+NAPEFINAL_DOWN = pose(hips=-18, spine=(34, 26, 14), neck=0, head=0, thighF=70, thighO=16, kneeF=135, footF=35, armF=(40, 40), armR=(-30, -30), elbow=(6, 6), hand=(-40, -40))
 
 CLIPS = {
     "pL":  (30, False, [(0, {"LeftArm": (0, 0, 60)}), (9, {"LeftArm": (0, 0, 60)}), (10, {"LeftArm": (0, 0, -60)}), (19, {"LeftArm": (0, 0, -60)}), (20, {"LeftArm": (60, 0, 0)}), (29, {"LeftArm": (60, 0, 0)}), (30, {"LeftArm": (-60, 0, 0)})]),
