@@ -150,6 +150,22 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
   scans his footprint and one stride ahead every 0.08 s (a quarter-second scan let a sprint put him a body deep into a house first) and
   brings down up to two houses a scan, in every movement path - chase, bulldoze, and the blind run while she rides the nape.
 
+- Day of 09-06 (user play-test 2): the 7 m Titan proxy is gone from the game. He belongs to the piece-15 captures and never got a
+  Meshy mesh, so a normal run had him standing in the market street at (-6, 0, 50) as bare capsules with a painted grin;
+  `ProxyBootstrap.Spawn` now builds him only for `-piece proxies` / `-lineup`, and registers `titan`/`titanProxy`/`titanPoser` only
+  then. (TownRuntime's old attempt at hiding him only covered Bootstrap's single stub capsule - the articulated proxy has no Renderer
+  on its root, so it always missed.) Tests updated to the new contract.
+- Day of 09-06 (user play-test 2): no stagger clip on him while she rides. Meshy's `hit` take has its travel baked into the hips and
+  `merge_clips` only strips that for the INPLACE locomotion clips, so every stab slid his whole body sideways and left her hanging
+  over where he used to be. The stab still reads (spray, head shake, camera punch, hit-stop, HUD dot, roar). On top of that
+  `TitanBrain.PinRide` pins the seat to his animated Neck bone at mount, so she now tracks whatever his animation does - the Zone_
+  colliders hang off the proxy skeleton, which stops being posed the moment the Meshy model dresses him, so a zone-only seat was
+  really root-relative.
+
+**Known, not fixed:** nothing is on the `Titan` physics layer. `OdmBoot` only ever assigned it to the 7 m proxy, never to the boss,
+so `hookReal` ("a hook in the Titan never ends in a perch") and the `bossDead`-as-ground mask are both keyed off a layer the boss was
+never on. Putting the boss on it also changes `TitanBrain.Steer`'s probe mask, so it is a real behaviour change and wants a play-test.
+
 **Open items:** user to confirm the grey squares are gone with smoke/dust/mist on (fallback: ship with them off by default);
 fist roll and Titan wrist numbers from the user; the tower grid visually swallows the town from above (cannons live there, his call).
 Crushed houses settle as a flattish field of shards rather than a heaped mound - the collapse moves vertices, so the big roof and wall

@@ -117,17 +117,18 @@ public class ProxyPoseTests
         Bootstrap.Ensure();
         yield return null;
         var mk = Ctx.Get<MikasaProxy>("mikasaProxy");
-        var t = Ctx.Get<TitanProxy>("titanProxy");
         var b = Ctx.Get<TitanProxy>("bossProxy");
         Assert.IsNotNull(mk, "mikasaProxy registered");
-        Assert.IsNotNull(t, "titanProxy registered");
         Assert.IsNotNull(b, "bossProxy registered");
         Assert.AreSame(mk.gameObject, Ctx.Get<GameObject>("mikasa"));
-        Assert.AreSame(t.gameObject, Ctx.Get<GameObject>("titan"));
         Assert.AreSame(b.gameObject, Ctx.Get<GameObject>("boss"));
         Assert.IsNotNull(Ctx.Get<IPoser>("mikasaPoser"));
-        Assert.That(t.height, Is.EqualTo(7f));
+        Assert.IsNull(Ctx.Get<TitanProxy>("titanProxy"), "the 7 m proxy is built only for a proxies capture");
         Assert.That(b.height, Is.EqualTo(15f));
+        // the 7 m proxy still builds correctly when the capture rig asks for one
+        var small = TitanProxy.Build("SmallProbe", TitanProxy.SmallHeight, new Vector3(0f, -400f, 0f), 0f);
+        Assert.That(small.height, Is.EqualTo(7f));
+        UnityEngine.Object.Destroy(small.gameObject);
         Assert.IsNotNull(HumanoidProxy.FindDeep(b.transform, "Zone_Nape"));
         Assert.IsNotNull(HumanoidProxy.FindDeep(mk.transform, "Socket_Scarf"));
     }

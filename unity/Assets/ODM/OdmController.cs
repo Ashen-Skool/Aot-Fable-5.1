@@ -186,6 +186,7 @@ namespace ODM
             rb.linearVelocity = Vector3.zero; rb.isKinematic = true; Grounded = false; Speed = 0f; slashHitTimer = 0f;
             HudEvents.Add(brain.NapeWorld() + Vector3.up * 1.5f, "ON HIS NECK", new Color(1f, 0.85f, 0.3f), 1.5f, 2f);
             brain.Mounted();
+            brain.PinRide();   // pin the seat to his animated neck now that Ridden is set and the stagger is suppressed
             HitStop.Do(0.08f);
             if (Harness.Active) Debug.Log("[Ride] enter hp=" + brain.HP);
         }

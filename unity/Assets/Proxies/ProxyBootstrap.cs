@@ -42,23 +42,33 @@ namespace Proxies
             old = Ctx.Get<GameObject>("titan");
             if (old != null && old.GetComponent<TitanProxy>() == null) HumanoidProxy.Kill(old);
 
+            // The 7 m Titan belongs to the piece-15 proxy captures, not to the game: v2 is one district and one 15 m
+            // Titan, and he never got a Meshy mesh, so a normal run had him standing in the market street at
+            // (-6, 0, 50) as a lineup of bare capsules with a painted grin. He is only built for a proxies capture.
+            var piece = Bootstrap.Arg("-piece");
+            bool proxyCapture = (piece != null && piece.StartsWith("proxies")) || Bootstrap.Arg("-lineup") != null;
+
             var mikasa = MikasaProxy.Build("Mikasa", MikasaPos, 0f);
-            var titan = TitanProxy.Build("Titan", TitanProxy.SmallHeight, TitanPos, 180f);
+            var titan = proxyCapture ? TitanProxy.Build("Titan", TitanProxy.SmallHeight, TitanPos, 180f) : null;
             var boss = TitanProxy.Build("Boss", TitanProxy.BossHeight, BossPos, 180f);
-            titan.rig.SetPose(Pose.Idle);
+            titan?.rig.SetPose(Pose.Idle);
             boss.rig.SetPose(Pose.Idle);
 
             b.mikasa = mikasa.gameObject;
-            b.titan = titan.gameObject;
+            b.titan = titan != null ? titan.gameObject : null;
             Ctx.Set("mikasa", mikasa.gameObject);
-            Ctx.Set("titan", titan.gameObject);
             Ctx.Set("boss", boss.gameObject);
             Ctx.Set("mikasaProxy", mikasa);
-            Ctx.Set("titanProxy", titan);
             Ctx.Set("bossProxy", boss);
             Ctx.Set("mikasaPoser", (IPoser)mikasa.rig);
-            Ctx.Set("titanPoser", (IPoser)titan.rig);
             Ctx.Set("bossPoser", (IPoser)boss.rig);
+            if (titan != null)
+            {
+                Ctx.Set("titan", titan.gameObject);
+                Ctx.Set("titanProxy", titan);
+                Ctx.Set("titanPoser", (IPoser)titan.rig);
+            }
+            else { Ctx.Remove("titan"); Ctx.Remove("titanProxy"); Ctx.Remove("titanPoser"); }
             // Real rigged model, if the FBX is in Resources/Characters (made with the user; proxy otherwise).
             var mikasaModel = PerfToggles.Off("chars") ? null : Characters.CharacterModel.TryDress(mikasa.gameObject, "Characters/Mikasa", MikasaProxy.Height);
             if (mikasaModel != null) { Ctx.Set("mikasaPoser", (IPoser)mikasaModel); Ctx.Set("mikasaModel", mikasaModel); }

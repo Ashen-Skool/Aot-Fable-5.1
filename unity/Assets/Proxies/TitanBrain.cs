@@ -257,7 +257,38 @@ namespace Proxies
         /// neck: seating her there left her floating a nape-radius above the surface, gliding rather than
         /// riding. This walks back out to the zone's rear face along his forward axis and sits her on it.
         /// </summary>
+        Transform rideBone; Vector3 rideOffset; Quaternion rideBoneRot0;
+
+        /// <summary>
+        /// Called once when she mounts: pins the seat to his animated neck bone. The Zone_ colliders hang off the
+        /// proxy skeleton, which stops being posed as soon as the Meshy model dresses him, so a zone-only seat is
+        /// really root-relative and does not follow anything his animation does.
+        /// </summary>
+        public void PinRide()
+        {
+            rideBone = null;
+            var m = Ctx.Get<Characters.CharacterModel>("bossModel");
+            var an = m != null ? m.animator : null;
+            if (an == null || !an.isHuman) return;
+            var neck = an.GetBoneTransform(HumanBodyBones.Neck) ?? an.GetBoneTransform(HumanBodyBones.Head);
+            if (neck == null) return;
+            SeatFromZone(out var pos, out _);
+            rideBone = neck; rideOffset = pos - neck.position; rideBoneRot0 = neck.rotation;
+        }
+
         public void RideSeat(out Vector3 pos, out Quaternion rot)
+        {
+            if (rideBone != null)
+            {
+                // rigid-follow the neck: no scale in the maths, so his 15 m model cannot double-apply it
+                pos = rideBone.position + (rideBone.rotation * Quaternion.Inverse(rideBoneRot0)) * rideOffset;
+                rot = transform.rotation;
+                return;
+            }
+            SeatFromZone(out pos, out rot);
+        }
+
+        void SeatFromZone(out Vector3 pos, out Quaternion rot)
         {
             Vector3 c = NapeWorld();
             var z = Fx != null ? Fx.NapeCollider() : null;
@@ -280,7 +311,7 @@ namespace Proxies
             if (Current == State.Dead) return;
             Roar(); Fx?.CameraPunch(0.5f);
             var m = Ctx.Get<Characters.CharacterModel>("bossModel"); if (m != null) m.ShakeHead();
-            if (Current != State.Kneel) { Current = State.Stagger; t = 0.2f; Set(Pose.Stagger); }
+            if (Current != State.Kneel && !Ridden) { Current = State.Stagger; t = 0.2f; Set(Pose.Stagger); }
         }
         /// <summary>One stab from the rider. Returns true when this was the killing one (the caller plays the final plunge, then NapeKill).</summary>
         public bool Stab(int n)
@@ -297,7 +328,11 @@ namespace Proxies
             Sfx.PlayClip(Synth.Squelch(), at, n >= StabsToKill ? 0.8f : Random.Range(0.95f, 1.1f), 1f, 200f);
             Sfx.Play("titan_hit", at, 0.5f, 0.9f, 200f);
             if (n % 2 == 1) Roar();
-            if (Current != State.Kneel && Current != State.Stagger) { Current = State.Stagger; t = 0.5f; Set(Pose.Stagger); }
+            // No stagger clip while she is on his neck. Meshy's `hit` take has the travel baked into the hips
+            // (merge_clips only strips that for the INPLACE locomotion clips), so every stab slid his whole body
+            // sideways while her seat stayed put, and she was left hanging over where he used to be. The stab still
+            // reads: spray, head shake, camera punch, hit-stop, HUD dot, roar on odd stabs.
+            if (Current != State.Kneel && Current != State.Stagger && !Ridden) { Current = State.Stagger; t = 0.5f; Set(Pose.Stagger); }
             if (Harness.Active) Debug.Log("[TitanStab] n=" + n + " hp=" + HP + " t=" + Time.time.ToString("0.00"));
             return n >= StabsToKill;
         }
