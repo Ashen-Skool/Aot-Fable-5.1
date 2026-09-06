@@ -215,7 +215,8 @@ namespace ODM
             Riding = false; if (rideBrain != null) rideBrain.Ridden = false;
             rb.isKinematic = false;
             Vector3 back = rideBrain != null ? -rideBrain.transform.forward : -transform.forward;
-            rb.linearVelocity = jump ? back * 9f + Vector3.up * 7f : back * 6f + Vector3.up * 9f;
+            Vector3 side = rideBrain != null ? rideBrain.transform.right * (Random.value < 0.5f ? -1f : 1f) : transform.right;
+            rb.linearVelocity = jump ? back * 9f + Vector3.up * 7f : side * 7f + back * 2f + Vector3.up * 9f;   // off the side, clear of the falling body
             // off the neck with a flip (the plain Fly frame looked stiff on the way down), then the landing takes over
             var model = Ctx.Get<Characters.CharacterModel>("mikasaModel");
             if (model != null) { model.PlayClip("spinjump"); kickTimer = 0.9f; }
@@ -841,7 +842,8 @@ namespace ODM
             // feet would start the sphere inside the ground and never register a hit.
             var probeOrigin = capsule.bounds.center;
             float probeDist = Mathf.Max(0.75f, capsule.bounds.extents.y - capsule.radius * 0.9f + 0.35f);
-            if (v.y < 3f && Physics.SphereCast(probeOrigin, capsule.radius * 0.9f, Vector3.down, out hit, probeDist, OdmLayers.GroundMask, QueryTriggerInteraction.Ignore))
+            int groundMask = OdmLayers.GroundMask | (Ctx.Get<bool>("bossDead") ? (1 << OdmLayers.Titan) : 0);   // a dead Titan is a surface, not a wall of Fly frames
+            if (v.y < 3f && Physics.SphereCast(probeOrigin, capsule.radius * 0.9f, Vector3.down, out hit, probeDist, groundMask, QueryTriggerInteraction.Ignore))
             {
                 if (hit.normal.y > 0.6f) { Grounded = true; GroundLayer = hit.collider.gameObject.layer; GroundHeight = hit.point.y; }
             }

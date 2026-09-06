@@ -81,8 +81,8 @@ namespace Proxies
               var r = sparks.GetComponent<ParticleSystemRenderer>(); r.renderMode = ParticleSystemRenderMode.Billboard; r.sortMode = ParticleSystemSortMode.YoungestInFront;
               var sh = sparks.shape; sh.shapeType = ParticleSystemShapeType.Cone; sh.angle = 32f; sh.radius = 0.12f; }
             drops = Sys("TitanBloodDrops", Mats.Unlit(new Color(0.45f, 0.02f, 0.02f)));
-            { var m = drops.main; m.startLifetime = new ParticleSystem.MinMaxCurve(0.6f, 1.2f); m.startSpeed = new ParticleSystem.MinMaxCurve(5f, 12f); m.startSize = new ParticleSystem.MinMaxCurve(0.04f, 0.09f); m.gravityModifier = 1.6f;
-              var r = drops.GetComponent<ParticleSystemRenderer>(); r.renderMode = ParticleSystemRenderMode.Stretch; r.velocityScale = 0.02f; r.lengthScale = 1.5f;
+            { var m = drops.main; m.startLifetime = new ParticleSystem.MinMaxCurve(0.6f, 1.2f); m.startSpeed = new ParticleSystem.MinMaxCurve(5f, 12f); m.startSize = new ParticleSystem.MinMaxCurve(0.02f, 0.045f); m.gravityModifier = 1.6f;
+              var r = drops.GetComponent<ParticleSystemRenderer>(); r.renderMode = ParticleSystemRenderMode.Stretch; r.velocityScale = 0.012f; r.lengthScale = 1f;
               var sh = drops.shape; sh.shapeType = ParticleSystemShapeType.Cone; sh.angle = 40f; sh.radius = 0.1f; }
             steamSrc = NoiseLoop.Source(gameObject, NoiseLoop.White(), 1f, 140f, out steamLp); if (steamLp != null) steamLp.cutoffFrequency = 1400f;
         }
@@ -113,7 +113,7 @@ namespace Proxies
             if (outDir.sqrMagnitude < 1e-3f) outDir = -transform.forward; outDir = (outDir.normalized + Vector3.up * 0.7f).normalized;
             sparks.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(outDir)); drops.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(outDir));
             var sp = new ParticleSystem.EmitParams { applyShapeToPosition = true };   // the red spray is the stab's read: never shrunk
-            sparks.Emit(sp, Mathf.RoundToInt(10 + 22 * strength)); drops.Emit(sp, Mathf.RoundToInt(6 + 16 * strength));
+            sparks.Emit(sp, Mathf.RoundToInt(10 + 22 * strength)); drops.Emit(sp, Mathf.RoundToInt(3 + 9 * strength));
             Shake(0.25f + 0.45f * strength);
             plume = Mathf.Max(plume, (ride ? 0.2f : 0.6f) * strength);
         }
@@ -142,12 +142,12 @@ namespace Proxies
         {
             if (Application.isBatchMode) return;
             var c = transform.position + Vector3.up * height * 0.5f;
-            for (int i = 0; i < 12; i++)
+            for (int i = 0; i < 8; i++)
             {
                 var ep = new ParticleSystem.EmitParams { position = c + Random.insideUnitSphere * height * 0.35f, applyShapeToPosition = true };
-                steam.Emit(ep, 8);
+                steam.Emit(ep, 6);
             }
-            plumeWant = 2.5f; Shake(0.8f);
+            plumeWant = 1.4f; Shake(0.8f);   // was 2.5: the ending card sat behind a wall of steam
         }
 
         void Update()
