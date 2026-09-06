@@ -156,9 +156,9 @@ namespace Proxies
                 // and after a while just shoulder through: a 15 m Titan is not stopped by a cottage
                 if (chosen.sqrMagnitude < 0.5f)
                 {
-                    stuckT += Time.deltaTime;
-                    if (bestFree > height * 0.15f) { chosen = best; steerHold = 0.3f; }
-                    else if (stuckT > 2f) { chosen = want; steerHold = 0.3f; Fx?.Step(0f); }
+                    stuckT += Time.deltaTime + steerHoldSpent; steerHoldSpent = 0f;
+                    if (stuckT > 4f) { chosen = want; steerHold = 2.5f; steerHoldSpent = 2.5f; Fx?.Step(0f); }     // shoulder through
+                    else if (bestFree > height * 0.15f) { chosen = best; steerHold = 1.2f; steerHoldSpent = 1.2f; }  // commit to the widest gap, no dithering
                 }
                 else stuckT = 0f;
             }
@@ -189,7 +189,7 @@ namespace Proxies
         /// <summary>Mikasa is on the back of his neck: he runs and thrashes, cannot attack, and each stab takes a fifth of the last quarter.</summary>
         public bool Ridden;
         public int StabsToKill = 5;
-        float wanderSign = 1f, wanderT, stuckT;
+        float wanderSign = 1f, wanderT, stuckT, steerHoldSpent;
         public Vector3 NapeWorld() => Fx != null ? Fx.NapePos() : transform.position + Vector3.up * height * 0.85f;
         /// <summary>One stab from the rider. Returns true when this was the killing one (the caller plays the final plunge, then NapeKill).</summary>
         public bool Stab(int n)
