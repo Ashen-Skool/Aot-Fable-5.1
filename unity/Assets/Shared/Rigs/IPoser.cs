@@ -7,7 +7,8 @@ namespace Shared.Rigs
     /// </summary>
     public enum Pose
     {
-        Idle, Run, Fly, Slash, Land, Stagger, Kneel, Swipe, Grab, Stomp, Sprint, Swing
+        Idle, Run, Fly, Slash, Land, Stagger, Kneel, Swipe, Grab, Stomp, Sprint, Swing,
+        Perch, Ride, Stab, Final   // Mikasa: wall perch on the cables, riding the nape, one stab, the final plunge
     }
 
     public interface IPoser

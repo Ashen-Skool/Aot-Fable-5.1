@@ -84,7 +84,88 @@ namespace ODM
         public bool verbose;
         float logAccum, hookRetry;
         bool wallContact; Vector3 wallNormal;
-        Vector3 hookNormal = Vector3.forward;
+        Vector3 hookNormal = Vector3.forward; bool hookReal;
+        // ---------- wall perch (cables into a wall, feet on it) and the nape ride ----------
+        public bool Perched { get; private set; }
+        public bool Riding { get; private set; }
+        public int Stabs { get; private set; }
+        public bool FinalBlow => finalTimer > 0f || finalSent;
+        public int StabsToKill => rideBrain != null ? rideBrain.StabsToKill : 5;
+        Vector3 perchPos; Quaternion perchRot; float perchT;
+        Proxies.TitanBrain rideBrain; float stabTimer, finalTimer; bool finalSent;
+
+        void EnterPerch()
+        {
+            Hook = HookState.Attached; SetCablesVisible(true);
+            Vector3 n = new Vector3(hookNormal.x, 0, hookNormal.z); if (n.sqrMagnitude < 1e-3f) n = -transform.forward; n.Normalize();
+            perchPos = Anchor + n * 0.55f + Vector3.down * 1.9f;      // hips a little off the wall, the feet planted on it below the anchor
+            perchRot = Quaternion.LookRotation(n, Vector3.up);          // back to the wall, facing out
+            RopeLength = Vector3.Distance(perchPos, Anchor);
+            rb.linearVelocity = Vector3.zero; rb.isKinematic = true; rb.position = perchPos; rb.rotation = perchRot;
+            Perched = true; perchT = 0f; Grounded = false; Reeling = false; hookLatched = false; Speed = 0f;
+            Shared.Sfx.Play("land", perchPos, 0.6f, 1.1f);
+            if (Harness.Active) Debug.Log("[Perch] at " + perchPos.ToString("0.0"));
+        }
+        void PerchStep(float dt)
+        {
+            perchT += dt; Speed = 0f;
+            rb.MovePosition(perchPos); rb.MoveRotation(perchRot);
+            if (input.boost && Gas > 0f && perchT > 0.15f) ExitPerch(true);   // gas = launch off the wall toward the look
+        }
+        void ExitPerch(bool kick)
+        {
+            Perched = false; rb.isKinematic = false; rb.position = perchPos;
+            Detach();
+            Vector3 n = perchRot * Vector3.forward;
+            Vector3 dir = LookDir; if (Vector3.Dot(dir, n) < 0.15f) dir = (n + Vector3.up * 0.3f).normalized;   // never launch into the wall
+            rb.linearVelocity = kick ? dir * 17f + Vector3.up * 4f : n * 2.5f + Vector3.down * 1f;
+            if (kick) { Gas = Mathf.Max(0f, Gas - hopGas * 0.5f); if (gasPuff != null) { gasPuff.transform.position = rb.position; gasPuff.Emit(10); } }
+            if (Harness.Active) Debug.Log("[Perch] exit kick=" + kick);
+        }
+
+        /// <summary>The nape phase kill sequence: she lands on the back of his neck and stays there while he runs; each LMB is a stab.</summary>
+        public void EnterRide(Proxies.TitanBrain brain)
+        {
+            if (Riding || brain == null) return;
+            if (Perched) { Perched = false; rb.isKinematic = false; }
+            if (Hook == HookState.Attached) { hookLatched = false; Detach(); }
+            Riding = true; rideBrain = brain; Stabs = 0; stabTimer = 0f; finalTimer = 0f; finalSent = false; brain.Ridden = true;
+            rb.linearVelocity = Vector3.zero; rb.isKinematic = true; Grounded = false; Speed = 0f; slashHitTimer = 0f;
+            HudEvents.Add(brain.NapeWorld() + Vector3.up * 1.5f, "ON HIS NECK", new Color(1f, 0.85f, 0.3f), 1.5f, 2f);
+            HitStop.Do(0.08f);
+            if (Harness.Active) Debug.Log("[Ride] enter hp=" + brain.HP);
+        }
+        void RideStep(float dt)
+        {
+            if (rideBrain == null || rideBrain.Current == Proxies.TitanBrain.State.Dead) { ExitRide(false); return; }
+            var tt = rideBrain.transform;
+            Vector3 pos = rideBrain.NapeWorld() - tt.forward * 0.35f + Vector3.up * 0.15f;
+            rb.MovePosition(pos); rb.MoveRotation(tt.rotation);
+            Speed = 0f;
+            stabTimer -= dt;
+            if (finalTimer > 0f) { finalTimer -= dt; if (finalTimer <= 0f && !finalSent) { finalSent = true; rideBrain.NapeKill(rb.position); } }
+        }
+        void RideStab()
+        {
+            if (stabTimer > 0f || finalTimer > 0f || finalSent || rideBrain == null) return;
+            Stabs++;
+            var model = Ctx.Get<Characters.CharacterModel>("mikasaModel");
+            bool kill = rideBrain.Stab(Stabs);
+            Shared.Sfx.Play("slash", rb.position, 1.6f, 0.8f);
+            if (kill) { finalTimer = 0.9f; model?.SetPose(Shared.Rigs.Pose.Final, true); }
+            else { stabTimer = 0.5f; model?.SetPose(Shared.Rigs.Pose.Stab, true); }
+            if (Harness.Active) Debug.Log("[Ride] stab " + Stabs + (kill ? " KILL" : ""));
+        }
+        void ExitRide(bool jump)
+        {
+            if (!Riding) return;
+            Riding = false; if (rideBrain != null) rideBrain.Ridden = false;
+            rb.isKinematic = false;
+            Vector3 back = rideBrain != null ? -rideBrain.transform.forward : -transform.forward;
+            rb.linearVelocity = jump ? back * 9f + Vector3.up * 7f : back * 3f + Vector3.up * 3f;
+            rideBrain = null; stabTimer = 0f; finalTimer = 0f;
+        }
+
         float mantleT, mantleDur = 0.32f; Vector3 mantleFrom, mantleTo, mantleFacing;
         float crouchT, preLandSpeed; int mantleGroundLayer;
         LineRenderer trail; readonly Vector3[] trailPts = new Vector3[8];
@@ -475,7 +556,7 @@ namespace ODM
         public void Teleport(Vector3 position, Vector3 facing)
         {
             if (Hook == HookState.Attached) Detach();
-            mantleT = 0f; crouchT = 0f; rb.isKinematic = false;
+            mantleT = 0f; crouchT = 0f; rb.isKinematic = false; Perched = false; if (Riding) ExitRide(false);
             rb.position = position;
             transform.position = position;
             rb.linearVelocity = Vector3.zero;
@@ -513,6 +594,9 @@ namespace ODM
             var mv = GameInput.Move;
             liveInput.moveX = mv.x;
             liveInput.moveY = mv.y;
+            if (Perched && UnityEngine.Input.GetKeyDown(KeyCode.Space)) { ExitPerch(false); }
+            if (Riding && UnityEngine.Input.GetKeyDown(KeyCode.Space)) { ExitRide(true); }
+            if (Ctx.Get<bool>("autoRide")) { Ctx.Set("autoRide", false); var b = Ctx.Get<Proxies.TitanBrain>("bossBrain"); if (b != null) { b.HP = Mathf.Min(b.HP, b.HPMax * b.napePhaseAt); EnterRide(b); } }
             // Space toggles the hooks: press = fire at the crosshair (a virtual anchor if nothing is there) and get pulled
             // in; press again = release and fall. Shift = gas burst. The pull is automatic while hooked.
             if (UnityEngine.Input.GetKeyDown(KeyCode.Space))
@@ -527,7 +611,9 @@ namespace ODM
             liveInput.boost = UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift);
             liveInput.hasAim = false;
             bool autoSlash = Ctx.Get<bool>("autoSlash"); if (autoSlash) Ctx.Set("autoSlash", false);
-            if ((UnityEngine.Input.GetMouseButtonDown(0) || autoSlash) && slashTimer <= 0.15f)
+            if (Riding && (UnityEngine.Input.GetMouseButtonDown(0) || autoSlash)) { RideStab(); autoSlash = false; }
+            else if (Perched && (UnityEngine.Input.GetMouseButtonDown(0) || autoSlash)) ExitPerch(true);   // leap off the wall into the air attack below
+            if (!Riding && (UnityEngine.Input.GetMouseButtonDown(0) || autoSlash) && slashTimer <= 0.15f)
             {
                 slashAirborne = !Grounded; slashHitTimer = 0.25f; Shared.Sfx.Play("slash", rb.position, Random.Range(1.5f, 1.9f), 0.7f);
                 if (Harness.Active) Debug.Log("[Slash] t=" + Time.time.ToString("0.00") + " grounded=" + Grounded + " focused=" + Application.isFocused);
@@ -582,7 +668,7 @@ namespace ODM
                 var c = overlap[i]; if (c == null) continue;
                 var brain = c.GetComponentInParent<Proxies.TitanBrain>(); if (brain == null) continue;
                 // nape phase: an airborne slash anywhere on his upper half is the kill (ODM onto the neck)
-                if (brain.NapePhase && slashAirborne && rb.position.y > brain.transform.position.y + brain.height * 0.5f) { brain.NapeKill(rb.position); return; }
+                if (brain.NapePhase && slashAirborne && rb.position.y > brain.transform.position.y + brain.height * 0.5f) { EnterRide(brain); return; }
                 if (c.name.StartsWith("Zone_")) { brain.Hit(c.name, rb.position); Shared.Sfx.Play("titan_hit", rb.position, 0.7f, 1f); return; }
                 bodyHit = brain;
             }
@@ -592,6 +678,7 @@ namespace ODM
         float hitGrace;   // seconds of invulnerability after a hit so one swing never chains into another
         public void TakeHit(Vector3 from, float damage)
         {
+            if (Riding) return;   // on his neck: out of reach
             if (Health <= 0f || Time.time < hitGrace) return;
             hitGrace = Time.time + 1.6f;
             Health = Mathf.Max(0f, Health - damage); hitFlash = 0.35f; Shared.Sfx.Play("player_hit", rb.position, 0.8f, 1f);
@@ -630,7 +717,9 @@ namespace ODM
             if (poser == null) return;
             landPoseTimer -= Time.deltaTime; slashTimer -= Time.deltaTime; staggerTimer -= Time.deltaTime; hitFlash -= Time.deltaTime;
             Shared.Rigs.Pose want;
-            if (staggerTimer > 0f) want = Shared.Rigs.Pose.Stagger;
+            if (Riding) want = FinalBlow ? Shared.Rigs.Pose.Final : stabTimer > 0f ? Shared.Rigs.Pose.Stab : Shared.Rigs.Pose.Ride;
+            else if (Perched) want = Shared.Rigs.Pose.Perch;
+            else if (staggerTimer > 0f) want = Shared.Rigs.Pose.Stagger;
             else if (slashTimer > 0f) want = Shared.Rigs.Pose.Slash; // Swipe = aerial blade spin on Mikasa
             else if (landPoseTimer > 0f) want = Shared.Rigs.Pose.Land;
             else if (!Grounded) want = Hook != HookState.None ? Shared.Rigs.Pose.Swing : Shared.Rigs.Pose.Fly;
@@ -653,6 +742,8 @@ namespace ODM
             if (recorder != null) recorder.RecordStep(dt, input);
 
             if (crouchT > 0f) crouchT -= dt;
+            if (Perched) { PerchStep(dt); return; }
+            if (Riding) { RideStep(dt); return; }
             if (mantleT > 0f)
             {
                 // scripted ledge mantle: an arc from the anchor to the roof, then a landing
@@ -764,6 +855,7 @@ namespace ODM
                             Speed = 0f; Reeling = false;
                             return;
                         }
+                        if (hookReal && Mathf.Abs(hookNormal.y) < 0.35f) { EnterPerch(); return; }   // a wall face: perch on it
                         float rise = Mathf.Clamp(Anchor.y + 3.5f - pos.y, 1f, 12f);
                         float up = Mathf.Clamp(Mathf.Sqrt(2f * gravity * rise), 6f, popUp);
                         v = v * 0.15f + Vector3.up * up + inward * popForward;
@@ -899,7 +991,7 @@ namespace ODM
             Hook = HookState.Attached;
             Shared.Sfx.Play("hook_fire", rb.position, 1.4f, 0.8f); Shared.Sfx.Play("hook_attach", real ? hit.point : rb.position, 0.9f, 0.9f, 90f);
             Anchor = real ? hit.point : eye + dir * Mathf.Min(hookRange, 45f);   // nothing there: a virtual anchor in the sky still pulls you
-            hookNormal = real ? hit.normal : -dir;
+            hookNormal = real ? hit.normal : -dir; hookReal = real;
             wantVirtual = false;
             // two hooks land a little apart so the cables read as a pair
             Vector3 spread = Vector3.Cross(hookNormal, Vector3.up);

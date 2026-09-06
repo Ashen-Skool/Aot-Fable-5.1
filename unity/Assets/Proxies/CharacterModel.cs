@@ -30,6 +30,7 @@ namespace Characters
             { Pose.Idle, "combatidle" }, { Pose.Run, "runfast" }, { Pose.Sprint, "runfast" }, { Pose.Fly, "jump" }, { Pose.Swing, "ropehang" },
             { Pose.Slash, "weaponcombo" }, { Pose.Land, "land" }, { Pose.Stagger, "hit" },
             { Pose.Kneel, "kneel" }, { Pose.Swipe, "swipe" }, { Pose.Grab, "grab" }, { Pose.Stomp, "stomp" },
+            { Pose.Perch, "wallperch" }, { Pose.Ride, "naperide" }, { Pose.Stab, "napestab" }, { Pose.Final, "napefinal" },
         };
 
         /// <summary>Dress a proxy host with the model; returns null (host untouched) if the resource is missing.</summary>
@@ -95,6 +96,7 @@ namespace Characters
             { "combatidle", new[] { "idle" } }, { "swordrun", new[] { "running_glb_url", "sprint" } }, { "spinjump", new[] { "jump", "sprint" } }, { "weaponcombo", new[] { "slash", "swipe" } },
             { "runfast", new[] { "running_glb_url", "sprint" } }, { "ropehang", new[] { "spinjump", "jump" } },
             { "swipe", new[] { "bladespin", "weaponcombo", "slash" } },
+            { "wallperch", new[] { "ropehang", "combatidle" } }, { "naperide", new[] { "combatidle" } }, { "napestab", new[] { "thrustslash", "slash" } }, { "napefinal", new[] { "chargedslash", "slash" } },
         };
         int Port(string clipName)
         {
@@ -113,9 +115,11 @@ namespace Characters
             return idx;
         }
 
-        public void SetPose(Pose pose)
+        public void SetPose(Pose pose) => SetPose(pose, false);
+        /// <summary>force: restart the clip even if it is already the current pose (a second stab).</summary>
+        public void SetPose(Pose pose, bool force)
         {
-            if (pose == Current && active >= 0) return;
+            if (pose == Current && active >= 0 && !force) return;
             Current = pose; holdEnd = false;
             int idx = Port(Map.TryGetValue(pose, out var n) ? n : "idle");
             if (idx < 0) return;

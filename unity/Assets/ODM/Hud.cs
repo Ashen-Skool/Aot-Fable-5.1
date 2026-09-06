@@ -182,7 +182,15 @@ namespace ODM
                 Chip(tx, chipY, chipW, "L HAM", brain.HamL, s); Chip(tx + tw - chipW, chipY, chipW, "R HAM", brain.HamR, s);
                 // the nape line on the bar: the last quarter only falls to the nape cut
                 Box(tx + tw * brain.napePhaseAt - 1f * s, ty + 33f * s, 2f * s, 16f * s, new Color(1f, 0.85f, 0.3f, 0.9f));
-                if (brain.NapePhase)
+                if (c.Riding)
+                {
+                    float pulse = 0.75f + 0.25f * Mathf.Sin(Time.unscaledTime * 7f);
+                    var dots = ""; for (int i = 0; i < c.StabsToKill; i++) dots += i < c.Stabs ? "\u25CF " : "\u25CB ";
+                    var sNape = Sized(sPrompt, 40f);
+                    Text(new Rect(0, chipY - 6f * s, W, 40f * s), c.FinalBlow ? "THE NAPE" : "STAB   " + dots.TrimEnd(), sNape, new Color(1f, 0.8f, 0.2f, pulse), 4f);
+                    var sh = Sized(sLabel, 18f); sh.alignment = TextAnchor.MiddleCenter; Text(new Rect(0, chipY + 34f * s, W, 26f * s), "LMB  STAB      SPACE  JUMP OFF", sh, new Color(1f, 1f, 1f, 0.8f)); sLabel.alignment = TextAnchor.MiddleLeft;
+                }
+                else if (brain.NapePhase)
                 {
                     float since = Time.unscaledTime - Ctx.Get<float>("napePhaseAt");
                     float pulse = 0.7f + 0.3f * Mathf.Sin(Time.unscaledTime * 6f);
@@ -199,6 +207,7 @@ namespace ODM
                 }
             }
 
+            if (c.Perched) { var sp = Sized(sLabel, 18f); sp.alignment = TextAnchor.MiddleCenter; Text(new Rect(0, H * 0.80f, W, 26f * s), "LMB  LEAP      SHIFT  LAUNCH      SPACE  DROP", sp, new Color(1f, 1f, 1f, 0.75f)); sLabel.alignment = TextAnchor.MiddleLeft; }
             // floating damage numbers
             if (cam != null)
             {

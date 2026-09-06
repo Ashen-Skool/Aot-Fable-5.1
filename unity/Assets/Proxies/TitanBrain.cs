@@ -57,6 +57,16 @@ namespace Proxies
                     if (distFlat < sightRange || (Ctx.Has("introUntil") && Time.unscaledTime > Ctx.Get<float>("introUntil") + gateHold)) { Current = State.Chase; roarTimer = 1.2f; chaseStart = Time.time; Roar(); }
                     break;
                 case State.Chase:
+                    if (Ridden)
+                    {
+                        // she is on his neck: he runs blind, swerving through the streets, and never swings
+                        wanderT -= dt; if (wanderT <= 0f) { wanderT = Random.Range(1.2f, 2.6f); wanderSign = Random.value < 0.5f ? -1f : 1f; }
+                        transform.Rotate(0f, wanderSign * 28f * dt, 0f, Space.World);
+                        Set(Pose.Sprint);
+                        var rf = transform.forward; rf.y = 0f; rf.Normalize();
+                        transform.position += Steer(rf, sprintSpeed * 0.8f * dt) * sprintSpeed * 0.8f * dt;
+                        break;
+                    }
                     Face(toP, dt);
                     if (distFlat < attackRange && cooldown <= 0f && InFront(toP, 0.1f) && Time.time > chaseStart + firstAttackGrace)
                     {
@@ -158,6 +168,27 @@ namespace Proxies
         /// <summary>Below 25% HP only the nape kills: ODM onto his upper half and slash. Everything else bounces off.</summary>
         public bool NapePhase => Current != State.Dead && HP <= HPMax * napePhaseAt;
         public float napePhaseAt = 0.25f;
+        /// <summary>Mikasa is on the back of his neck: he runs and thrashes, cannot attack, and each stab takes a fifth of the last quarter.</summary>
+        public bool Ridden;
+        public int StabsToKill = 5;
+        float wanderSign = 1f, wanderT;
+        public Vector3 NapeWorld() => Fx != null ? Fx.NapePos() : transform.position + Vector3.up * height * 0.85f;
+        /// <summary>One stab from the rider. Returns true when this was the killing one (the caller plays the final plunge, then NapeKill).</summary>
+        public bool Stab(int n)
+        {
+            if (Current == State.Dead) return false;
+            float step = HPMax * napePhaseAt / StabsToKill;
+            HP = Mathf.Max(n >= StabsToKill ? 0f : 1f, HP - step);
+            Vector3 at = NapeWorld();
+            Fx?.HitBurst(at, 0.8f);
+            HudEvents.Add(at, n >= StabsToKill ? "NAPE" : (n + " / " + StabsToKill), new Color(1f, 0.85f, 0.3f), n >= StabsToKill ? 1.8f : 1.3f);
+            HitStop.Do(n >= StabsToKill ? 0.14f : 0.06f);
+            Sfx.Play("titan_hit", at, 0.8f, 0.9f, 200f);
+            if (n % 2 == 1) Roar();
+            if (Current != State.Kneel && Current != State.Stagger) { Current = State.Stagger; t = 0.5f; Set(Pose.Stagger); }
+            if (Harness.Active) Debug.Log("[TitanStab] n=" + n + " hp=" + HP + " t=" + Time.time.ToString("0.00"));
+            return n >= StabsToKill;
+        }
         bool napeAnnounced;
         /// <summary>The nape phase kill: an airborne slash on the upper half of his body. Freezes into the nape cutscene
         /// (Hud plays StreamingAssets/nape.mp4), then <see cref="FinishNapeKill"/> drops him.</summary>
