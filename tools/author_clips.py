@@ -49,10 +49,10 @@ def pose(hips=0, spine=(0, 0, 0), neck=0, head=0, thighF=0, thighO=0, kneeF=0, f
     }
 
 # Wall perch: back to the wall, feet planted flat on it, knees bent, hips low, torso leaning out, blades low and ready.
-WALLPERCH = pose(hips=-12, spine=(6, 4, 2), neck=10, head=6, thighF=-38, thighO=10, kneeF=105, footF=-45, armF=(12, 12), armR=(-30, -30), elbow=(18, 18), hand=(-10, -10))
+WALLPERCH = pose(hips=-12, spine=(6, 4, 2), neck=10, head=6, thighF=38, thighO=10, kneeF=105, footF=45, armF=(12, 12), armR=(-30, -30), elbow=(18, 18), hand=(-10, -10))
 # Kick-off: sink deeper, then explode off the wall legs straight, arms forward with the blades.
-WALLKICK_A = pose(hips=-18, spine=(10, 6, 2), neck=10, head=6, thighF=-20, thighO=10, kneeF=135, footF=-50, armF=(5, 5), armR=(-35, -35), elbow=(25, 25))
-WALLKICK_B = pose(hips=6, spine=(14, 10, 6), neck=10, head=6, thighF=10, thighO=6, kneeF=10, footF=25, armF=(70, 70), armR=(-20, -20), elbow=(20, 20))
+WALLKICK_A = pose(hips=-18, spine=(10, 6, 2), neck=10, head=6, thighF=20, thighO=10, kneeF=135, footF=50, armF=(5, 5), armR=(-35, -35), elbow=(25, 25))
+WALLKICK_B = pose(hips=6, spine=(14, 10, 6), neck=10, head=6, thighF=-10, thighO=6, kneeF=10, footF=-25, armF=(70, 70), armR=(-20, -20), elbow=(20, 20))
 # Nape ride: kneeling on the back of his neck, hunched, left blade buried low, right blade raised over the head.
 NAPERIDE = pose(hips=-18, spine=(14, 10, 6), neck=16, head=8, thighF=70, thighO=16, kneeF=135, footF=35, armF=(30, 15), armR=(-38, 165), elbow=(5, 25), hand=(-25, -15))
 # Stab: the right arm cocks, then plunges down in front, the torso dips with it, then returns to the ride pose.

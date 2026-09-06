@@ -138,7 +138,7 @@ namespace ODM
             // She faces the wall: the authored wallperch pose is a deep crouch with the knees drawn up and the feet forward,
             // so her feet only land on the face if forward points into it. perchOut is the way back out into the air.
             perchOut = n;
-            perchRot = Quaternion.LookRotation(-n, Vector3.up);
+            perchRot = Quaternion.LookRotation(n, Vector3.up);   // back to the wall, facing the street (the reference frame); the clip's feet reach back to the face
             RopeLength = Vector3.Distance(perchPos, Anchor);
             rb.linearVelocity = Vector3.zero; rb.isKinematic = true; rb.position = perchPos; rb.rotation = perchRot;
             Perched = true; perchT = 0f; Grounded = false; Reeling = false; hookLatched = false; Speed = 0f;
