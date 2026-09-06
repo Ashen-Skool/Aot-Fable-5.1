@@ -94,6 +94,18 @@ namespace ODM
         Vector3 perchPos, perchOut; Quaternion perchRot; float perchT;
         Proxies.TitanBrain rideBrain; float stabTimer, finalTimer; bool finalSent; float rideLog;
 
+        public float kickAttackDelay = 0.3f;   // wallkick owns the model this long off a perch, then the air attack replaces it
+        float kickTimer; bool airAttackPending;
+
+        void StartAttack()
+        {
+            slashAirborne = !Grounded; slashHitTimer = 0.25f; Shared.Sfx.Play("slash", rb.position, Random.Range(1.5f, 1.9f), 0.7f);
+            if (Harness.Active) Debug.Log("[Slash] t=" + Time.time.ToString("0.00") + " grounded=" + Grounded + " focused=" + Application.isFocused);
+            var model = Ctx.Get<Characters.CharacterModel>("mikasaModel");
+            slashTimer = model != null ? Mathf.Min(1.6f, model.Attack(slashAirborne)) : (Grounded ? 1.1f : 0.8f);
+            slashPoseSet = model != null; // the model already plays the clip; UpdatePose must not restart it
+        }
+
         /// <summary>True while the cables are in a wall face (no ledge to mantle): the reel ends in <see cref="EnterPerch"/>.</summary>
         bool WallAnchor => Hook == HookState.Attached && hookReal && Mathf.Abs(hookNormal.y) < 0.35f;
 
@@ -154,8 +166,13 @@ namespace ODM
                 dir = tangent.sqrMagnitude > 1e-4f ? (tangent.normalized + n * 0.8f).normalized : (n + Vector3.up * 0.3f).normalized;
             }
             rb.linearVelocity = kick ? dir * 17f + Vector3.up * 4f : n * 2.5f + Vector3.down * 1f;
-            if (kick) { Gas = Mathf.Max(0f, Gas - hopGas * 0.5f); if (gasPuff != null) { gasPuff.transform.position = rb.position; gasPuff.Emit(10); } }
-            if (Harness.Active) Debug.Log("[Perch] exit kick=" + kick);
+            if (kick)
+            {
+                Gas = Mathf.Max(0f, Gas - hopGas * 0.5f); if (gasPuff != null) { gasPuff.transform.position = rb.position; gasPuff.Emit(10); }
+                Ctx.Get<Characters.CharacterModel>("mikasaModel")?.PlayClip("wallkick");   // the push-off, until the air attack takes over
+                kickTimer = kickAttackDelay;
+            }
+            if (Harness.Active) Debug.Log("[Perch] exit kick=" + kick + " clip=" + (Ctx.Get<Characters.CharacterModel>("mikasaModel")?.ActiveClipName ?? "-"));
         }
 
         /// <summary>The nape phase kill sequence: she lands on the back of his neck and stays there while he runs; each LMB is a stab.</summary>
@@ -652,16 +669,12 @@ namespace ODM
             liveInput.boost = UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift);
             liveInput.hasAim = false;
             bool autoSlash = Ctx.Get<bool>("autoSlash"); if (autoSlash) Ctx.Set("autoSlash", false);
-            if (Riding && (UnityEngine.Input.GetMouseButtonDown(0) || autoSlash)) { RideStab(); autoSlash = false; }
-            else if (Perched && (UnityEngine.Input.GetMouseButtonDown(0) || autoSlash)) ExitPerch(true);   // leap off the wall into the air attack below
-            if (!Riding && (UnityEngine.Input.GetMouseButtonDown(0) || autoSlash) && slashTimer <= 0.15f)
-            {
-                slashAirborne = !Grounded; slashHitTimer = 0.25f; Shared.Sfx.Play("slash", rb.position, Random.Range(1.5f, 1.9f), 0.7f);
-                if (Harness.Active) Debug.Log("[Slash] t=" + Time.time.ToString("0.00") + " grounded=" + Grounded + " focused=" + Application.isFocused);
-                var model = Ctx.Get<Characters.CharacterModel>("mikasaModel");
-                slashTimer = model != null ? Mathf.Min(1.6f, model.Attack(slashAirborne)) : (Grounded ? 1.1f : 0.8f);
-                slashPoseSet = model != null; // the model already plays the clip; UpdatePose must not restart it
-            }
+            bool attackPressed = UnityEngine.Input.GetMouseButtonDown(0) || autoSlash;
+            if (Riding && attackPressed) { RideStab(); attackPressed = false; }
+            // leap off the wall: the kick clip gets its push-off before the air attack takes the model over
+            else if (Perched && attackPressed) { ExitPerch(true); attackPressed = false; airAttackPending = true; }
+            if (airAttackPending && kickTimer <= 0f) { airAttackPending = false; attackPressed = true; }
+            if (!Riding && attackPressed && slashTimer <= 0.15f) StartAttack();
             if (Health <= 0f) { deathTimer -= Time.deltaTime; if (deathTimer <= 0f) Respawn(); }
             if (rb.position.y < -25f) Respawn(); // fell off the world
             // what the crosshair is over (HUD marker); the wind and gas beds
@@ -757,6 +770,7 @@ namespace ODM
             var poser = Ctx.Get<Shared.Rigs.IPoser>("mikasaPoser");
             if (poser == null) return;
             landPoseTimer -= Time.deltaTime; slashTimer -= Time.deltaTime; staggerTimer -= Time.deltaTime; hitFlash -= Time.deltaTime;
+            if (kickTimer > 0f) { kickTimer -= Time.deltaTime; if (!Perched) return; kickTimer = 0f; }   // the wallkick push-off owns the model
             Shared.Rigs.Pose want;
             if (Riding) want = FinalBlow ? Shared.Rigs.Pose.Final : stabTimer > 0f ? Shared.Rigs.Pose.Stab : Shared.Rigs.Pose.Ride;
             else if (Perched) want = Shared.Rigs.Pose.Perch;
