@@ -27,40 +27,40 @@ def breathe(base, amp=2.0, arm=1.5, frames=60):
         keys.append((f, p))
     return keys
 
+# ---- side-aware helpers (axes measured on this rig with the pL/pR/pF probes)
+def arm(side, fwd=0, raise_=0, twist=0):
+    """upper arm: fwd = swing forward (deg), raise_ = lift away from the body in the coronal plane (rest is the A-pose, ~45 deg down)."""
+    return {"L": (-fwd, twist, -raise_), "R": (-fwd, twist, raise_)}[side]
+def forearm(side, flex):  return {"L": (0, 0, flex), "R": (0, 0, -flex)}[side]
+def thigh(side, fwd=0, out=0): return {"L": (-fwd, 0, out), "R": (-fwd, 0, -out)}[side]
+def knee(flex): return (flex, 0, 0)
+def foot(flex): return (flex, 0, 0)
+def pose(hips=0, spine=(0, 0, 0), neck=0, head=0, thighF=0, thighO=0, kneeF=0, footF=0, armF=(0, 0), armR=(0, 0), elbow=(0, 0), hand=(0, 0)):
+    """hips: lean back (+) / forward (-). spine: (Spine02, Spine01, Spine) forward bend. neck/head: look up (+).
+    armF/armR/elbow/hand are (left, right)."""
+    return {
+        "Hips": (-hips, 0, 0), "Spine02": (spine[0], 0, 0), "Spine01": (spine[1], 0, 0), "Spine": (spine[2], 0, 0),
+        "neck": (-neck, 0, 0), "Head": (-head, 0, 0),
+        "LeftUpLeg": thigh("L", thighF, thighO), "RightUpLeg": thigh("R", thighF, thighO),
+        "LeftLeg": knee(kneeF), "RightLeg": knee(kneeF), "LeftFoot": foot(footF), "RightFoot": foot(footF),
+        "LeftArm": arm("L", armF[0], armR[0]), "RightArm": arm("R", armF[1], armR[1]),
+        "LeftForeArm": forearm("L", elbow[0]), "RightForeArm": forearm("R", elbow[1]),
+        "LeftHand": (hand[0], 0, 0), "RightHand": (hand[1], 0, 0),
+    }
+
 # Wall perch: back to the wall, feet planted flat on it, knees bent, hips low, torso leaning out, blades low and ready.
-WALLPERCH = {
-    "Hips": (-18, 0, 0),
-    "LeftUpLeg": (-75, 0, 8), "RightUpLeg": (-75, 0, -8),
-    "LeftLeg": (95, 0, 0), "RightLeg": (95, 0, 0),
-    "LeftFoot": (-30, 0, 0), "RightFoot": (-30, 0, 0),
-    "Spine02": (10, 0, 0), "Spine01": (6, 0, 0), "Spine": (4, 0, 0),
-    "neck": (-16, 0, 0), "Head": (-8, 0, 0),
-    "LeftArm": (-10, 0, -55), "RightArm": (-10, 0, -55),
-    "LeftForeArm": (0, 0, -50), "RightForeArm": (0, 0, 50),
-    "LeftHand": (0, 0, -10), "RightHand": (0, 0, 10),
-}
+WALLPERCH = pose(hips=18, spine=(8, 6, 4), neck=14, head=6, thighF=80, thighO=8, kneeF=95, footF=-25, armF=(20, 20), armR=(-30, -30), elbow=(25, 25), hand=(-10, -10))
 # Kick-off: sink deeper, then explode off the wall legs straight, arms forward with the blades.
-WALLKICK_A = dict(WALLPERCH); WALLKICK_A.update({"LeftUpLeg": (-95, 0, 8), "RightUpLeg": (-95, 0, -8), "LeftLeg": (120, 0, 0), "RightLeg": (120, 0, 0), "Hips": (-24, 0, 0)})
-WALLKICK_B = {
-    "Hips": (-6, 0, 0),
-    "LeftUpLeg": (-10, 0, 6), "RightUpLeg": (-10, 0, -6), "LeftLeg": (12, 0, 0), "RightLeg": (12, 0, 0), "LeftFoot": (20, 0, 0), "RightFoot": (20, 0, 0),
-    "Spine02": (18, 0, 0), "Spine01": (12, 0, 0), "Spine": (8, 0, 0), "neck": (-12, 0, 0), "Head": (-6, 0, 0),
-    "LeftArm": (-40, 0, -30), "RightArm": (-40, 0, 30), "LeftForeArm": (-25, 0, 0), "RightForeArm": (-25, 0, 0),
-}
+WALLKICK_A = pose(hips=24, spine=(12, 8, 4), neck=14, head=6, thighF=100, thighO=8, kneeF=125, footF=-30, armF=(10, 10), armR=(-35, -35), elbow=(30, 30))
+WALLKICK_B = pose(hips=6, spine=(14, 10, 6), neck=10, head=6, thighF=10, thighO=6, kneeF=10, footF=25, armF=(70, 70), armR=(-20, -20), elbow=(20, 20))
 # Nape ride: kneeling on the back of his neck, hunched, left blade buried low, right blade raised over the head.
-NAPERIDE = {
-    "Hips": (28, 0, 0),
-    "LeftUpLeg": (-100, 0, 14), "RightUpLeg": (-100, 0, -14), "LeftLeg": (128, 0, 0), "RightLeg": (128, 0, 0), "LeftFoot": (30, 0, 0), "RightFoot": (30, 0, 0),
-    "Spine02": (16, 0, 0), "Spine01": (14, 0, 0), "Spine": (10, 0, 0), "neck": (-18, 0, 0), "Head": (-10, 0, 0),
-    "LeftArm": (-55, 0, -15), "LeftForeArm": (-10, 0, 0), "LeftHand": (-20, 0, 0),
-    "RightArm": (-150, 0, 25), "RightForeArm": (-60, 0, 0), "RightHand": (-20, 0, 0),
-}
+NAPERIDE = pose(hips=-20, spine=(16, 14, 10), neck=18, head=10, thighF=100, thighO=14, kneeF=130, footF=30, armF=(60, 120), armR=(-10, 20), elbow=(15, 70), hand=(-20, -20))
 # Stab: the right arm cocks, then plunges down in front, the torso dips with it, then returns to the ride pose.
-NAPESTAB_COCK = dict(NAPERIDE); NAPESTAB_COCK.update({"RightArm": (-165, 0, 30), "RightForeArm": (-75, 0, 0), "Spine01": (8, 0, 0)})
-NAPESTAB_HIT = dict(NAPERIDE); NAPESTAB_HIT.update({"RightArm": (-40, 0, 10), "RightForeArm": (-15, 0, 0), "RightHand": (-30, 0, 0), "Spine02": (28, 0, 0), "Spine01": (22, 0, 0), "neck": (-8, 0, 0)})
+NAPESTAB_COCK = pose(hips=-20, spine=(8, 8, 6), neck=22, head=10, thighF=100, thighO=14, kneeF=130, footF=30, armF=(60, 150), armR=(-10, 30), elbow=(15, 80), hand=(-20, -20))
+NAPESTAB_HIT  = pose(hips=-20, spine=(30, 24, 14), neck=6, head=4, thighF=100, thighO=14, kneeF=130, footF=30, armF=(60, 40), armR=(-10, -5), elbow=(15, 15), hand=(-20, -35))
 # Final blow: both blades up, both plunge, hold buried.
-NAPEFINAL_UP = dict(NAPERIDE); NAPEFINAL_UP.update({"LeftArm": (-165, 0, -30), "LeftForeArm": (-75, 0, 0), "RightArm": (-165, 0, 30), "RightForeArm": (-75, 0, 0), "Spine02": (4, 0, 0), "Spine01": (2, 0, 0), "neck": (-26, 0, 0)})
-NAPEFINAL_DOWN = dict(NAPERIDE); NAPEFINAL_DOWN.update({"LeftArm": (-35, 0, -8), "LeftForeArm": (-12, 0, 0), "LeftHand": (-30, 0, 0), "RightArm": (-35, 0, 8), "RightForeArm": (-12, 0, 0), "RightHand": (-30, 0, 0), "Spine02": (34, 0, 0), "Spine01": (26, 0, 0), "neck": (-4, 0, 0)})
+NAPEFINAL_UP   = pose(hips=-20, spine=(2, 2, 2), neck=28, head=12, thighF=100, thighO=14, kneeF=130, footF=30, armF=(150, 150), armR=(30, 30), elbow=(80, 80), hand=(-20, -20))
+NAPEFINAL_DOWN = pose(hips=-20, spine=(34, 26, 14), neck=2, head=2, thighF=100, thighO=14, kneeF=130, footF=30, armF=(40, 40), armR=(-5, -5), elbow=(12, 12), hand=(-35, -35))
 
 CLIPS = {
     "pL":  (30, False, [(0, {"LeftArm": (0, 0, 60)}), (9, {"LeftArm": (0, 0, 60)}), (10, {"LeftArm": (0, 0, -60)}), (19, {"LeftArm": (0, 0, -60)}), (20, {"LeftArm": (60, 0, 0)}), (29, {"LeftArm": (60, 0, 0)}), (30, {"LeftArm": (-60, 0, 0)})]),
