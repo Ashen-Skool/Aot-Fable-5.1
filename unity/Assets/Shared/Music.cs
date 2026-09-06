@@ -7,7 +7,9 @@ namespace Shared
     public static class Music
     {
         const float FadeSeconds = 2.5f, Volume = 0.55f;
-        static AudioSource a, b; static string current; static MusicTicker ticker; static float duckUntil, duck = 1f;
+        static AudioSource a, b; static string current; static MusicTicker ticker; static float duckUntil, duck = 1f, intensity = 0f;
+        /// <summary>0 = normal, 1 = the nape phase: the track lifts a few percent in pitch and volume.</summary>
+        public static void Intensity(float v) { intensity = Mathf.Clamp01(v); }
         /// <summary>Drop the music for a beat (a hit, a cut).</summary>
         public static void Duck(float seconds) { duckUntil = Mathf.Max(duckUntil, Time.unscaledTime + seconds); }
 
@@ -38,7 +40,11 @@ namespace Shared
             {
                 float step = Time.unscaledDeltaTime / FadeSeconds;   // keeps fading while the title pauses the clock
                 duck = Mathf.MoveTowards(duck, Time.unscaledTime < duckUntil ? 0.35f : 1f, Time.unscaledDeltaTime * (Time.unscaledTime < duckUntil ? 8f : 1.5f));
-                if (a != null && a.clip != null) a.volume = Mathf.MoveTowards(a.volume, Volume * duck, Mathf.Max(step, Time.unscaledDeltaTime * 2f));
+                if (a != null && a.clip != null)
+                {
+                    a.volume = Mathf.MoveTowards(a.volume, Volume * duck * (1f + 0.18f * intensity), Mathf.Max(step, Time.unscaledDeltaTime * 2f));
+                    a.pitch = Mathf.MoveTowards(a.pitch, 1f + 0.06f * intensity, Time.unscaledDeltaTime * 0.1f);
+                }
                 if (b != null && b.isPlaying) { b.volume = Mathf.MoveTowards(b.volume, 0f, step); if (b.volume <= 0f) b.Stop(); }
             }
         }

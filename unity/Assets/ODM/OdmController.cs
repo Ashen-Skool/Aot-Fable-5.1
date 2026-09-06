@@ -148,6 +148,7 @@ namespace ODM
         void PerchStep(float dt)
         {
             perchT += dt; Speed = 0f;
+            Gas = Mathf.Min(gasMax, Gas + gasRefill * 0.6f * dt);   // resting on the cables: the tanks top up slowly
             rb.MovePosition(perchPos); rb.MoveRotation(perchRot);
             if (input.boost && Gas > 0f && perchT > 0.15f) ExitPerch(true);   // gas = launch off the wall toward the look
         }
@@ -721,7 +722,7 @@ namespace ODM
             float restWant = (Grounded && slashTimer <= 0f && Hook == HookState.None && Speed < 6f && staggerTimer <= 0f) ? 1f : 0f;
             Characters.CharacterModel.BladeRest = Mathf.Lerp(Characters.CharacterModel.BladeRest, restWant, 1f - Mathf.Exp(-(restWant > 0.5f ? 5f : 14f) * Time.deltaTime));
             EnsureBladeTrails();
-            if (bladeTrails != null) { bool on = slashTimer > 0.05f; for (int i = 0; i < 2; i++) if (bladeTrails[i] != null && bladeTrails[i].emitting != on) { bladeTrails[i].emitting = on; if (on) bladeTrails[i].Clear(); } }
+            if (bladeTrails != null) { bool on = slashTimer > 0.05f || (Riding && (stabTimer > 0.15f || finalTimer > 0.3f)); for (int i = 0; i < 2; i++) if (bladeTrails[i] != null && bladeTrails[i].emitting != on) { bladeTrails[i].emitting = on; if (on) bladeTrails[i].Clear(); } }
         }
 
         // ---------- combat: blade hits on titan zones, taking hits ----------

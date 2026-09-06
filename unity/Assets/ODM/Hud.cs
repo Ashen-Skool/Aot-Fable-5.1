@@ -126,6 +126,7 @@ namespace ODM
             if (!string.IsNullOrEmpty(over)) { Music.Set("ending"); Ending(c, over, W, H, s); return; }   // the card alone, nothing bleeding through
             var brain = Ctx.Get<Proxies.TitanBrain>("bossBrain");
             Music.Set(brain != null && brain.Current == Proxies.TitanBrain.State.Dead ? "ending" : "battle");
+            Music.Intensity(brain != null && brain.NapePhase ? 1f : 0f);
             HudEvents.Prune();
 
             // hit / low-HP vignette
@@ -326,7 +327,7 @@ namespace ODM
             Text(new Rect(0, H * 0.30f, W, 120f * s), "AOT FABLE 5.1", Sized(sTitle, 110f), Color.white, 4f);
             var sub = Sized(sLabel, 18f); sub.alignment = TextAnchor.MiddleCenter;
             Text(new Rect(0, H * 0.30f + 122f * s, W, 30f * s), "SHIGANSHINA DISTRICT   ·   ONE TITAN   ·   CUT THE NAPE", sub, new Color(1f, 0.85f, 0.55f));
-            Text(new Rect(0, H * 0.30f + 170f * s, W, 80f * s), "WASD move   ·   Mouse aim   ·   Space hook / release   ·   Shift gas   ·   LMB slash   ·   E fire a cannon\nHook a tower, get above him, cut both hamstrings, then the nape.", sub, new Color(1f, 1f, 1f, 0.75f));
+            Text(new Rect(0, H * 0.30f + 170f * s, W, 80f * s), "WASD move   ·   Mouse aim   ·   Space hook / release   ·   Shift gas   ·   LMB slash   ·   E fire a cannon\nHook a tower, cut both hamstrings to bring him down, and at a quarter health hook onto his neck and stab.", sub, new Color(1f, 1f, 1f, 0.75f));
             sLabel.alignment = TextAnchor.MiddleLeft;
             float pulse = 0.6f + 0.4f * Mathf.Sin(Time.unscaledTime * 3f);
             Text(new Rect(0, H * 0.30f + 280f * s, W, 40f * s), "PRESS ANY KEY", Sized(sPrompt, 34f), new Color(1f, 1f, 1f, pulse));
