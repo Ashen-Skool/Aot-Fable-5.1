@@ -37,6 +37,11 @@ namespace Shared
         {
             float t = Time.realtimeSinceStartup - t0;
             if (autoStart >= 0f && !started && t >= autoStart) { started = true; Ctx.Set("autoStart", true); Debug.Log("[Harness] autoStart at t=" + t.ToString("0.0")); }
+            if (titanLog && Time.frameCount % 30 == 0)
+            {
+                var pl = Ctx.Get<Component>("player"); var prb = pl != null ? pl.GetComponent<Rigidbody>() : null;
+                if (prb != null) Debug.Log("[Player] t=" + Time.time.ToString("0.0") + " pos=" + prb.position.ToString("0.0") + " vel=" + prb.linearVelocity.ToString("0.0") + " kin=" + prb.isKinematic + " ts=" + Time.timeScale);
+            }
             if (titanLog)
             {
                 var boss = Ctx.Get<Component>("bossBrain");
