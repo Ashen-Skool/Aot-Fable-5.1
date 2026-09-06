@@ -207,6 +207,14 @@ namespace Proxies
         public int StabsToKill = 5;
         float wanderSign = 1f, wanderT, stuckT, steerHoldSpent, progressT, bestDist = 1e9f, bulldozeT, rubbleT;
         public Vector3 NapeWorld() => Fx != null ? Fx.NapePos() : transform.position + Vector3.up * height * 0.85f;
+        /// <summary>She just landed on his neck: a roar, a stagger, a head shake, and the camera feels it.</summary>
+        public void Mounted()
+        {
+            if (Current == State.Dead) return;
+            Roar(); Fx?.CameraPunch(0.5f);
+            var m = Ctx.Get<Characters.CharacterModel>("bossModel"); if (m != null) m.ShakeHead();
+            if (Current != State.Kneel) { Current = State.Stagger; t = 0.2f; Set(Pose.Stagger); }
+        }
         /// <summary>One stab from the rider. Returns true when this was the killing one (the caller plays the final plunge, then NapeKill).</summary>
         public bool Stab(int n)
         {
