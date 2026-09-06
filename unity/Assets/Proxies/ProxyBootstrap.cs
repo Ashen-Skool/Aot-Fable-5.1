@@ -160,6 +160,10 @@ namespace Proxies
                 case Pose.Swipe: return 0.52f;
                 case Pose.Grab: return 0.6f;
                 case Pose.Stomp: return 0.6f;
+                case Pose.Perch: return 0.5f;
+                case Pose.Ride: return 0.5f;
+                case Pose.Stab: return 0.2f;
+                case Pose.Final: return 0.7f;
             }
             return 0f;
         }
