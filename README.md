@@ -109,9 +109,17 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
   `.meta` clipAnimations (lastFrame 18) as of 2026-09-05 evening.
 - Camera: airborne heading (hooked or free) is the mouse's alone; the dutch reads the velocity yaw rate.
 
-**Open items:** after the nape kill she falls to the ground in a stiff pose (the ending card lands 2 s later, so it is barely seen);
-the blood spray still reads as a small starburst up close; the Titan did not reach her in a 40 s `-autoFly` run (worth a look);
-user to confirm the grey squares are gone with smoke/dust/mist on (fallback: ship with them off by default);
+- Night of 09-06 (autonomous, Studio): blood is a cone of soft dark-red puffs plus thin drops (`TitanFx` sparks/drops); after the
+  kill she flips off the neck sideways (`spinjump`), steps clear of his collider and ignores it for 1.5 s (she was pinned at nape
+  height with zero velocity), and a dead Titan counts as ground; death steam halved; HUD nape marker with range during the nape
+  phase (`Hud` ring + "NAPE n M"); stabs play `Synth.Squelch`; blade trails on stabs; `Music.Intensity` lifts pitch/volume 6%/18% in the
+  nape phase; gas tops up on a perch; title hint names the neck rule. Titan steering: commits to the widest gap when boxed in, and a
+  progress watchdog (no closing for 4 s -> 3 s bulldoze straight at her with dust); he reaches and swipes her in the 40 s run now.
+  Harness: `-autoPhase N` (drop him to 25%), `-perchExit 1|2|3` (LMB/Shift/Space off the perch: all three verified), `-titanLog`
+  also logs the player body.
+
+**Open items:** houses are not crushable (the bulldoze clips through them with dust; house meshes are batched per cell, so per-house
+hiding needs a builder change); user to confirm the grey squares are gone with smoke/dust/mist on (fallback: ship with them off by default);
 building destruction is rubble/dust only; attic hatches skipped; fist roll and Titan wrist numbers from the user; draw/sheathe pose;
 the tower grid visually swallows the town from above (cannons live there, his call); outskirt ground lifts toward the fog from above.
 The grade lost some contrast on 2026-09-05 evening (contrast 10 -> 6, shadow lift 0.13) because the shadow side of the towers was flat black.
