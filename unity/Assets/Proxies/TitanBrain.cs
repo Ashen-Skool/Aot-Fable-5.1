@@ -85,7 +85,18 @@ namespace Proxies
                         Set(sprint ? Pose.Sprint : Pose.Run);
                         float sp = sprint ? sprintSpeed : walkSpeed;
                         var f = transform.forward; f.y = 0f; f.Normalize();
-                        if (distFlat > attackRange * 0.55f) transform.position += Steer(f, sp * dt) * sp * dt;   // close enough that a stomp can actually land on a grounded player
+                        // progress watchdog: a block of houses between him and her had him zigzagging in place (each probe frame
+                        // picked a side, the turn toward her undid it). No progress for 4 s -> he bulldozes straight through for 3 s.
+                        progressT += dt;
+                        if (progressT > 4f) { if (distFlat > bestDist - 3f && distFlat > attackRange) { bulldozeT = 3f; Roar(); } bestDist = distFlat; progressT = 0f; }
+                        bestDist = Mathf.Min(bestDist, distFlat);
+                        if (bulldozeT > 0f)
+                        {
+                            bulldozeT -= dt; rubbleT -= dt;
+                            if (distFlat > attackRange * 0.55f) transform.position += f * sp * dt;
+                            if (rubbleT <= 0f) { rubbleT = 0.35f; Fx?.Stomp(transform.position + f * height * 0.25f, toP); }
+                        }
+                        else if (distFlat > attackRange * 0.55f) transform.position += Steer(f, sp * dt) * sp * dt;   // close enough that a stomp can actually land on a grounded player
                     }
                     break;
                 case State.Attack:
@@ -189,7 +200,7 @@ namespace Proxies
         /// <summary>Mikasa is on the back of his neck: he runs and thrashes, cannot attack, and each stab takes a fifth of the last quarter.</summary>
         public bool Ridden;
         public int StabsToKill = 5;
-        float wanderSign = 1f, wanderT, stuckT, steerHoldSpent;
+        float wanderSign = 1f, wanderT, stuckT, steerHoldSpent, progressT, bestDist = 1e9f, bulldozeT, rubbleT;
         public Vector3 NapeWorld() => Fx != null ? Fx.NapePos() : transform.position + Vector3.up * height * 0.85f;
         /// <summary>One stab from the rider. Returns true when this was the killing one (the caller plays the final plunge, then NapeKill).</summary>
         public bool Stab(int n)
