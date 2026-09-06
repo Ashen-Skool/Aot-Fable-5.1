@@ -6,7 +6,7 @@ A ten-minute playable Attack on Titan homage in Unity 6, built through the CLI
 on the Mac Studio by a gauntlet loop of builder and critic sub-agents. Started
 2026-09-01. **Read this whole file before doing anything.**
 
-## STATE (2026-09-05 afternoon, read this, the rest of this file is history)
+## STATE (2026-09-05 evening, read this, the rest of this file is history)
 
 Scope is v2: one district, one 15 m Titan, Mikasa, three-minute loop. No agent loops; the director builds by hand
 and the user is the critic (he plays the mac build on his laptop; never screenshot or drive his machine).
@@ -57,7 +57,8 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
   Runtime static batching is REMOVED (`StaticBatchingUtility.Combine` produced giant grey planes across the map in the build);
   dressing/outskirts cast no shadows, the Titan has a kinematic Rigidbody.
 - **Player self-checks** (`Shared/Harness.cs`, all command-line): `-quitAfter N`, `-autoRestart N` (proved `Reboot` in a real build:
-  RESTART_OK), `-fpslog`, `-autoStart N` (lifts the title), `-autoKill N` (nape hit through reflection), `-screenshotAt a,b,c`
+  RESTART_OK), `-fpslog`, `-autoStart N` (lifts the title), `-autoKill N` (nape hit through reflection), `-autoStabs N` (N LMB presses 0.6 s apart from `-autoSlash`, re-pressed
+  when hit-stop swallows one), `-autoPerch N` (hook the nearest tall wall face), `-screenshotAt a,b,c`
   (real frames with the HUD to `shots/play/`). `tools/play.sh 42 -fpslog -autoStart 2 -autoKill 26 -screenshotAt 15,27 -quitAfter 30`
   then rsync `shots/play/` back. `Shared/PerfToggles.cs`: `-noSsao -noPost -msaa1 -shadow2k -noShadows -noMist -noSmoke -noDust
   -noTrees -noLamps -noHud -noTown -noChars` for bisecting frame cost.
@@ -88,25 +89,38 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
   half lands, and it puts Mikasa ON HIS NECK (`OdmController.EnterRide`): kinematic, parented each physics step to `TitanBrain.NapeWorld()`,
   he runs blind and swerves (`Ridden`), each LMB = `RideStab` (`TitanBrain.Stab`, a fifth of the last quarter, HUD dots), the fifth
   plays the final plunge then `NapeKill` -> `Hud.Cutscene` (StreamingAssets/nape.mp4, the user's titan-fight clip, 7 s, Space skips)
-  -> `FinishNapeKill` -> kill cam -> YOU WON. Space jumps off. `-autoRide N` + `-autoSlash N` drive it from the harness.
-- Wall perch: a real hook into a wall face (|normal.y| < 0.35) with no ledge to mantle ends the reel in `EnterPerch`: back to the wall,
-  feet on it below the anchor, cables stay up. LMB leaps into the air attack, Shift launches toward the look, Space drops.
+  -> `FinishNapeKill` -> kill cam -> YOU WON. Space jumps off. `-autoRide N` + `-autoSlash N` + `-autoStabs N` drive the whole kill from
+  the harness (verified end to end 2026-09-05 evening: five stabs, `napefinal`, nape.mp4, kill cam, YOU WON).
+  Each stab: red spray, camera shake + a `CameraRig.Punch` lunge, hit-stop, HUD dot, a stagger and a head shake on the Titan
+  (`CharacterModel.ShakeHead`, +/-12 deg at 6 Hz decaying over 0.6 s), a roar on odd stabs.
+  Ride camera: `CameraTargetState.Riding` opens the chase to `rideDistance` 5 m / `rideHeight` 2.2 m with his facing as the heading
+  (free look kept, his colliders excluded from camera collision), and `TitanFx` emits small short steam while `Ridden`.
+- Wall perch (play-tested 2026-09-05 evening with `-autoPerch N`, which sweeps for the nearest tall wall face and hooks it): a real hook
+  into a wall face (|normal.y| < 0.35) with no ledge to mantle ends the reel in `EnterPerch`. A wall anchor holds the hook latch down to
+  `reelDetach` (it used to unlatch at 3.5 m, so the perch never ran on a real hook). She faces the wall (the authored `wallperch` crouch
+  plants the feet forward) 0.55 m out and 1.9 m below the anchor, cables up to the two heads, no clipping; the chase camera swings out in
+  front of her at a three-quarter angle (`perchDistance` 4.5, `perchYawDeg` 30). LMB leaps: `wallkick` plays for `kickAttackDelay` 0.3 s,
+  then the air attack. Shift launches along the look (the component along the face is kept, never into the wall), Space drops and the
+  press is consumed so the hook toggle does not fire a fresh anchor.
 - Hand-keyed Mikasa clips `wallperch`, `naperide`, `napestab`, `napefinal` come from `tools/author_clips.py` (Blender, pose-bone eulers
   with side-aware helpers; the arm/elbow/leg axes of this rig were measured with the pL/pR/pF probes in that file), exported as GLBs into
   `assets/characters/mikasa/rig` and merged by `tools/merge_clips.py` (28 clips, height 1.70). Poses: `Perch/Ride/Stab/Final` in `IPoser`,
-  mapped in `CharacterModel.Map`, with procedural twins in `ProceduralPoser` for the proxy rig. `wallkick` is not authored yet.
+  mapped in `CharacterModel.Map`, with procedural twins in `ProceduralPoser` for the proxy rig. `wallkick` is authored, merged and in the
+  `.meta` clipAnimations (lastFrame 18) as of 2026-09-05 evening.
 - Camera: airborne heading (hooked or free) is the mouse's alone; the dutch reads the velocity yaw rate.
 
-**Open items:** wallkick clip; the perch needs a play-test (position offsets 0.55 m out / 1.9 m down from the anchor); the ride camera
-sits inside the nape steam; user to confirm the grey squares are gone with smoke/dust/mist on (fallback: ship with them off by default);
+**Open items:** after the nape kill she falls to the ground in a stiff pose (the ending card lands 2 s later, so it is barely seen);
+the blood spray still reads as a small starburst up close; the Titan did not reach her in a 40 s `-autoFly` run (worth a look);
+user to confirm the grey squares are gone with smoke/dust/mist on (fallback: ship with them off by default);
 building destruction is rubble/dust only; attic hatches skipped; fist roll and Titan wrist numbers from the user; draw/sheathe pose;
 the tower grid visually swallows the town from above (cannons live there, his call); outskirt ground lifts toward the fog from above.
+The grade lost some contrast on 2026-09-05 evening (contrast 10 -> 6, shadow lift 0.13) because the shadow side of the towers was flat black.
 
 **Process notes:** the Studio working copy that actually builds is the director lane `~/dev/lanes/director` (on main); set
 (`tools/_remote.sh` defaults to it now). `remote()` runs `git checkout -q -- .` before every command: Unity's import churn
 (fbx metas, Main.unity, URP assets, Particles.mat) silently blocked `git pull --ff-only`, so several "builds" were old.
 Always check the Studio HEAD hash after a pull before trusting a build.
-Keep `tools/test.sh` green (36 tests incl. `CharactersWiredTests`, `GroundSnapProbe`); build with
+Keep `tools/test.sh` green (39 tests incl. `CharactersWiredTests`, `GroundSnapProbe`); build with
 `tools/build.sh mac`, then rsync the app to `~/Desktop/AOT-build/` on the laptop and `open` it for him. Unity batch runs
 sometimes leave a stale editor holding the project lock after an interrupted command: `pkill -f lanes/director`.
 
