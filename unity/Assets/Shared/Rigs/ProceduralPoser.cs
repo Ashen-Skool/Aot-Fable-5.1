@@ -109,6 +109,10 @@ namespace Shared.Rigs
                 case Pose.Swipe: Swipe(u); break;
                 case Pose.Grab: Grab(u); break;
                 case Pose.Stomp: Stomp(u); break;
+                case Pose.Perch: Perch(u); break;
+                case Pose.Ride: Ride(u); break;
+                case Pose.Stab: Stab(u); break;
+                case Pose.Final: Final(u); break;
             }
         }
 
@@ -175,6 +179,35 @@ namespace Shared.Rigs
             Limb(BoneId.RightUpperArm, 150f, 22f); Elbow(BoneId.RightLowerArm, 18f);
             Limb(BoneId.LeftUpperLeg, 26f, 4f + 3f * wob); Knee(BoneId.LeftLowerLeg, 48f); Foot(BoneId.LeftFoot, 20f);
             Limb(BoneId.RightUpperLeg, 34f, 4f - 3f * wob); Knee(BoneId.RightLowerLeg, 56f); Foot(BoneId.RightFoot, 20f);
+        }
+
+        /// <summary>Wall perch: back to the wall, hanging off the cables, feet planted on it behind her, arms low with the blades.</summary>
+        void Perch(float u)
+        {
+            float breath = Mathf.Sin(u * 3f);
+            Hips(-12f, 0.02f, 0, 0, 0, 0);
+            Torso(BoneId.Spine, 6f, 0, 0); Torso(BoneId.Chest, 4f + 2f * breath, 0, 0); Torso(BoneId.Neck, -6f, 0, 0); Torso(BoneId.Head, -10f, 0, 0);
+            Limb(BoneId.LeftUpperArm, 12f, 30f + 2f * breath); Elbow(BoneId.LeftLowerArm, 18f);
+            Limb(BoneId.RightUpperArm, 12f, 30f + 2f * breath); Elbow(BoneId.RightLowerArm, 18f);
+            Limb(BoneId.LeftUpperLeg, -38f, 10f); Knee(BoneId.LeftLowerLeg, 105f); Foot(BoneId.LeftFoot, -45f);
+            Limb(BoneId.RightUpperLeg, -38f, 10f); Knee(BoneId.RightLowerLeg, 105f); Foot(BoneId.RightFoot, -45f);
+        }
+        /// <summary>Riding the nape: kneeling on the back of his neck, left blade buried low, right blade cocked overhead.</summary>
+        void Ride(float u) { RidePose(Mathf.Sin(u * 3f), 0f); }
+        void Stab(float u) { float p = Mathf.Repeat(u, 0.5f); RidePose(0f, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.1f, 0.25f, p)) * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.35f, 0.5f, p)))); }
+        void Final(float u) { float s = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.4f, 0.6f, Mathf.Min(u, 0.9f))); RidePose(0f, s, both: true); }
+        void RidePose(float breath, float plunge, bool both = false)
+        {
+            float drop = rig.props.upperLeg - 0.02f;
+            Hips(18f + 12f * plunge, -drop, 0, 0, 0, 0);
+            Torso(BoneId.Spine, 14f + 12f * plunge, 0, 0); Torso(BoneId.Chest, 10f + 3f * breath + 10f * plunge, 0, 0); Torso(BoneId.Head, -16f + 14f * plunge, 0, 0);
+            Limb(BoneId.LeftUpperLeg, 70f, 16f); Knee(BoneId.LeftLowerLeg, 135f); Foot(BoneId.LeftFoot, 35f);
+            Limb(BoneId.RightUpperLeg, 70f, 16f); Knee(BoneId.RightLowerLeg, 135f); Foot(BoneId.RightFoot, 35f);
+            // right arm: cocked overhead, driven down; left arm: already buried (or both, for the final plunge)
+            float rUp = Mathf.Lerp(165f, 40f, plunge);
+            Limb(BoneId.RightUpperArm, rUp, 22f - 20f * plunge); Elbow(BoneId.RightLowerArm, Mathf.Lerp(25f, 6f, plunge));
+            if (both) { Limb(BoneId.LeftUpperArm, rUp, 22f - 20f * plunge); Elbow(BoneId.LeftLowerArm, Mathf.Lerp(25f, 6f, plunge)); }
+            else { Limb(BoneId.LeftUpperArm, 30f, -8f); Elbow(BoneId.LeftLowerArm, 5f); }
         }
 
         void Slash(float u)
