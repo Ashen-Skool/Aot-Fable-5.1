@@ -63,6 +63,7 @@ NAPEFINAL_UP = dict(NAPERIDE); NAPEFINAL_UP.update({"LeftArm": (-165, 0, -30), "
 NAPEFINAL_DOWN = dict(NAPERIDE); NAPEFINAL_DOWN.update({"LeftArm": (-35, 0, -8), "LeftForeArm": (-12, 0, 0), "LeftHand": (-30, 0, 0), "RightArm": (-35, 0, 8), "RightForeArm": (-12, 0, 0), "RightHand": (-30, 0, 0), "Spine02": (34, 0, 0), "Spine01": (26, 0, 0), "neck": (-4, 0, 0)})
 
 CLIPS = {
+    "probe":     (30, False, [(0, {"LeftArm": (70, 0, 0), "RightArm": (0, 0, 70), "LeftUpLeg": (0, 0, 40)}), (15, {"LeftArm": (0, 70, 0), "RightArm": (0, 0, -70), "LeftUpLeg": (0, 40, 0)}), (30, {"LeftArm": (0, 0, 70), "RightArm": (-70, 0, 0), "LeftUpLeg": (40, 0, 0)})]),
     "wallperch": (60, True, breathe(WALLPERCH)),
     "wallkick":  (18, False, [(0, WALLPERCH), (7, WALLKICK_A), (13, WALLKICK_B), (18, WALLKICK_B)]),
     "naperide":  (60, True, breathe(NAPERIDE, amp=2.5, arm=2.0)),
@@ -107,11 +108,11 @@ def render_strip(arm, name, length, n=5):
     objs = [o for o in bpy.data.objects if o.type == "MESH"]
     pts = [o.matrix_world @ mathutils.Vector(c) for o in objs for c in o.bound_box]
     lo = mathutils.Vector((min(p.x for p in pts), min(p.y for p in pts), min(p.z for p in pts))); hi = mathutils.Vector((max(p.x for p in pts), max(p.y for p in pts), max(p.z for p in pts)))
-    c = (lo + hi) / 2; r = (hi - lo).length * 1.05 + 0.3
+    c = (lo + hi) / 2; r = (hi - lo).length * 0.8 + 0.2
     w = bpy.data.worlds.new("W"); sc.world = w; w.use_nodes = True; w.node_tree.nodes["Background"].inputs[0].default_value = (0.9, 0.9, 0.9, 1)
     sun = bpy.data.objects.new("Sun", bpy.data.lights.new("Sun", "SUN")); sun.data.energy = 3; sun.rotation_euler = (math.radians(50), 0, math.radians(30)); sc.collection.objects.link(sun)
     cam = bpy.data.objects.new("Cam", bpy.data.cameras.new("Cam")); sc.collection.objects.link(cam); sc.camera = cam; cam.data.lens = 45
-    sc.render.engine = "BLENDER_EEVEE"; sc.render.resolution_x = 520; sc.render.resolution_y = 640
+    sc.render.engine = "BLENDER_EEVEE"; sc.render.resolution_x = 480; sc.render.resolution_y = 600
     views = {"front": mathutils.Vector((0, -r, r * 0.15)), "side": mathutils.Vector((r, 0, r * 0.15)), "quarter": mathutils.Vector((r * 0.7, -r * 0.7, r * 0.3))}
     for vn, off in views.items():
         cam.location = c + off; d = c - cam.location; cam.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()
