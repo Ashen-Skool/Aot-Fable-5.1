@@ -144,6 +144,12 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
   They are clips, not poses - nothing else in the fight asks for them. The blade props still stay in her fists: the clips read as
   taking them off the boxes, but nothing is actually stowed, which is the user's call to make.
 
+- Day of 09-06 (user play-test): the ride was seated at `NapeWorld()`, which is the CENTRE of the nape zone and therefore inside his
+  neck, so she glided a nape-radius above the surface instead of kneeling on it. `TitanBrain.RideSeat` projects the zone's bounds onto
+  his facing and sits her on the rear face (`seatOut` 0.18, `seatUp` 0.35). And he no longer slides through houses: `TitanBrain.Plow`
+  scans his footprint and one stride ahead every 0.08 s (a quarter-second scan let a sprint put him a body deep into a house first) and
+  brings down up to two houses a scan, in every movement path - chase, bulldoze, and the blind run while she rides the nape.
+
 **Open items:** user to confirm the grey squares are gone with smoke/dust/mist on (fallback: ship with them off by default);
 fist roll and Titan wrist numbers from the user; the tower grid visually swallows the town from above (cannons live there, his call).
 Crushed houses settle as a flattish field of shards rather than a heaped mound - the collapse moves vertices, so the big roof and wall

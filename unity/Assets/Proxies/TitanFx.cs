@@ -93,6 +93,8 @@ namespace Proxies
             return nape;
         }
         public Vector3 NapePos() { var n = Nape(); if (n == null) return transform.position + Vector3.up * height * 0.85f; var c = n.GetComponent<Collider>(); return c != null ? c.bounds.center : n.position; }
+        /// <summary>The nape zone's collider, so a rider can be seated on its surface rather than at its centre.</summary>
+        public Collider NapeCollider() { var n = Nape(); return n != null ? n.GetComponent<Collider>() : null; }
         static Transform FindDeep(Transform t, string name) { if (t.name == name) return t; for (int i = 0; i < t.childCount; i++) { var r = FindDeep(t.GetChild(i), name); if (r != null) return r; } return null; }
 
         /// <summary>A stab-sized camera lunge (CameraRig.Punch); the shake alone read as noise on the nape.</summary>

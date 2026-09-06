@@ -65,6 +65,7 @@ namespace Proxies
                         Set(Pose.Sprint);
                         var rf = transform.forward; rf.y = 0f; rf.Normalize();
                         transform.position += Steer(rf, sprintSpeed * 0.8f * dt) * sprintSpeed * 0.8f * dt;
+                        Plow(rf, dt);   // running blind with her on his neck: he goes through the houses, not into them
                         break;
                     }
                     Face(toP, dt);
@@ -107,7 +108,7 @@ namespace Proxies
                                 if (Crush == null || !Crush.CrushNear(shoulder, height * 0.55f, f)) Fx?.Stomp(shoulder, toP);
                             }
                         }
-                        else if (distFlat > attackRange * 0.55f) transform.position += Steer(f, sp * dt) * sp * dt;   // close enough that a stomp can actually land on a grounded player
+                        else if (distFlat > attackRange * 0.55f) { transform.position += Steer(f, sp * dt) * sp * dt; Plow(f, dt); }   // close enough that a stomp can actually land on a grounded player
                     }
                     break;
                 case State.Attack:
@@ -217,7 +218,24 @@ namespace Proxies
         /// <summary>Mikasa is on the back of his neck: he runs and thrashes, cannot attack, and each stab takes a fifth of the last quarter.</summary>
         public bool Ridden;
         public int StabsToKill = 5;
-        float wanderSign = 1f, wanderT, stuckT, steerHoldSpent, progressT, bestDist = 1e9f, bulldozeT, rubbleT;
+        float wanderSign = 1f, wanderT, stuckT, steerHoldSpent, progressT, bestDist = 1e9f, bulldozeT, rubbleT, plowT;
+
+        /// <summary>
+        /// Steer only avoids what it can see a way around; boxed into an alley it takes the least-bad opening and
+        /// walks straight into a wall, and the player then watches a 15 m Titan slide through a house. He levels it
+        /// instead: anything his torso reaches comes down. Cheap - one scan a quarter second, only while he moves.
+        /// </summary>
+        void Plow(Vector3 dir, float dt)
+        {
+            plowT -= dt;
+            if (plowT > 0f || Crush == null) return;
+            plowT = 0.08f;   // at a sprint he covers 3 m in a quarter second: a slow scan let him get a body deep into a house first
+            // his own footprint and one stride ahead, and up to two houses per scan (a block can put three against him at once)
+            int down = 0;
+            if (Crush.CrushNear(transform.position + dir * (height * 0.22f), height * 0.2f, dir)) down++;
+            if (Crush.CrushNear(transform.position, height * 0.16f, dir)) down++;
+            if (down > 0 && Harness.Active) Debug.Log("[Plow] " + down + " down at " + transform.position.ToString("0.0") + " total=" + Crush.Crushed);
+        }
 
         /// <summary>The town's crusher, looked up once (Town does not exist in EditMode tests or with -noTown).</summary>
         ICrush crush; bool crushLooked;
@@ -230,6 +248,32 @@ namespace Proxies
             }
         }
         public Vector3 NapeWorld() => Fx != null ? Fx.NapePos() : transform.position + Vector3.up * height * 0.85f;
+
+        /// <summary>How far off the nape surface her feet sit, and how far up the neck she kneels.</summary>
+        public float seatOut = 0.18f, seatUp = 0.35f;
+
+        /// <summary>
+        /// Where a rider's feet actually go. NapeWorld() is the CENTRE of the nape zone, which is inside his
+        /// neck: seating her there left her floating a nape-radius above the surface, gliding rather than
+        /// riding. This walks back out to the zone's rear face along his forward axis and sits her on it.
+        /// </summary>
+        public void RideSeat(out Vector3 pos, out Quaternion rot)
+        {
+            Vector3 c = NapeWorld();
+            var z = Fx != null ? Fx.NapeCollider() : null;
+            float depth = height * 0.06f;
+            float lift = 0f;
+            if (z != null)
+            {
+                // the zone's bounds are axis-aligned: project their extents onto his facing to get the rear face
+                var e = z.bounds.extents;
+                var f = transform.forward;
+                depth = Mathf.Abs(e.x * f.x) + Mathf.Abs(e.y * f.y) + Mathf.Abs(e.z * f.z);
+                lift = -e.y * 0.35f;   // down the back of the neck a little, not perched on top of the zone
+            }
+            pos = c - transform.forward * (depth + seatOut) + Vector3.up * (lift + seatUp);
+            rot = transform.rotation;
+        }
         /// <summary>She just landed on his neck: a roar, a stagger, a head shake, and the camera feels it.</summary>
         public void Mounted()
         {

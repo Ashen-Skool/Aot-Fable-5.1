@@ -193,8 +193,8 @@ namespace ODM
         {
             if (rideBrain == null || rideBrain.Current == Proxies.TitanBrain.State.Dead) { ExitRide(false); return; }
             var tt = rideBrain.transform;
-            Vector3 pos = rideBrain.NapeWorld() - tt.forward * 0.35f + Vector3.up * 0.15f;
-            rb.MovePosition(pos); rb.MoveRotation(tt.rotation);
+            rideBrain.RideSeat(out var pos, out var rot);   // the SURFACE of the nape: NapeWorld() is its centre, inside his neck
+            rb.MovePosition(pos); rb.MoveRotation(rot);
             Speed = 0f;
             if (Harness.Active) { rideLog -= dt; if (rideLog <= 0f) { rideLog = 0.5f; Debug.Log("[RideDbg] her=" + rb.position.ToString("0.0") + " nape=" + rideBrain.NapeWorld().ToString("0.0") + " titan=" + tt.position.ToString("0.0") + " fwd=" + tt.forward.ToString("0.00")); } }
             stabTimer -= dt;
