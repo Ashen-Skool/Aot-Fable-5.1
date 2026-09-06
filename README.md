@@ -116,7 +116,9 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
   nape phase; gas tops up on a perch; title hint names the neck rule. Titan steering: commits to the widest gap when boxed in, and a
   progress watchdog (no closing for 4 s -> 3 s bulldoze straight at her with dust); he reaches and swipes her in the 40 s run now.
   Harness: `-autoPhase N` (drop him to 25%), `-perchExit 1|2|3` (LMB/Shift/Space off the perch: all three verified), `-titanLog`
-  also logs the player body.
+  also logs the player body. The perch faces OUT again (back to the wall, the reference frame; the Studio session had her facing the
+  wall): the wallperch/wallkick legs were re-keyed to reach back, the perch camera hangs in the street looking at her, a hook in the
+  Titan never perches, the bulldoze is clamped to `town.bounds`.
 
 **Open items:** houses are not crushable (the bulldoze clips through them with dust; house meshes are batched per cell, so per-house
 hiding needs a builder change); user to confirm the grey squares are gone with smoke/dust/mist on (fallback: ship with them off by default);

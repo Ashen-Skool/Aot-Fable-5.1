@@ -93,7 +93,12 @@ namespace Proxies
                         if (bulldozeT > 0f)
                         {
                             bulldozeT -= dt; rubbleT -= dt;
-                            if (distFlat > attackRange * 0.55f) transform.position += f * sp * dt;
+                            if (distFlat > attackRange * 0.55f)
+                            {
+                                var np = transform.position + f * sp * dt;
+                                if (Ctx.Has("town.bounds")) { var tb = Ctx.Get<Bounds>("town.bounds"); np.x = Mathf.Clamp(np.x, tb.min.x + 4f, tb.max.x - 4f); np.z = Mathf.Clamp(np.z, tb.min.z + 4f, tb.max.z - 4f); }   // never through the boundary
+                                transform.position = np;
+                            }
                             if (rubbleT <= 0f) { rubbleT = 0.35f; Fx?.Stomp(transform.position + f * height * 0.25f, toP); }
                         }
                         else if (distFlat > attackRange * 0.55f) transform.position += Steer(f, sp * dt) * sp * dt;   // close enough that a stomp can actually land on a grounded player

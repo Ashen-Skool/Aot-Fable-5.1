@@ -1065,7 +1065,7 @@ namespace ODM
             Hook = HookState.Attached;
             Shared.Sfx.Play("hook_fire", rb.position, 1.4f, 0.8f); Shared.Sfx.Play("hook_attach", real ? hit.point : rb.position, 0.9f, 0.9f, 90f);
             Anchor = real ? hit.point : eye + dir * Mathf.Min(hookRange, 45f);   // nothing there: a virtual anchor in the sky still pulls you
-            hookNormal = real ? hit.normal : -dir; hookReal = real;
+            hookNormal = real ? hit.normal : -dir; hookReal = real && hit.collider.gameObject.layer != OdmLayers.Titan;   // a hook in the Titan never ends in a perch
             wantVirtual = false;
             // two hooks land a little apart so the cables read as a pair
             Vector3 spread = Vector3.Cross(hookNormal, Vector3.up);
