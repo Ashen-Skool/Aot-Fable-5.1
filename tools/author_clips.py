@@ -33,10 +33,10 @@ WALLPERCH = {
     "LeftUpLeg": (-75, 0, 8), "RightUpLeg": (-75, 0, -8),
     "LeftLeg": (95, 0, 0), "RightLeg": (95, 0, 0),
     "LeftFoot": (-30, 0, 0), "RightFoot": (-30, 0, 0),
-    "Spine02": (14, 0, 0), "Spine01": (10, 0, 0), "Spine": (6, 0, 0),
-    "neck": (-14, 0, 0), "Head": (-8, 0, 0),
-    "LeftArm": (-20, 0, -30), "RightArm": (-20, 0, -30),
-    "LeftForeArm": (-40, 0, 0), "RightForeArm": (-40, 0, 0),
+    "Spine02": (10, 0, 0), "Spine01": (6, 0, 0), "Spine": (4, 0, 0),
+    "neck": (-16, 0, 0), "Head": (-8, 0, 0),
+    "LeftArm": (-10, 0, -55), "RightArm": (-10, 0, -55),
+    "LeftForeArm": (0, 0, -50), "RightForeArm": (0, 0, 50),
     "LeftHand": (0, 0, -10), "RightHand": (0, 0, 10),
 }
 # Kick-off: sink deeper, then explode off the wall legs straight, arms forward with the blades.
