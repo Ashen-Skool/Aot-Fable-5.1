@@ -35,7 +35,7 @@ WALLPERCH = {
     "LeftFoot": (-30, 0, 0), "RightFoot": (-30, 0, 0),
     "Spine02": (14, 0, 0), "Spine01": (10, 0, 0), "Spine": (6, 0, 0),
     "neck": (-14, 0, 0), "Head": (-8, 0, 0),
-    "LeftArm": (30, 0, -35), "RightArm": (30, 0, 35),
+    "LeftArm": (-20, 0, -30), "RightArm": (-20, 0, -30),
     "LeftForeArm": (-40, 0, 0), "RightForeArm": (-40, 0, 0),
     "LeftHand": (0, 0, -10), "RightHand": (0, 0, 10),
 }
@@ -63,6 +63,7 @@ NAPEFINAL_UP = dict(NAPERIDE); NAPEFINAL_UP.update({"LeftArm": (-165, 0, -30), "
 NAPEFINAL_DOWN = dict(NAPERIDE); NAPEFINAL_DOWN.update({"LeftArm": (-35, 0, -8), "LeftForeArm": (-12, 0, 0), "LeftHand": (-30, 0, 0), "RightArm": (-35, 0, 8), "RightForeArm": (-12, 0, 0), "RightHand": (-30, 0, 0), "Spine02": (34, 0, 0), "Spine01": (26, 0, 0), "neck": (-4, 0, 0)})
 
 CLIPS = {
+    "probe2":    (30, False, [(0, {"LeftForeArm": (-70, 0, 0), "RightForeArm": (0, 0, 70), "Spine02": (30, 0, 0), "LeftFoot": (-40, 0, 0)}), (15, {"LeftForeArm": (-70, 0, 0), "RightForeArm": (0, 0, 70), "Spine02": (30, 0, 0), "LeftFoot": (-40, 0, 0)}), (16, {"LeftForeArm": (0, 0, -70), "RightForeArm": (70, 0, 0), "Spine02": (0, 0, 30), "LeftFoot": (40, 0, 0), "Hips": (-30, 0, 0)}), (30, {"LeftForeArm": (0, 0, -70), "RightForeArm": (70, 0, 0), "Spine02": (0, 0, 30), "LeftFoot": (40, 0, 0), "Hips": (-30, 0, 0)})]),
     "probe":     (30, False, [(0, {"LeftArm": (70, 0, 0), "RightArm": (0, 0, 70), "LeftUpLeg": (0, 0, 40)}), (15, {"LeftArm": (0, 70, 0), "RightArm": (0, 0, -70), "LeftUpLeg": (0, 40, 0)}), (30, {"LeftArm": (0, 0, 70), "RightArm": (-70, 0, 0), "LeftUpLeg": (40, 0, 0)})]),
     "wallperch": (60, True, breathe(WALLPERCH)),
     "wallkick":  (18, False, [(0, WALLPERCH), (7, WALLKICK_A), (13, WALLKICK_B), (18, WALLKICK_B)]),
