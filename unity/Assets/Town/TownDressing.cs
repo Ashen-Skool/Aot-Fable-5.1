@@ -51,7 +51,7 @@ namespace Town
             // a wide grass floor under everything, a step below the town's paving so it never z-fights
             var floor = GameObject.CreatePrimitive(PrimitiveType.Plane); floor.name = "Outskirts_Floor"; floor.transform.SetParent(root, false);
             floor.transform.position = new Vector3(b.center.x, -0.08f, b.center.z); floor.transform.localScale = new Vector3(160f, 1f, 160f);
-            var floorMat = mats.TexturedSimple("grassFloor", "Ground103", 9f, new Color(0.08f, 0.1f, 0.06f));   // Simple Lit: no sky reflection at grazing angles
+            var floorMat = mats.TexturedSimple("grassFloor", "Ground103", 9f, new Color(0.055f, 0.07f, 0.042f));   // Simple Lit: no sky reflection at grazing angles
             var floorScale = new Vector2(1600f / 9f, 1600f / 9f);   // the plane's UVs span 0..1 over 1600 m: tile every 9 m
             floorMat.SetTextureScale("_BaseMap", floorScale);
             floor.GetComponent<Renderer>().sharedMaterial = floorMat; floor.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -69,7 +69,12 @@ namespace Town
                     float a = j / (float)segs * Mathf.PI * 2f;
                     float x = b.center.x + Mathf.Cos(a) * r, z = b.center.z + Mathf.Sin(a) * r;
                     float n = Mathf.PerlinNoise(nx + x * 0.004f, nz + z * 0.004f) * 0.7f + Mathf.PerlinNoise(nx + x * 0.015f, nz + z * 0.015f) * 0.3f;
-                    float rise = i == 0 ? -0.1f : Mathf.Lerp(0f, 150f, Mathf.Pow(t, 1.7f)) * (0.3f + 1.1f * n) + (i == 1 ? 0f : 3f * n);   // flat meadow first, the ridges far out
+                    // The meadow used to stay dead flat for the first third of the ring. Seen from a rooftop that
+                    // is a horizontal sheet running to the horizon with nothing to catch light, and once the
+                    // fog saturates it, it is a white page with trees stuck on it. It rolls from the fence now:
+                    // near swells you read as ground, ridges further out.
+                    float swell = Mathf.Sin(t * 9f + n * 6f) * 3.5f * (1f - t);
+                    float rise = i == 0 ? -0.1f : Mathf.Lerp(0f, 165f, Mathf.Pow(t, 1.45f)) * (0.3f + 1.1f * n) + 4.5f * n + swell;
                     if (z > L.wallZ1 - 40f && i < 4) rise = Mathf.Min(rise, 2f);   // flat outside the gate
                     verts.Add(new Vector3(x, rise, z)); uvs.Add(new Vector2(x / 14f, z / 14f));   // 1 UV unit per texture tile
                 }
@@ -81,52 +86,98 @@ namespace Town
             }
             var mesh = new Mesh { name = "Hills", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
             mesh.SetVertices(verts); mesh.SetUVs(0, uvs); mesh.SetTriangles(tris, 0); mesh.RecalculateNormals(); mesh.RecalculateBounds();
-            var hills = new GameObject("Hills"); hills.transform.SetParent(root, false);
-            hills.AddComponent<MeshFilter>().sharedMesh = mesh;
-            var hr = hills.AddComponent<MeshRenderer>(); hr.sharedMaterial = mats.TexturedSimple("hills", "Ground103", 1f, new Color(0.08f, 0.11f, 0.07f)); hr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            // treeline: dark cones on the first hill rings, merged into one mesh
-            var kTree = new MeshKit(); var kTrunk = new MeshKit();
-            int placed = 0;
-            for (int n = 0; n < 6000 && placed < 2200; n++)
+            // The ring is rendered in bands, each tinted darker than the one inside it. Distance fog is
+            // exponential-squared toward a bright horizon grey, so a single dark tint lifted the whole
+            // meadow into a pale sheet when you looked down at it from the rooftops: each band is
+            // pre-darkened by roughly what the fog is about to add back.
+            var normals = mesh.normals;
+            for (int band = 0; band < FogBands.Length; band++)
             {
-                float a = (float)rng.NextDouble() * Mathf.PI * 2f; float r = r0 - 14f + Mathf.Pow((float)rng.NextDouble(), 1.3f) * 250f;   // from the boundary fence outward, dense first
+                int i0 = Mathf.RoundToInt(band / (float)FogBands.Length * rings);
+                int i1 = Mathf.RoundToInt((band + 1) / (float)FogBands.Length * rings);
+                var bt = new List<int>((i1 - i0) * segs * 6);
+                for (int i = i0; i < i1; i++) for (int j = 0; j < segs; j++)
+                {
+                    int a = i * (segs + 1) + j, c = a + segs + 1;
+                    bt.Add(a); bt.Add(c); bt.Add(a + 1); bt.Add(a + 1); bt.Add(c); bt.Add(c + 1);
+                }
+                var bm = new Mesh { name = "Hills_" + band, indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+                bm.SetVertices(verts); bm.SetUVs(0, uvs); bm.SetNormals(normals); bm.SetTriangles(bt, 0); bm.RecalculateBounds();
+                var hills = new GameObject("Hills_" + band); hills.transform.SetParent(root, false);
+                hills.AddComponent<MeshFilter>().sharedMesh = bm;
+                var hr = hills.AddComponent<MeshRenderer>();
+                hr.sharedMaterial = mats.TexturedSimple("hills" + band, "Ground103", 1f, new Color(0.08f, 0.11f, 0.07f) * FogBands[band]);
+                hr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
+            // treeline: dark cones on the first hill rings, merged into one mesh
+            var kTree = new MeshKit[FogBands.Length]; var kTrunk = new MeshKit[FogBands.Length];
+            for (int i = 0; i < FogBands.Length; i++) { kTree[i] = new MeshKit(); kTrunk[i] = new MeshKit(); }
+            int placed = 0;
+            for (int n = 0; n < 14000 && placed < 5200; n++)
+            {
+                // out to the far ridges, not just the first 250 m: bare meadow at range is what read as a sheet
+                float a = (float)rng.NextDouble() * Mathf.PI * 2f; float r = r0 - 14f + Mathf.Pow((float)rng.NextDouble(), 0.75f) * (r1 - r0 + 20f);
                 float x = b.center.x + Mathf.Cos(a) * r, z = b.center.z + Mathf.Sin(a) * r;
                 if (z > L.wallZ0 - 8f) continue;
-                float y = SampleHills(mesh, b.center, r0, r1, rings, segs, x, z);
+                float y = SampleHills(verts, b.center, r0, r1, rings, segs, x, z);
                 float h = R(rng, 8f, 18f), w = h * R(rng, 0.26f, 0.38f);
-                kTree.Cylinder(new Vector3(x, y + h * 0.15f, z), w, h * 0.85f, 6, Quaternion.identity, true, 0.05f);
-                kTree.Cylinder(new Vector3(x, y + h * 0.45f, z), w * 0.75f, h * 0.55f, 6, Quaternion.identity, true, 0.05f);
-                kTrunk.Cylinder(new Vector3(x, y - 0.5f, z), w * 0.12f, h * 0.25f, 5);
+                int band = Band(r, r0, r1);
+                kTree[band].Cylinder(new Vector3(x, y + h * 0.15f, z), w, h * 0.85f, 6, Quaternion.identity, true, 0.05f);
+                kTree[band].Cylinder(new Vector3(x, y + h * 0.45f, z), w * 0.75f, h * 0.55f, 6, Quaternion.identity, true, 0.05f);
+                kTrunk[band].Cylinder(new Vector3(x, y - 0.5f, z), w * 0.12f, h * 0.25f, 5);
                 placed++;
             }
             // undergrowth: low dark mounds between the trunks so the meadow floor is not a flat sheet from the rooftops
-            var kBush = new MeshKit(); int bushes = 0;
-            for (int n = 0; n < 4000 && bushes < 1400; n++)
+            var kBush = new MeshKit[FogBands.Length];
+            for (int i = 0; i < FogBands.Length; i++) kBush[i] = new MeshKit();
+            int bushes = 0;
+            for (int n = 0; n < 8000 && bushes < 3000; n++)
             {
-                float a = (float)rng.NextDouble() * Mathf.PI * 2f; float r = r0 - 14f + Mathf.Pow((float)rng.NextDouble(), 1.2f) * 200f;
+                float a = (float)rng.NextDouble() * Mathf.PI * 2f; float r = r0 - 14f + Mathf.Pow((float)rng.NextDouble(), 0.9f) * (r1 - r0);
                 float x = b.center.x + Mathf.Cos(a) * r, z = b.center.z + Mathf.Sin(a) * r;
                 if (z > L.wallZ0 - 8f) continue;
-                float y = SampleHills(mesh, b.center, r0, r1, rings, segs, x, z);
+                float y = SampleHills(verts, b.center, r0, r1, rings, segs, x, z);
                 float w = R(rng, 1.6f, 3.4f);
-                kBush.Cylinder(new Vector3(x, y - 0.3f, z), w, R(rng, 1.2f, 2.2f), 7, Quaternion.Euler(0f, R(rng, 0f, 360f), 0f), true, w * 0.45f);
+                kBush[Band(r, r0, r1)].Cylinder(new Vector3(x, y - 0.3f, z), w, R(rng, 1.2f, 2.2f), 7, Quaternion.Euler(0f, R(rng, 0f, 360f), 0f), true, w * 0.45f);
                 bushes++;
             }
-            var bgo = new GameObject("Undergrowth"); bgo.transform.SetParent(root, false);
-            bgo.AddComponent<MeshFilter>().sharedMesh = kBush.Build("Undergrowth"); var br = bgo.AddComponent<MeshRenderer>(); br.sharedMaterial = mats.Plain("bush", new Color(0.07f, 0.12f, 0.07f), 0.02f); br.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            var tgo = new GameObject("Treeline"); tgo.transform.SetParent(root, false);
-            tgo.AddComponent<MeshFilter>().sharedMesh = kTree.Build("Treeline"); var tr = tgo.AddComponent<MeshRenderer>(); tr.sharedMaterial = mats.Plain("treeDark", new Color(0.06f, 0.11f, 0.08f), 0.02f); tr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            var trgo = new GameObject("Trunks"); trgo.transform.SetParent(root, false);
-            trgo.AddComponent<MeshFilter>().sharedMesh = kTrunk.Build("Trunks"); var trr = trgo.AddComponent<MeshRenderer>(); trr.sharedMaterial = mats.Plain("trunk", new Color(0.22f, 0.16f, 0.11f), 0.05f); trr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            for (int i = 0; i < FogBands.Length; i++)
+            {
+                float f = FogBands[i];
+                Band(root, kBush[i], "Undergrowth_" + i, mats.Plain("bush" + i, new Color(0.07f, 0.12f, 0.07f) * f, 0.02f));
+                Band(root, kTree[i], "Treeline_" + i, mats.Plain("treeDark" + i, new Color(0.06f, 0.11f, 0.08f) * f, 0.02f));
+                Band(root, kTrunk[i], "Trunks_" + i, mats.Plain("trunk" + i, new Color(0.22f, 0.16f, 0.11f) * f, 0.05f));
+            }
         }
 
-        static float SampleHills(Mesh m, Vector3 c, float r0, float r1, int rings, int segs, float x, float z)
+        /// <summary>
+        /// How much each distance band of the outskirts is pre-darkened. Exponential-squared fog toward
+        /// the bright horizon grey adds roughly the inverse back, so the meadow reads as one dark ring
+        /// instead of lifting toward the sky the further out it goes.
+        /// </summary>
+        static readonly float[] FogBands = { 1f, 0.7f, 0.46f, 0.28f, 0.17f };
+
+        static int Band(float r, float r0, float r1)
+            => Mathf.Clamp(Mathf.FloorToInt(Mathf.Clamp01((r - r0) / Mathf.Max(1f, r1 - r0)) * FogBands.Length), 0, FogBands.Length - 1);
+
+        static void Band(Transform root, MeshKit kit, string name, Material mat)
+        {
+            if (kit.Empty) return;
+            var go = new GameObject(name); go.transform.SetParent(root, false);
+            go.AddComponent<MeshFilter>().sharedMesh = kit.Build(name);
+            var r = go.AddComponent<MeshRenderer>();
+            r.sharedMaterial = mat;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+
+        static float SampleHills(List<Vector3> verts, Vector3 c, float r0, float r1, int rings, int segs, float x, float z)
         {
             float r = Vector2.Distance(new Vector2(x, z), new Vector2(c.x, c.z));
             float t = Mathf.Clamp01((r - r0) / (r1 - r0));
             int i = Mathf.Clamp(Mathf.RoundToInt(t * rings), 0, rings);
             float a = Mathf.Atan2(z - c.z, x - c.x); if (a < 0f) a += Mathf.PI * 2f;
             int j = Mathf.Clamp(Mathf.RoundToInt(a / (Mathf.PI * 2f) * segs), 0, segs);
-            return m.vertices[i * (segs + 1) + j].y;
+            return verts[i * (segs + 1) + j].y;
         }
 
         // ---------------------------------------------------------------- streets

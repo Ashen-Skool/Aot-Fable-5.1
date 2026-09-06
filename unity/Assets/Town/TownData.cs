@@ -58,6 +58,12 @@ namespace Town
         public float RidgeY => WallTop + Rise;
         /// <summary>About a quarter of the houses have lamps lit behind the glass at this hour (deterministic per house).</summary>
         public bool LitWindows => ((int)(Mathf.Abs(uvOffset.x * 7.31f + uvOffset.y * 3.17f) * 1000f) % 4) == 0;
+        /// <summary>Roof access hatch onto the tiles: about half the houses have one (deterministic per house).</summary>
+        public bool Hatch => ((int)(Mathf.Abs(uvOffset.x * 5.13f + uvOffset.y * 9.7f) * 1000f) % 2) == 0;
+        /// <summary>How far up the front slope the hatch sits, 0 at the eave, 1 at the ridge.</summary>
+        public float HatchT => 0.4f + 0.02f * (((int)(Mathf.Abs(uvOffset.y * 39f) * 100f) % 11));
+        /// <summary>Where along the ridge the hatch sits, as a fraction of the roof's half width.</summary>
+        public float HatchOff => ((((int)(Mathf.Abs(uvOffset.x * 77f) * 100f) % 21)) / 20f - 0.5f) * 1.1f;
     }
 
     public enum PropKind { Fountain, Stall, Barrel, Crate, Cart, Lamp, Well, Clothesline, Sacks }
@@ -82,5 +88,7 @@ namespace Town
         public Rect square;
         public float wallHeight, wallZ;
         public GameObject root;
+        /// <summary>The crusher that owns every house's vertex span; also in Ctx as "town.destruction".</summary>
+        public TownDestruction destruction;
     }
 }

@@ -99,7 +99,13 @@ namespace Proxies
                                 if (Ctx.Has("town.bounds")) { var tb = Ctx.Get<Bounds>("town.bounds"); np.x = Mathf.Clamp(np.x, tb.min.x + 4f, tb.max.x - 4f); np.z = Mathf.Clamp(np.z, tb.min.z + 4f, tb.max.z - 4f); }   // never through the boundary
                                 transform.position = np;
                             }
-                            if (rubbleT <= 0f) { rubbleT = 0.35f; Fx?.Stomp(transform.position + f * height * 0.25f, toP); }
+                            if (rubbleT <= 0f)
+                            {
+                                rubbleT = 0.35f;
+                                // He does not clip through the block any more: whatever is in front of him comes down.
+                                var shoulder = transform.position + f * height * 0.3f;
+                                if (Crush == null || !Crush.CrushNear(shoulder, height * 0.55f, f)) Fx?.Stomp(shoulder, toP);
+                            }
                         }
                         else if (distFlat > attackRange * 0.55f) transform.position += Steer(f, sp * dt) * sp * dt;   // close enough that a stomp can actually land on a grounded player
                     }
@@ -111,7 +117,13 @@ namespace Proxies
                         hitDone = true; Sfx.Play("titan_step", transform.position + transform.forward * height * 0.4f, attackKind == Pose.Stomp ? 0.35f : 0.6f, 1f, 260f);
                         Vector3 hitCenter = transform.position + transform.forward * height * 0.38f + Vector3.up * (attackKind == Pose.Stomp ? height * 0.06f : height * 0.45f);
                         float r = attackKind == Pose.Stomp ? height * 0.24f : height * 0.3f;   // stomp reaches ~3.6 m around the foot, swipe ~4.5 m around the hand
-                        if (attackKind == Pose.Stomp) Fx?.Stomp(new Vector3(hitCenter.x, transform.position.y, hitCenter.z), toP); else Fx?.Swipe(hitCenter);
+                        if (attackKind == Pose.Stomp)
+                        {
+                            var foot = new Vector3(hitCenter.x, transform.position.y, hitCenter.z);
+                            Fx?.Stomp(foot, toP);
+                            Crush?.CrushNear(foot, height * 0.3f, transform.forward);
+                        }
+                        else Fx?.Swipe(hitCenter);
                         bool inArc = InFront(toP, 0.25f);   // behind or beside him you are safe: that is where the nape is
                         if (inArc && Vector3.Distance(pl.position, hitCenter) < r) (playerCtrl as ODMHit)?.Hit(this, attackKind == Pose.Stomp ? stompDamage : swipeDamage);
                         else playerCtrl.SendMessage("TakeHitIfInside", new object[] { hitCenter, r, attackKind == Pose.Stomp ? stompDamage : swipeDamage }, SendMessageOptions.DontRequireReceiver);
@@ -206,6 +218,17 @@ namespace Proxies
         public bool Ridden;
         public int StabsToKill = 5;
         float wanderSign = 1f, wanderT, stuckT, steerHoldSpent, progressT, bestDist = 1e9f, bulldozeT, rubbleT;
+
+        /// <summary>The town's crusher, looked up once (Town does not exist in EditMode tests or with -noTown).</summary>
+        ICrush crush; bool crushLooked;
+        ICrush Crush
+        {
+            get
+            {
+                if (!crushLooked) { crush = Ctx.Get<ICrush>("town.destruction"); crushLooked = crush != null; }
+                return crush;
+            }
+        }
         public Vector3 NapeWorld() => Fx != null ? Fx.NapePos() : transform.position + Vector3.up * height * 0.85f;
         /// <summary>She just landed on his neck: a roar, a stagger, a head shake, and the camera feels it.</summary>
         public void Mounted()

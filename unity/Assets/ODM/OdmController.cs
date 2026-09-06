@@ -783,12 +783,37 @@ namespace ODM
         }
 
         float landPoseTimer;
+        bool drewBlades, sheathedBlades; float ceremonyHold;
+
+        /// <summary>
+        /// The two clips that bracket the fight: she pulls the blades off the ODM boxes as the intro dive hands
+        /// her the controls, and puts them away once the Titan is down. Both are authored clips played once
+        /// (tools/author_clips.py), not poses: nothing else in the fight ever asks for them.
+        /// </summary>
+        void Ceremony()
+        {
+            var model = Ctx.Get<Characters.CharacterModel>("mikasaModel");
+            if (model == null) return;
+            if (!drewBlades && TitleDone && !InputHeld && !Riding && !Perched)
+            {
+                drewBlades = true; model.PlayClip("draw"); ceremonyHold = 0.6f;
+                if (Harness.Active) Debug.Log("[Ceremony] draw at t=" + Time.time.ToString("0.00"));
+            }
+            if (!sheathedBlades && !string.IsNullOrEmpty(Ctx.Get<string>("gameOver")))
+            {
+                sheathedBlades = true; model.PlayClip("sheathe"); ceremonyHold = 0.75f;
+                if (Harness.Active) Debug.Log("[Ceremony] sheathe at t=" + Time.time.ToString("0.00"));
+            }
+        }
+
         /// <summary>Drive whichever IPoser is registered for Mikasa (proxy or the real rig) from flight state.</summary>
         void UpdatePose()
         {
             var poser = Ctx.Get<Shared.Rigs.IPoser>("mikasaPoser");
             if (poser == null) return;
             landPoseTimer -= Time.deltaTime; slashTimer -= Time.deltaTime; staggerTimer -= Time.deltaTime; hitFlash -= Time.deltaTime;
+            Ceremony();
+            if (ceremonyHold > 0f) { ceremonyHold -= Time.deltaTime; if (slashTimer <= 0f && staggerTimer <= 0f) return; ceremonyHold = 0f; }   // the draw/sheathe owns the model unless the fight interrupts
             if (kickTimer > 0f) { kickTimer -= Time.deltaTime; if (!Perched) return; kickTimer = 0f; }   // the wallkick push-off owns the model
             Shared.Rigs.Pose want;
             if (Riding) want = FinalBlow ? Shared.Rigs.Pose.Final : stabTimer > 0f ? Shared.Rigs.Pose.Stab : Shared.Rigs.Pose.Ride;

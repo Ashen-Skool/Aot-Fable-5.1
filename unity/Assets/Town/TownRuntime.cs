@@ -122,18 +122,45 @@ namespace Town
                 RenderSettings.sun = sun;
             }
 
+            Fill();
+
             // Ambient from the sky itself (cool blue from above, warm bounce at the horizon), lifted a touch for the shadowed streets.
             RenderSettings.ambientMode = AmbientMode.Skybox;
             RenderSettings.ambientIntensity = 1.7f;
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = TownMaterials.FogColor;
-            RenderSettings.fogDensity = 0.0023f;
+            // 0.0023 saturated the outskirt meadow to pure fog colour well inside the treeline, and the grade
+            // then read that as a white page under the trees. 0.0017 keeps the town's depth and pushes the
+            // saturation point out past the far ridges.
+            RenderSettings.fogDensity = 0.0017f;
             QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
             DynamicGI.UpdateEnvironment();
             Grade();
             TownLife.Build(Info, Root.transform);
             AmbientBed.Ensure(Ctx.Get<Camera>("camera"));
+        }
+
+        /// <summary>
+        /// A dim, shadowless bounce light from the opposite side of the sun. The grade lost its contrast
+        /// (10 -> 6, shadows lifted to 0.13) because the shadow side of the towers went flat black and
+        /// filled half the frame; a directional fill fixes that where the problem actually is, so the
+        /// grade can carry its contrast again instead of washing the whole frame to lift one plane.
+        /// </summary>
+        static void Fill()
+        {
+            var go = new GameObject("SkyFill");
+            go.transform.SetParent(Root.transform, false);
+            var l = go.AddComponent<Light>();
+            l.type = LightType.Directional;
+            // opposite azimuth, higher up: the shadow sides face north-east here
+            float az = (SunAzimuth + 180f) * Mathf.Deg2Rad, el = 34f * Mathf.Deg2Rad;
+            var toFill = new Vector3(Mathf.Sin(az) * Mathf.Cos(el), Mathf.Sin(el), Mathf.Cos(az) * Mathf.Cos(el));
+            go.transform.rotation = Quaternion.LookRotation(-toFill, Vector3.up);
+            l.color = new Color(0.62f, 0.72f, 0.9f);   // sky bounce, cool against the warm key
+            l.intensity = 0.5f;
+            l.shadows = LightShadows.None;             // a second shadow cascade set for a fill is not worth the frame
+            l.renderMode = LightRenderMode.ForcePixel;
         }
 
         /// <summary>Global volume: ACES tonemapping, bloom for the sun and lit windows, warm highlights over cool shadows, a soft vignette.</summary>
@@ -150,12 +177,12 @@ namespace Town
             tone.mode.Override(TonemappingMode.ACES);
             var adj = prof.Add<ColorAdjustments>(true);
             adj.postExposure.Override(0.4f);
-            adj.saturation.Override(10f);
-            adj.contrast.Override(6f);      // 10 crushed the shadow side of the towers to black: they filled half the frame with nothing
+            adj.saturation.Override(6f);
+            adj.contrast.Override(9f);      // back up from 6: the SkyFill directional carries the shadow side now, so contrast no longer crushes it to black
             var wb = prof.Add<WhiteBalance>(true);
             wb.temperature.Override(8f);
             var smh = prof.Add<ShadowsMidtonesHighlights>(true);
-            smh.shadows.Override(new Vector4(0.92f, 0.96f, 1.08f, 0.13f));   // w = lift: stone reads in shadow instead of going flat black
+            smh.shadows.Override(new Vector4(0.9f, 0.95f, 1.1f, 0.05f));     // w = lift: only a touch now; a flat lift over the whole frame is what ate the contrast
             smh.highlights.Override(new Vector4(1.06f, 1.0f, 0.92f, 0f));
             var bloom = prof.Add<Bloom>(true);
             bloom.threshold.Override(0.95f);

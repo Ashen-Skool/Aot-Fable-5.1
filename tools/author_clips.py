@@ -62,6 +62,15 @@ NAPESTAB_HIT  = pose(hips=-18, spine=(30, 22, 12), neck=4, head=2, thighF=70, th
 NAPEFINAL_UP   = pose(hips=-18, spine=(0, 0, 0), neck=28, head=12, thighF=70, thighO=16, kneeF=135, footF=35, armF=(5, 5), armR=(180, 180), elbow=(40, 40), hand=(-15, -15))
 NAPEFINAL_DOWN = pose(hips=-18, spine=(34, 26, 14), neck=0, head=0, thighF=70, thighO=16, kneeF=135, footF=35, armF=(40, 40), armR=(-30, -30), elbow=(6, 6), hand=(-40, -40))
 
+# Draw and sheathe: the blades live in the boxes on the ODM rig at her hips. DRAW_STOW is hands empty and
+# down on the boxes, DRAW_GRIP is the reach back and the grip, DRAW_PULL is the sweep out, GUARD is the
+# combat-ready hold the rest of the fight starts from. Sheathe runs the same poses backwards into DRAW_REST.
+DRAW_STOW  = pose(spine=(2, 1, 0), neck=2, armF=(-14, -14), armR=(-40, -40), elbow=(22, 22), hand=(-14, -14))
+DRAW_GRIP  = pose(spine=(6, 4, 2), neck=6, head=3, armF=(-48, -48), armR=(-46, -46), elbow=(78, 78), hand=(-28, -28))
+DRAW_PULL  = pose(spine=(-4, -2, 0), neck=8, head=4, armF=(40, 40), armR=(28, 28), elbow=(20, 20), hand=(10, 10))
+DRAW_GUARD = pose(spine=(6, 3, 1), neck=7, head=4, thighF=8, thighO=5, kneeF=14, footF=6, armF=(38, 38), armR=(-6, -6), elbow=(52, 52), hand=(-8, -8))
+DRAW_REST  = pose(spine=(1, 1, 0), neck=2, armF=(0, 0), armR=(-38, -38), elbow=(12, 12), hand=(-6, -6))
+
 CLIPS = {
     "pL":  (30, False, [(0, {"LeftArm": (0, 0, 60)}), (9, {"LeftArm": (0, 0, 60)}), (10, {"LeftArm": (0, 0, -60)}), (19, {"LeftArm": (0, 0, -60)}), (20, {"LeftArm": (60, 0, 0)}), (29, {"LeftArm": (60, 0, 0)}), (30, {"LeftArm": (-60, 0, 0)})]),
     "pR":  (30, False, [(0, {"RightArm": (0, 0, 60)}), (9, {"RightArm": (0, 0, 60)}), (10, {"RightArm": (0, 0, -60)}), (19, {"RightArm": (0, 0, -60)}), (20, {"RightArm": (60, 0, 0)}), (29, {"RightArm": (60, 0, 0)}), (30, {"RightArm": (-60, 0, 0)})]),
@@ -73,6 +82,8 @@ CLIPS = {
     "naperide":  (60, True, breathe(NAPERIDE, amp=2.5, arm=2.0)),
     "napestab":  (16, False, [(0, NAPERIDE), (4, NAPESTAB_COCK), (8, NAPESTAB_HIT), (11, NAPESTAB_HIT), (16, NAPERIDE)]),
     "napefinal": (30, False, [(0, NAPERIDE), (12, NAPEFINAL_UP), (18, NAPEFINAL_DOWN), (30, NAPEFINAL_DOWN)]),
+    "draw":      (18, False, [(0, DRAW_STOW), (5, DRAW_GRIP), (11, DRAW_PULL), (18, DRAW_GUARD)]),
+    "sheathe":   (22, False, [(0, DRAW_GUARD), (7, DRAW_PULL), (14, DRAW_GRIP), (18, DRAW_STOW), (22, DRAW_REST)]),
 }
 
 def load_rig():

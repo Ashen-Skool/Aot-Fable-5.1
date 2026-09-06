@@ -17,6 +17,7 @@ from its own location, so it works from any clone or worktree
 | `tools/build.sh mac` | arm64 standalone → `builds/mac/AOT.app` | MAC_TIME |
 | `tools/build.sh webgl` | → `builds/webgl/` (gzip + decompression fallback, GitHub Pages safe) | WEBGL_TIME |
 | `tools/play.sh [seed]` | launch the mac build on the Studio, windowed 1080p, `-seed n` | instant |
+| `... -autoCrush N` | at N s, bring down the block of houses she faces; logs `CRUSH_OK`/`CRUSH_FAIL` | - |
 | `node tools/progress.mjs` | regenerate `progress.html` from `gauntlet/` | 0.03 s |
 | `tools/unity.sh <log> args…` | raw Unity batch wrapper; log in `logs/<log>.log` | – |
 

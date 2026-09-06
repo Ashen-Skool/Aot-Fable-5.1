@@ -32,6 +32,11 @@ namespace Town
         readonly Dictionary<long, Group> cells = new Dictionary<long, Group>(64);
         readonly Group wallGroup = new Group(), propGroup = new Group();
         readonly MeshKit colliderKit = new MeshKit();
+        // Per-house vertex spans, so a batched house can still be brought down one at a time (TownDestruction).
+        readonly List<TownDestruction.Parts> parts = new List<TownDestruction.Parts>(256);
+        readonly Dictionary<MeshKit, int> before = new Dictionary<MeshKit, int>(24);
+        readonly Dictionary<MeshKit, Mesh> emitted = new Dictionary<MeshKit, Mesh>(256);
+        TownDestruction.Parts current;
         Transform housesRoot, propsRoot;
         const float CellSize = 56f;
         static readonly Vector3 Up = Vector3.up;
@@ -66,6 +71,7 @@ namespace Town
             foreach (var kv in cells) Emit(kv.Value, housesRoot, "Cell_" + kv.Key, info.hookLayer);
             Emit(wallGroup, parent, "WallMesh", info.hookLayer);
             Emit(propGroup, propsRoot, "PropMesh", 0);
+            Destruction();
 
             Ctx.Set("town", info);
             Ctx.Set("town.bounds", info.bounds);
@@ -74,6 +80,7 @@ namespace Town
             Ctx.Set("town.rooftops", info.rooftops.ToArray());
             Ctx.Set("town.hookLayer", info.hookLayer);
             Ctx.Set("town.root", info.root);
+            Ctx.Set("town.destruction", info.destruction);
             return info;
         }
 
@@ -85,7 +92,7 @@ namespace Town
             return g;
         }
 
-        static void Emit(Group g, Transform parent, string name, int layer)
+        void Emit(Group g, Transform parent, string name, int layer)
         {
             int i = 0;
             foreach (var kv in g.kits)
@@ -94,7 +101,9 @@ namespace Town
                 var go = new GameObject(name + "_" + kv.Key.name + "_" + i++);
                 go.transform.SetParent(parent, false);
                 go.layer = layer;
-                go.AddComponent<MeshFilter>().sharedMesh = kv.Value.Build(go.name);
+                var mesh = kv.Value.Build(go.name);
+                emitted[kv.Value] = mesh;
+                go.AddComponent<MeshFilter>().sharedMesh = mesh;
                 var mr = go.AddComponent<MeshRenderer>();
                 mr.sharedMaterial = kv.Key;
                 mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
@@ -104,10 +113,57 @@ namespace Town
 
         // ---------------------------------------------------------------- houses
 
+        /// <summary>
+        /// Builds one house and records, per mesh kit it touched, the contiguous vertex span it owns.
+        /// Houses are appended one whole house at a time, so every span is contiguous; TownDestruction
+        /// rewrites exactly those vertices when the house comes down.
+        /// </summary>
         void House(HouseSpec h)
         {
-            var xf = Matrix4x4.TRS(h.pos, Quaternion.Euler(0f, h.Yaw, 0f), Vector3.one);
             var g = Cell(h.pos);
+            before.Clear();
+            foreach (var kv in g.kits) before[kv.Value] = kv.Value.VertexCount;
+            current = new TownDestruction.Parts { spec = h };
+            currentKits = new List<MeshKit>(16);
+            HouseGeo(h, g);
+            foreach (var kv in g.kits)
+            {
+                int start = before.TryGetValue(kv.Value, out var c) ? c : 0;
+                int count = kv.Value.VertexCount - start;
+                if (count <= 0) continue;
+                current.meshes.Add(null);   // resolved to the mesh Emit builds, in Destruction()
+                current.starts.Add(start);
+                current.counts.Add(count);
+                currentKits.Add(kv.Value);
+            }
+            parts.Add(current);
+            partKits.Add(currentKits);
+            current = null; currentKits = null;
+        }
+
+        readonly List<List<MeshKit>> partKits = new List<List<MeshKit>>(256);
+        List<MeshKit> currentKits;
+
+        /// <summary>Resolves the recorded spans onto the meshes Emit built and hangs the crusher off the town root.</summary>
+        void Destruction()
+        {
+            for (int i = 0; i < parts.Count; i++)
+            {
+                var p = parts[i]; var pk = partKits[i];
+                for (int s = p.meshes.Count - 1; s >= 0; s--)
+                {
+                    if (emitted.TryGetValue(pk[s], out var m)) { p.meshes[s] = m; continue; }
+                    p.meshes.RemoveAt(s); p.starts.RemoveAt(s); p.counts.RemoveAt(s);   // kit never emitted (empty)
+                }
+            }
+            var d = info.root.AddComponent<TownDestruction>();
+            d.Init(parts);
+            info.destruction = d;
+        }
+
+        void HouseGeo(HouseSpec h, Group g)
+        {
+            var xf = Matrix4x4.TRS(h.pos, Quaternion.Euler(0f, h.Yaw, 0f), Vector3.one);
             float hw = h.w * 0.5f, hd = h.d * 0.5f, top = h.WallTop, g0 = h.baseH + h.storeyH;
             float ov = h.Overhang, og = h.GableOverhang;
             var uv = h.uvOffset;
@@ -221,6 +277,46 @@ namespace Town
                 Opening(g, xf, new Vector3(dx, ys - 0.55f, zs - 1.3f), Vector3.back, 0.8f, 1.0f, false, h, kPale, kGlass, kShut, kStone, kTimber);
             }
 
+            // attic hatch: the plank lid a soldier comes up through, sitting proud of the tiles on the front slope
+            if (h.Hatch)
+            {
+                float run = h.gableFront ? hw + ov : hd + ov;
+                float rise = h.RidgeY - eave;
+                float ang = Mathf.Atan2(rise, run);
+                float angDeg = ang * Mathf.Rad2Deg;
+                float ht = Mathf.Clamp(h.HatchT, 0.25f, 0.72f);
+                float y = Mathf.Lerp(eave, h.RidgeY, ht);
+                float lw = Mathf.Min(1.0f, (h.gableFront ? h.d : h.w) * 0.16f);   // never wider than the roof it sits on
+                var lid = new Vector3(lw, 0.09f, 0.86f);
+                Vector3 c, nrm; Quaternion rot;
+                if (!h.gableFront)
+                {
+                    float z = Mathf.Lerp(rmin.z, 0f, ht);
+                    float x = h.HatchOff * (hw - lw);
+                    c = new Vector3(x, y, z);
+                    rot = Quaternion.Euler(-angDeg, 0f, 0f);
+                    nrm = new Vector3(0f, Mathf.Cos(ang), -Mathf.Sin(ang));
+                }
+                else
+                {
+                    float x = Mathf.Lerp(rmin.x, 0f, ht);
+                    float z = h.HatchOff * (hd - lw);
+                    c = new Vector3(x, y, z);
+                    rot = Quaternion.Euler(0f, 0f, angDeg);
+                    nrm = new Vector3(-Mathf.Sin(ang), Mathf.Cos(ang), 0f);
+                    lid = new Vector3(0.86f, 0.09f, lw);
+                }
+                // a dark opening under the lid, the lid itself, and two hinge straps across it
+                kDark.BoxRot(c + nrm * 0.02f, new Vector3(lid.x + 0.14f, 0.1f, lid.z + 0.14f), rot);
+                kTimber.BoxRot(c + nrm * 0.09f, lid, rot);
+                for (int s = -1; s <= 1; s += 2)
+                {
+                    var along = rot * (h.gableFront ? Vector3.forward : Vector3.right);
+                    kDark.BoxRot(c + nrm * 0.15f + along * (s * (h.gableFront ? lid.z : lid.x) * 0.3f),
+                                 h.gableFront ? new Vector3(lid.x * 0.9f, 0.05f, 0.1f) : new Vector3(0.1f, 0.05f, lid.z * 0.9f), rot);
+                }
+            }
+
             // rooftop points along the ridge (world space)
             for (int i = 0; i < 3; i++)
             {
@@ -244,6 +340,7 @@ namespace Town
             var mc = go.AddComponent<MeshCollider>();
             mc.sharedMesh = colliderKit.Build("roof");
             mc.convex = true;
+            if (current != null) current.colliders = go;
         }
 
         /// <summary>Windows and the door on one face. outN is the outward normal in house-local space.</summary>

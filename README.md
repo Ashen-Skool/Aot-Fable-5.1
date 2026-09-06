@@ -6,7 +6,7 @@ A ten-minute playable Attack on Titan homage in Unity 6, built through the CLI
 on the Mac Studio by a gauntlet loop of builder and critic sub-agents. Started
 2026-09-01. **Read this whole file before doing anything.**
 
-## STATE (2026-09-05 evening, read this, the rest of this file is history)
+## STATE (2026-09-06, read this, the rest of this file is history)
 
 Scope is v2: one district, one 15 m Titan, Mikasa, three-minute loop. No agent loops; the director builds by hand
 and the user is the critic (he plays the mac build on his laptop; never screenshot or drive his machine).
@@ -120,11 +120,35 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
   wall): the wallperch/wallkick legs were re-keyed to reach back, the perch camera hangs in the street looking at her, a hook in the
   Titan never perches, the bulldoze is clamped to `town.bounds`.
 
-**Open items:** houses are not crushable (the bulldoze clips through them with dust; house meshes are batched per cell, so per-house
-hiding needs a builder change); user to confirm the grey squares are gone with smoke/dust/mist on (fallback: ship with them off by default);
-building destruction is rubble/dust only; attic hatches skipped; fist roll and Titan wrist numbers from the user; draw/sheathe pose;
-the tower grid visually swallows the town from above (cannons live there, his call); outskirt ground lifts toward the fog from above.
-The grade lost some contrast on 2026-09-05 evening (contrast 10 -> 6, shadow lift 0.13) because the shadow side of the towers was flat black.
+- Day of 09-06: **houses come down.** `Town/TownDestruction.cs` records, per house, the contiguous vertex span it owns inside each
+  batched (cell, material) mesh, then writes those spans into a broken pile over 1.05 s: the ridge and the upper storeys fall furthest
+  and are thrown along the hit, the ground floor stays as a stub, the roof MeshCollider goes and the body box drops to pile height so
+  the rubble is walkable. Original normals are kept through the fall on purpose (the pile shuffles vertices past each other, so
+  recalculating flips half the quads to black). Dust up the whole height plus mesh debris, camera shake by distance, a pitch-dropped
+  crash. `Shared/ICrush.cs` is how Proxies reaches it without referencing Town (`Ctx "town.destruction"`); `TitanBrain` crushes on the
+  bulldoze (he used to clip through the block with a dust puff) and under a stomp. `-autoCrush N` flattens the block she faces and
+  logs CRUSH_OK. Two EditMode tests prove a crush moves that house's vertices and nothing else's, anywhere in the district.
+- Day of 09-06: **grade contrast restored.** A dim shadowless directional fill (`TownRuntime.Fill`, sky-blue, opposite azimuth, 0.5)
+  carries the shadow side of the towers, so contrast goes 6 -> 9, saturation 10 -> 6 and the flat shadow lift drops 0.13 -> 0.05.
+  Lifting the whole frame to rescue one plane is what ate the contrast in the first place.
+- Day of 09-06: **the outskirts stop lifting into the fog.** The meadow was dead flat for the first third of the ring with only 2200
+  trees over 250 m, so from a rooftop it was a horizontal sheet running to the horizon; once exp-squared fog at 0.0023 saturated it to
+  the bright horizon grey, the grade rendered it as a white page with trees stuck on. It rolls from the fence now (near swells, ridges
+  further out), 5200 trees and 3000 bushes carry out to the far ridges, hills/trees/undergrowth render in five distance bands each
+  pre-darkened against the fog, and fog density is 0.0017. Verified from `wall_top` and `town_rooftop`.
+- Day of 09-06: **attic hatches** - a plank lid with hinge straps over a dark opening, proud of the tiles on the front slope, on about
+  half the houses (`HouseSpec.Hatch/HatchT/HatchOff`, deterministic per house like `LitWindows`).
+- Day of 09-06: **draw and sheathe.** Authored in `tools/author_clips.py` (DRAW_STOW/GRIP/PULL/GUARD/REST), merged into `Mikasa.fbx`
+  (30 clips) and registered in the `.meta` `clipAnimations`. `OdmController.Ceremony` plays `draw` once as the intro dive hands over
+  the controls and `sheathe` once when `gameOver` lands; both verified in a real build (`[Ceremony] draw` / `[Ceremony] sheathe`).
+  They are clips, not poses - nothing else in the fight asks for them. The blade props still stay in her fists: the clips read as
+  taking them off the boxes, but nothing is actually stowed, which is the user's call to make.
+
+**Open items:** user to confirm the grey squares are gone with smoke/dust/mist on (fallback: ship with them off by default);
+fist roll and Titan wrist numbers from the user; the tower grid visually swallows the town from above (cannons live there, his call).
+Crushed houses settle as a flattish field of shards rather than a heaped mound - the collapse moves vertices, so the big roof and wall
+quads lie down whole; a real mound needs per-face chunking. A crushed house keeps smoking from its chimney (`TownLife` holds the
+chimney list). Blade stow geometry for draw/sheathe (see above).
 
 **Process notes:** the Studio working copy that actually builds is the director lane `~/dev/lanes/director` (on main); set
 (`tools/_remote.sh` defaults to it now). `remote()` runs `git checkout -q -- .` before every command: Unity's import churn
