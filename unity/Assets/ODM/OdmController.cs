@@ -216,11 +216,22 @@ namespace ODM
             rb.isKinematic = false;
             Vector3 back = rideBrain != null ? -rideBrain.transform.forward : -transform.forward;
             Vector3 side = rideBrain != null ? rideBrain.transform.right * (Random.value < 0.5f ? -1f : 1f) : transform.right;
+            // she was parented inside his neck collider: step clear of it and let his body pass through her for a moment,
+            // or the de-penetration pins her at nape height with zero velocity
+            rb.position = rb.position + side * 2.2f + Vector3.up * 0.6f;
+            if (rideBrain != null) StartCoroutine(IgnoreBody(rideBrain.GetComponentsInChildren<Collider>(), 1.5f));
             rb.linearVelocity = jump ? back * 9f + Vector3.up * 7f : side * 7f + back * 2f + Vector3.up * 9f;   // off the side, clear of the falling body
             // off the neck with a flip (the plain Fly frame looked stiff on the way down), then the landing takes over
             var model = Ctx.Get<Characters.CharacterModel>("mikasaModel");
             if (model != null) { model.PlayClip("spinjump"); kickTimer = 0.9f; }
             rideBrain = null; stabTimer = 0f; finalTimer = 0f;
+        }
+
+        System.Collections.IEnumerator IgnoreBody(Collider[] cols, float seconds)
+        {
+            foreach (var c in cols) if (c != null && capsule != null) Physics.IgnoreCollision(capsule, c, true);
+            yield return new WaitForSeconds(seconds);
+            foreach (var c in cols) if (c != null && capsule != null) Physics.IgnoreCollision(capsule, c, false);
         }
 
         float mantleT, mantleDur = 0.32f; Vector3 mantleFrom, mantleTo, mantleFacing;
