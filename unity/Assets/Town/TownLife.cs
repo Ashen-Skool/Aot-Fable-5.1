@@ -49,14 +49,35 @@ namespace Town
         }
 
         /// <summary>Every third chimney (up to 90) trails a thin, wind-bent plume.</summary>
+        /// <summary>Every chimney's smoke, so a house that comes down can have its own put out (TownDestruction).</summary>
+        static readonly System.Collections.Generic.List<ParticleSystem> smokes = new System.Collections.Generic.List<ParticleSystem>(96);
+
+        /// <summary>Stop the chimney smoke inside radius of p. A pile of rubble does not have a fire lit in it.</summary>
+        public static void Douse(Vector3 p, float radius)
+        {
+            float r2 = radius * radius;
+            for (int i = smokes.Count - 1; i >= 0; i--)
+            {
+                var ps = smokes[i];
+                if (ps == null) { smokes.RemoveAt(i); continue; }
+                var d = ps.transform.position - p; d.y = 0f;
+                if (d.sqrMagnitude > r2) continue;
+                var em = ps.emission; em.enabled = false;   // the plume already in the air drifts off on its own
+                ps.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+                smokes.RemoveAt(i);
+            }
+        }
+
         static void Smoke(TownInfo info, Transform root, System.Random rng)
         {
+            smokes.Clear();   // Reboot rebuilds the town
             int made = 0;
             var wind = Quaternion.Euler(0f, TownRuntime.SunAzimuth + 100f, 0f) * Vector3.forward;
             for (int i = 0; i < info.chimneys.Count && made < 90; i += 3)
             {
                 if (rng.NextDouble() < 0.25) continue;
                 var ps = NewSystem(root, "Smoke", info.chimneys[i]);
+                smokes.Add(ps);
                 var main = ps.main;
                 main.simulationSpace = ParticleSystemSimulationSpace.World;
                 main.startLifetime = new ParticleSystem.MinMaxCurve(7f, 11f);

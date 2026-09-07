@@ -116,7 +116,7 @@ namespace Town
             for (int n = 0; n < 14000 && placed < 5200; n++)
             {
                 // out to the far ridges, not just the first 250 m: bare meadow at range is what read as a sheet
-                float a = (float)rng.NextDouble() * Mathf.PI * 2f; float r = r0 - 14f + Mathf.Pow((float)rng.NextDouble(), 0.75f) * (r1 - r0 + 20f);
+                float a = (float)rng.NextDouble() * Mathf.PI * 2f; float r = Mathf.Min(r1 - 4f, r0 - 14f + Mathf.Pow((float)rng.NextDouble(), 0.75f) * (r1 - r0 + 20f));
                 float x = b.center.x + Mathf.Cos(a) * r, z = b.center.z + Mathf.Sin(a) * r;
                 if (z > L.wallZ0 - 8f) continue;
                 float y = SampleHills(verts, b.center, r0, r1, rings, segs, x, z);
@@ -170,14 +170,29 @@ namespace Town
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
+        /// <summary>
+        /// Ground height under (x, z) on the hill ring, bilinear between the four surrounding grid vertices.
+        /// It used to snap to the nearest ring and segment, which was harmless while the meadow was flat but put
+        /// trees metres into the air once the ridges rose: one ring step out there is tens of metres of height,
+        /// and rounding to the nearest one floats or buries everything standing between two rings.
+        /// </summary>
         static float SampleHills(List<Vector3> verts, Vector3 c, float r0, float r1, int rings, int segs, float x, float z)
         {
             float r = Vector2.Distance(new Vector2(x, z), new Vector2(c.x, c.z));
             float t = Mathf.Clamp01((r - r0) / (r1 - r0));
-            int i = Mathf.Clamp(Mathf.RoundToInt(t * rings), 0, rings);
+            float fi = t * rings;
+            int i0 = Mathf.Clamp(Mathf.FloorToInt(fi), 0, rings - 1); int i1 = i0 + 1;
+            float ti = Mathf.Clamp01(fi - i0);
+
             float a = Mathf.Atan2(z - c.z, x - c.x); if (a < 0f) a += Mathf.PI * 2f;
-            int j = Mathf.Clamp(Mathf.RoundToInt(a / (Mathf.PI * 2f) * segs), 0, segs);
-            return verts[i * (segs + 1) + j].y;
+            float fj = a / (Mathf.PI * 2f) * segs;
+            int j0 = Mathf.Clamp(Mathf.FloorToInt(fj), 0, segs - 1); int j1 = j0 + 1;   // the row has segs+1 vertices, the last repeating the first
+            float tj = Mathf.Clamp01(fj - j0);
+
+            int w = segs + 1;
+            float h00 = verts[i0 * w + j0].y, h01 = verts[i0 * w + j1].y;
+            float h10 = verts[i1 * w + j0].y, h11 = verts[i1 * w + j1].y;
+            return Mathf.Lerp(Mathf.Lerp(h00, h01, tj), Mathf.Lerp(h10, h11, tj), ti);
         }
 
         // ---------------------------------------------------------------- streets

@@ -162,12 +162,18 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
   colliders hang off the proxy skeleton, which stops being posed the moment the Meshy model dresses him, so a zone-only seat was
   really root-relative.
 
-**Known, not fixed:** nothing is on the `Titan` physics layer. `OdmBoot` only ever assigned it to the 7 m proxy, never to the boss,
-so `hookReal` ("a hook in the Titan never ends in a perch") and the `bossDead`-as-ground mask are both keyed off a layer the boss was
-never on. Putting the boss on it also changes `TitanBrain.Steer`'s probe mask, so it is a real behaviour change and wants a play-test.
+- Day of 09-07: **trees no longer fly.** `SampleHills` snapped to the nearest ring and segment, which was harmless while the meadow
+  was flat but floated trees metres into the air once the ridges rose (one ring step out there is tens of metres of height). It is
+  bilinear over the four surrounding grid vertices now, and the treeline is clamped inside `r1` so nothing is placed off the mesh.
+- Day of 09-07: **the boss is on the `Titan` layer.** Only the 7 m proxy was ever put there, and he is gone, so `HookMask`
+  (HookTarget | Titan) did not include the boss - he could not be hooked at all - while `GroundMask` (Default | HookTarget) did, so
+  she could stand on a living Titan. Both are what the layer exists for. `TitanBrain.Steer` now names the HookTarget layer outright
+  instead of `~(1 << own layer)`, which had quietly meant "everything except Default" while he sat on Default. Play-tested: he still
+  closes and lands five attacks over a 40 s run, hooks still anchor.
+- Day of 09-07: crushed houses stop smoking (`TownLife.Douse`, called from the crush).
 
-**Open items:** user to confirm the grey squares are gone with smoke/dust/mist on (fallback: ship with them off by default);
-fist roll and Titan wrist numbers from the user; the tower grid visually swallows the town from above (cannons live there, his call).
+**Open items:** the tower grid visually swallows the town from above (cannons live there, his call).
+(Grey squares confirmed gone by the user 2026-09-07, with the effects on. Fist roll and Titan wrist roll confirmed fine at 0 deg.)
 Crushed houses settle as a flattish field of shards rather than a heaped mound - the collapse moves vertices, so the big roof and wall
 quads lie down whole; a real mound needs per-face chunking. A crushed house keeps smoking from its chimney (`TownLife` holds the
 chimney list). Blade stow geometry for draw/sheathe (see above).

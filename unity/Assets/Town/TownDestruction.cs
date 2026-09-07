@@ -146,6 +146,7 @@ namespace Town
             }
             falling.Add(i); fallT.Add(0f);
             Drop(h);
+            TownLife.Douse(h.pos, h.reach + 2.5f);   // its chimney is in the pile now
             Burst(h, dir);
         }
 

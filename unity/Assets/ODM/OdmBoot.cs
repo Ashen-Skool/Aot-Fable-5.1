@@ -47,6 +47,12 @@ namespace ODM
             }
             var titan = Ctx.Get<GameObject>("titan");
             if (titan != null) SetLayerDeep(titan.transform, OdmLayers.Titan);
+            // The boss was never put on the Titan layer - only the 7 m proxy ever was, and he is gone. So HookMask
+            // (HookTarget | Titan) did not include him and he could not be hooked at all, while GroundMask (Default |
+            // HookTarget) did, so she could stand on a living Titan. Both of those are what the layer exists for:
+            // hookReal refuses a perch off a Titan, and the bossDead mask makes a dead one walkable.
+            var boss = Ctx.Get<GameObject>("boss");
+            if (boss != null) SetLayerDeep(boss.transform, OdmLayers.Titan);
             var placeholder = Ctx.Get<GameObject>("placeholder");
             if (placeholder != null) SetLayerDeep(placeholder.transform, OdmLayers.Hook);
             if (buildGrid) { var g = HookTestGrid.Build(Ctx.Get<int>("seed")); Ctx.Set("odmGrid", (object)g); }

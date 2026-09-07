@@ -160,7 +160,11 @@ namespace Proxies
         {
             float r = height * 0.16f; Vector3 origin = transform.position + Vector3.up * height * 0.45f;
             float look = Mathf.Max(step * 8f, height * 0.5f);
-            int mask = ~(1 << gameObject.layer);
+            // Buildings only, named outright. This used to be ~(1 << his own layer), which quietly meant "everything
+            // except Default" while he sat on Default; now that he is on the Titan layer that would have started
+            // probing market stalls and the boundary walls too. What he needs to walk around is houses and the wall.
+            int hookLayer = LayerMask.NameToLayer("HookTarget");
+            int mask = hookLayer >= 0 ? (1 << hookLayer) : ~(1 << gameObject.layer);
             float Free(Vector3 d)
             {
                 if (!Physics.SphereCast(origin, r, d, out var h, look, mask, QueryTriggerInteraction.Ignore)) return look;
