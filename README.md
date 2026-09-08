@@ -172,11 +172,30 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
   closes and lands five attacks over a 40 s run, hooks still anchor.
 - Day of 09-07: crushed houses stop smoking (`TownLife.Douse`, called from the crush).
 
+- Day of 09-08: **the WebGL build works and ships.** It had not been rebuilt since 09-01. Now verified in a browser at
+  **85 FPS** with the district, the Titan, the fight and house destruction all intact.
+  - `Hud.Video` guarded on `System.IO.File.Exists`, but on WebGL `Application.streamingAssetsPath` is an http URL, so the check was
+    always false: the title video never played (you got the live orbit) and the nape cutscene was skipped. It probes the disk only
+    when StreamingAssets is on disk now, and lets the VideoPlayer 404 over http.
+  - **99 MB -> 40 MB**, under the brief's 60 MB. `Editor/Build/WebGLTextures.cs` writes a per-platform WebGL budget into every
+    texture importer (256-1024 by folder, DXT); `qwantani.hdr` was unused but sat in Resources and shipped anyway (4.4 MB); the two
+    mp4s were 12 and 20 Mbps and are re-encoded to 1600 px CRF 26 with no audio (25 MB -> 4 MB). The mac build is untouched.
+  - **URL query flags.** WebGL has no command line, so no `-no*` toggle or harness flag worked in a browser. `Bootstrap.Args` now
+    folds the page's query string in: `index.html?-fpslog&-autoStart=2&-noShadows` behaves like the same switches on the desktop
+    build. This is how the browser build gets bisected.
+  - **`Assets/WebGLTemplates/AOT`**: the stock template pins the canvas at 960x600 on a white page. This one is full-bleed, follows
+    resizes, caps devicePixelRatio at 2, keeps a fullscreen button, focuses the canvas so the keyboard works without a click first,
+    and ignores `chrome-extension://` errors (a wallet extension was painting a red banner across the game).
+  - `link.xml` preserves `SphereCollider`: `CreatePrimitive(Sphere)` attaches one from native code, the stripper could not see it,
+    and the browser console filled with "class doesn't exist". `Harness` no longer reads `triangles` on non-readable meshes.
+  - `TownDestruction` marks a mesh dynamic only when a house in it actually falls, instead of every town mesh up front.
+  - **Measuring lesson:** a Chrome tab that is not visible is throttled to exactly 1 Hz. A browser FPS reading is only real with
+    `document.hidden === false`; several builds were bisected against a phantom "1 FPS" before that was checked.
+
 **Open items:** the tower grid visually swallows the town from above (cannons live there, his call).
 (Grey squares confirmed gone by the user 2026-09-07, with the effects on. Fist roll and Titan wrist roll confirmed fine at 0 deg.)
 Crushed houses settle as a flattish field of shards rather than a heaped mound - the collapse moves vertices, so the big roof and wall
-quads lie down whole; a real mound needs per-face chunking. A crushed house keeps smoking from its chimney (`TownLife` holds the
-chimney list). Blade stow geometry for draw/sheathe (see above).
+quads lie down whole; a real mound needs per-face chunking. Blade stow geometry for draw/sheathe (see above).
 
 **Process notes:** the Studio working copy that actually builds is the director lane `~/dev/lanes/director` (on main); set
 (`tools/_remote.sh` defaults to it now). `remote()` runs `git checkout -q -- .` before every command: Unity's import churn

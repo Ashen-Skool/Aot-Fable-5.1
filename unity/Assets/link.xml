@@ -1,0 +1,12 @@
+<!--
+  Engine code stripping drops classes nothing references from script. GameObject.CreatePrimitive(Sphere)
+  attaches a SphereCollider from native code, which the stripper cannot see, so the WebGL build logged
+  "Can't add component because class 'SphereCollider' doesn't exist!" for every primitive sphere
+  (cannon shells, proxy heads). Harmless - every call site destroys the collider immediately - but it
+  filled the browser console. Preserve the type instead.
+-->
+<linker>
+  <assembly fullname="UnityEngine.PhysicsModule">
+    <type fullname="UnityEngine.SphereCollider" preserve="all" />
+  </assembly>
+</linker>

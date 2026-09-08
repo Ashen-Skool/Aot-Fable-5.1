@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Shared
@@ -40,9 +41,37 @@ namespace Shared
             return go.AddComponent<Bootstrap>();
         }
 
+        /// <summary>
+        /// The switch list for this run. On a player that is the real command line; on WebGL there is no command
+        /// line, so the page URL's query string stands in: index.html?-noPost&-autoStart=2 behaves like the same
+        /// flags on the desktop build. Without this nothing in PerfToggles or Harness can be bisected in a browser.
+        /// </summary>
+        public static string[] Args
+        {
+            get
+            {
+                if (argCache != null) return argCache;
+                var cmd = Environment.GetCommandLineArgs();
+                var url = Application.absoluteURL;
+                int q = string.IsNullOrEmpty(url) ? -1 : url.IndexOf('?');
+                if (q < 0) return argCache = cmd;
+                var list = new List<string>(cmd);
+                foreach (var part in url.Substring(q + 1).Split('&'))
+                {
+                    if (part.Length == 0) continue;
+                    var kv = Uri.UnescapeDataString(part).Split(new[] { '=' }, 2);
+                    var key = kv[0].StartsWith("-") ? kv[0] : "-" + kv[0];
+                    list.Add(key);
+                    if (kv.Length > 1) list.Add(kv[1]);
+                }
+                return argCache = list.ToArray();
+            }
+        }
+        static string[] argCache;
+
         public static int ArgInt(string flag, int fallback)
         {
-            var args = Environment.GetCommandLineArgs();
+            var args = Args;
             for (int i = 0; i < args.Length - 1; i++)
                 if (args[i] == flag && int.TryParse(args[i + 1], out var v)) return v;
             return fallback;
@@ -50,7 +79,7 @@ namespace Shared
 
         public static string Arg(string flag, string fallback = null)
         {
-            var args = Environment.GetCommandLineArgs();
+            var args = Args;
             for (int i = 0; i < args.Length - 1; i++)
                 if (args[i] == flag) return args[i + 1];
             return fallback;

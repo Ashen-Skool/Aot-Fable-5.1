@@ -28,6 +28,9 @@ namespace Build
 
         public static void WebGL()
         {
+            // The stock template pins the canvas at 960x600 on a white page; Assets/WebGLTemplates/AOT fills the
+            // viewport, follows resizes, and keeps a fullscreen button. Set here so a fresh clone builds it too.
+            PlayerSettings.WebGL.template = "PROJECT:AOT";
             Do("webgl", BuildTarget.WebGL, Path.Combine(Repo, "builds", "webgl"));
         }
 

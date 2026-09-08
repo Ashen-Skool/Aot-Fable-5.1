@@ -22,11 +22,11 @@ namespace Shared
         {
             if (inst != null) return;
             float q = Bootstrap.ArgInt("-quitAfter", -1), r = Bootstrap.ArgInt("-autoRestart", -1);
-            bool f = Bootstrap.Arg("-fpslog", null) != null || System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-fpslog") >= 0;
+            bool f = Bootstrap.Arg("-fpslog", null) != null || System.Array.IndexOf(Bootstrap.Args, "-fpslog") >= 0;
             float a = Bootstrap.ArgInt("-autoStart", -1); float k = Bootstrap.ArgInt("-autoKill", -1); float fl = Bootstrap.ArgInt("-autoFly", -1); float sl = Bootstrap.ArgInt("-autoSlash", -1); float pa = Bootstrap.ArgInt("-autoPause", -1); float ri = Bootstrap.ArgInt("-autoRide", -1); float ph = Bootstrap.ArgInt("-autoPhase", -1); float pe = Bootstrap.ArgInt("-autoPerch", -1); float cr = Bootstrap.ArgInt("-autoCrush", -1); int px = (int)Bootstrap.ArgInt("-perchExit", 0);
             int stabs = Bootstrap.ArgInt("-autoStabs", 0);
             string shots = Bootstrap.Arg("-screenshotAt"); string dir = Bootstrap.Arg("-shotDir", "shots/play");
-            bool tl = System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-titanLog") >= 0;
+            bool tl = System.Array.IndexOf(Bootstrap.Args, "-titanLog") >= 0;
             if (q < 0f && r < 0f && !f && a < 0f && k < 0f && fl < 0f && sl < 0f && pa < 0f && pe < 0f && cr < 0f && stabs <= 0 && !tl && shots == null) return;
             var go = new GameObject("Harness"); DontDestroyOnLoad(go);
             inst = go.AddComponent<Harness>(); inst.quitAt = q; inst.restartAt = restarted ? -1f : r; inst.fps = f; inst.t0 = Time.realtimeSinceStartup; inst.autoStart = a; inst.autoKill = k; inst.autoFly = fl; inst.autoSlash = sl; inst.autoPause = pa; inst.autoRide = ri; inst.autoPhase = ph; inst.autoStabs = stabs; inst.nextStabAt = sl; inst.autoPerch = pe; inst.autoCrush = cr; inst.perchExit = px; inst.shotDir = dir; inst.titanLog = tl;
@@ -138,10 +138,11 @@ namespace Shared
                     {
                         if (mf.sharedMesh == null) continue; var r = mf.GetComponent<Renderer>(); if (r == null || !r.enabled) continue;
                         renderers++; if (!seen.Add(mf.sharedMesh)) continue;   // static batching shares one combined mesh across many renderers
-                        verts += mf.sharedMesh.vertexCount; tris += mf.sharedMesh.triangles.Length / 3;
+                        verts += mf.sharedMesh.vertexCount;
+                        if (mf.sharedMesh.isReadable) tris += mf.sharedMesh.triangles.Length / 3;   // imported meshes are not readable in a build; reading them logged an error per mesh
                         if (r.shadowCastingMode != UnityEngine.Rendering.ShadowCastingMode.Off) casters++;
                     }
-                    foreach (var sk in Object.FindObjectsByType<SkinnedMeshRenderer>(FindObjectsSortMode.None)) { if (sk.sharedMesh != null) { verts += sk.sharedMesh.vertexCount; tris += sk.sharedMesh.triangles.Length / 3; renderers++; } }
+                    foreach (var sk in Object.FindObjectsByType<SkinnedMeshRenderer>(FindObjectsSortMode.None)) { if (sk.sharedMesh != null) { verts += sk.sharedMesh.vertexCount; if (sk.sharedMesh.isReadable) tris += sk.sharedMesh.triangles.Length / 3; renderers++; } }
                     Debug.Log("[Scene] renderers=" + renderers + " shadowCasters=" + casters + " verts=" + verts + " tris=" + tris + " vsync=" + QualitySettings.vSyncCount + " target=" + Application.targetFrameRate + " msaa=" + QualitySettings.antiAliasing);
                 }
             }

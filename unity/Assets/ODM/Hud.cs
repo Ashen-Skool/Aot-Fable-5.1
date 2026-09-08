@@ -24,8 +24,14 @@ namespace ODM
             if (videoFile != file)
             {
                 StopVideo(); videoFile = file;
-                var path = System.IO.Path.Combine(Application.streamingAssetsPath, file);
-                if (System.IO.File.Exists(path))
+                // On WebGL, streamingAssetsPath is an http:// URL, so File.Exists is always false and the videos
+                // silently never played: the title showed the live orbit and the nape cutscene was skipped. Only
+                // probe the disk where StreamingAssets is actually on disk; over http let the VideoPlayer 404.
+                bool overHttp = Application.streamingAssetsPath.Contains("://");
+                var path = overHttp
+                    ? Application.streamingAssetsPath.TrimEnd('/') + "/" + file
+                    : System.IO.Path.Combine(Application.streamingAssetsPath, file);
+                if (overHttp || System.IO.File.Exists(path))
                 {
                     var go = new GameObject("HudVideo"); Object.DontDestroyOnLoad(go);
                     if (titleRt == null) titleRt = new RenderTexture(1920, 1080, 0);

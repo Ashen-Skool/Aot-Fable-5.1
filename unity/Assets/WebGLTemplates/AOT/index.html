@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes">
+    <title>{{{ PRODUCT_NAME }}}</title>
+    <style>
+      html, body { margin: 0; padding: 0; height: 100%; background: #07080a; overflow: hidden; }
+      /* The stock template pins the canvas at 960x600 in the middle of a white page. This one fills the
+         viewport and follows every resize, so the game is full-bleed the moment it loads. */
+      #unity-container { position: fixed; inset: 0; }
+      #unity-canvas { display: block; width: 100%; height: 100%; background: #07080a; outline: none; }
+      #unity-loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+                       background: #07080a; color: #d8cdbb; font: 500 13px/1.5 "Helvetica Neue", Arial, sans-serif; letter-spacing: .18em; text-transform: uppercase; }
+      #unity-bar { width: min(340px, 60vw); height: 2px; margin-top: 18px; background: #26221d; }
+      #unity-bar-fill { width: 0; height: 100%; background: #c8a05a; transition: width .2s ease-out; }
+      #unity-fullscreen { position: fixed; right: 14px; bottom: 12px; z-index: 5; width: 30px; height: 30px; padding: 0;
+                          border: 1px solid rgba(216,205,187,.35); border-radius: 4px; background: rgba(7,8,10,.55); color: #d8cdbb;
+                          font-size: 15px; line-height: 28px; text-align: center; cursor: pointer; opacity: .35; transition: opacity .15s; }
+      #unity-fullscreen:hover { opacity: 1; }
+      #unity-warning { position: fixed; left: 50%; top: 12px; transform: translateX(-50%); z-index: 6; }
+    </style>
+  </head>
+  <body>
+    <div id="unity-container">
+      <canvas id="unity-canvas" tabindex="-1"></canvas>
+    </div>
+    <div id="unity-loading">
+      <div>{{{ PRODUCT_NAME }}}</div>
+      <div id="unity-bar"><div id="unity-bar-fill"></div></div>
+    </div>
+    <button id="unity-fullscreen" title="Fullscreen" hidden>&#9974;</button>
+    <div id="unity-warning"></div>
+    <script>
+      var canvas = document.querySelector("#unity-canvas");
+      var loading = document.querySelector("#unity-loading");
+      var fill = document.querySelector("#unity-bar-fill");
+      var fsButton = document.querySelector("#unity-fullscreen");
+
+      function unityShowBanner(msg, type) {
+        // Browser extensions (wallets especially) throw into the page and Unity routes every uncaught error
+        // here, so a visitor with one installed got a red banner across the game that had nothing to do with it.
+        if (typeof msg === "string" && msg.indexOf("chrome-extension://") !== -1) return;
+        var banner = document.querySelector("#unity-warning");
+        var div = document.createElement('div');
+        div.innerHTML = msg;
+        div.style = "padding:8px 12px;border-radius:4px;font:13px sans-serif;background:" + (type == 'error' ? '#a11' : '#aa1') + ";color:#fff";
+        banner.appendChild(div);
+        if (type != 'error') setTimeout(function () { banner.removeChild(div); }, 5000);
+      }
+
+      var buildUrl = "Build";
+      var config = {
+        arguments: [],
+        dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+        frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+        codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+        productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+        productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+        showBanner: unityShowBanner,
+      };
+
+      // Keep the drawing buffer matched to the element, capped at 2x so a Retina display does not
+      // ask for four times the pixels for no visible gain.
+      config.devicePixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+
+      var script = document.createElement("script");
+      script.src = buildUrl + "/{{{ LOADER_FILENAME }}}";
+      script.onload = function () {
+        createUnityInstance(canvas, config, function (p) { fill.style.width = (100 * p) + "%"; })
+          .then(function (unityInstance) {
+            loading.style.display = "none";
+            fsButton.hidden = false;
+            fsButton.onclick = function () { unityInstance.SetFullscreen(1); canvas.focus(); };
+            canvas.focus();                       // so keyboard input reaches the game without a click first
+            window.addEventListener("click", function () { canvas.focus(); });
+          })
+          .catch(function (message) { unityShowBanner(message, 'error'); });
+      };
+      document.body.appendChild(script);
+    </script>
+  </body>
+</html>

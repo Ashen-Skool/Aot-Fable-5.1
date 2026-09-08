@@ -17,7 +17,7 @@ namespace Shared
             if (set == null)
             {
                 set = new HashSet<string>();
-                foreach (var a in System.Environment.GetCommandLineArgs()) if (a.StartsWith("-no") || a == "-msaa1" || a == "-shadow2k") set.Add(a.ToLowerInvariant());
+                foreach (var a in Bootstrap.Args) if (a.StartsWith("-no") || a == "-msaa1" || a == "-shadow2k") set.Add(a.ToLowerInvariant());
             }
             return set.Contains("-no" + name.ToLowerInvariant());
         }

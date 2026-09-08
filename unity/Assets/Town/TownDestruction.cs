@@ -76,7 +76,7 @@ namespace Town
                 for (int s = 0; s < spans.Length; s++)
                 {
                     var m = p.meshes[s];
-                    if (!index.TryGetValue(m, out int mi)) { mi = meshes.Count; index[m] = mi; meshes.Add(m); m.MarkDynamic(); }
+                    if (!index.TryGetValue(m, out int mi)) { mi = meshes.Count; index[m] = mi; meshes.Add(m); }
                     spans[s] = new Span { mesh = mi, start = p.starts[s], count = p.counts[s] };
                     verts += p.counts[s];
                 }
@@ -97,6 +97,10 @@ namespace Town
         void Page(int i)
         {
             if (rest[i] != null) return;
+            // MarkDynamic is deferred to the first house that actually falls in this mesh. Marking every town mesh
+            // up front costs nothing on a desktop GPU but puts ~3.5 M vertices into dynamic VBOs, which WebGL
+            // re-streams: it pinned the browser build at 1 FPS whatever else was turned off.
+            meshes[i].MarkDynamic();
             rest[i] = meshes[i].vertices;
             work[i] = (Vector3[])rest[i].Clone();
         }
