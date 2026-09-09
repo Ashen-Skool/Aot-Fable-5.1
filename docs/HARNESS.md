@@ -19,6 +19,7 @@ from its own location, so it works from any clone or worktree
 | `tools/play.sh [seed]` | launch the mac build on the Studio, windowed 1080p, `-seed n` | instant |
 | `... -autoCrush N` | at N s, bring down the block of houses she faces; logs `CRUSH_OK`/`CRUSH_FAIL` | - |
 | `node tools/progress.mjs` | regenerate `progress.html` from `gauntlet/` | 0.03 s |
+| `tools/build.sh webgl` | -> `builds/webgl/` (~40 MB, full-bleed template, serve the folder) | 50 s |
 | `tools/unity.sh <log> args…` | raw Unity batch wrapper; log in `logs/<log>.log` | – |
 
 Every script prints one verdict line: `CAPTURE_OK n shots` / `CAPTURE_FAIL reason`,
@@ -71,6 +72,27 @@ waits 10 warm-up frames, then per pose (sorted by `timeSec`): advances frames un
 renders with `Camera.Render()` into a 1920x1080 MSAA RenderTexture, `ReadPixels`,
 writes the PNG. Then `EditorApplication.Exit(0)`. Add poses to `tools/poses.json`;
 `-posesFile` overrides the file. The orbit camera is disabled during capture.
+
+## The web build
+
+`tools/build.sh webgl` writes a self-contained `builds/webgl/` (~40 MB): serve the whole directory, any static
+host will do. `builds/` is gitignored, so it is never committed.
+
+- **Flags work through the URL.** WebGL has no command line, so `Bootstrap.Args` folds the page's query string in:
+  `index.html?-fpslog&-autoStart=2&-noShadows` behaves exactly like those switches on the desktop build. Every
+  `PerfToggles` switch and every `Harness` flag is available this way, which is the only way to bisect the browser
+  build. `Debug.Log` goes to the browser console, so `[FPS]` and `[Scene]` come back the same as in `logs/play.log`.
+- **A frame rate from a browser is only real when the tab is visible.** Chrome throttles a hidden or occluded tab's
+  rAF to exactly 1 Hz. If `[FPS]` reads a flat `1.0`, check `document.hidden` before believing there is a problem:
+  several builds were bisected against that phantom before anyone looked.
+- **Textures are budgeted per platform**, not globally: `Build.WebGLTextures.Run` (menu: Build > Apply WebGL texture
+  budget) writes a WebGL override into every texture importer, 256-1024 by folder, DXT. Standalone keeps the 4K
+  Meshy source. Re-run it after adding textures, and commit the `.meta` changes.
+- **The page comes from `Assets/WebGLTemplates/AOT`**, set by `Builder.WebGL` into `PlayerSettings.WebGL.template`.
+  Full-bleed canvas, follows resizes, devicePixelRatio capped at 2, fullscreen button, canvas focused on load, and
+  `chrome-extension://` errors suppressed. Edit the template, not `builds/webgl/index.html` - that is generated.
+- **StreamingAssets is served over http there**, so `File.Exists` on a StreamingAssets path is always false. That is
+  what kept the title video and the nape cutscene from ever playing in a browser; see `Hud.Video`.
 
 ## Gotchas (all hit for real)
 

@@ -7,3 +7,12 @@ logs/
 .DS_Store
 node_modules/
 test-results/
+
+# Approval renders and rig intermediates: regenerable from tools/author_clips.py, tools/turntable.py and
+# tools/merge_clips.py, and ~90 MB of PNG if committed. The clip GLBs and the merged FBX are what matter.
+assets/characters/*/rig/attacks/
+assets/characters/*/rig/attacks_anim/
+assets/characters/*/rig/drawsheathe/
+assets/characters/*/rig/runsheet/
+assets/characters/*/rig/rigged.fbx
+unity/mono_crash*.json
