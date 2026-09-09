@@ -9,7 +9,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT="${AOT_RAILWAY_PROJECT:-6aa3c2dc-4efa-4bb1-9564-5f9ce5eda6b8}"
 SERVICE="${AOT_RAILWAY_SERVICE:-9f9ad891-2e26-4b09-8c96-001a6b4c8061}"
 ENVIRONMENT="${AOT_RAILWAY_ENV:-6a5367f2-cf4c-4d24-a51a-26aadad46686}"
-URL="https://aot-fable-5-1-production.up.railway.app"
+URL="https://aot-unity-test-production.up.railway.app"
 
 [[ "${1:-}" == "--build" ]] && "$HERE/tools/build.sh" webgl
 [[ -f "$HERE/builds/webgl/index.html" ]] || { echo "DEPLOY_FAIL no builds/webgl; run tools/build.sh webgl"; exit 1; }

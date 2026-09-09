@@ -97,6 +97,9 @@ namespace AotCamera
         public float killCamDuration = 3f;
         public float killCamTimeScale = 0.2f;
         public float killCamRadiusStart = 11f;
+        float killRadius = 11f;   // this kill's orbit radius; killCamRadiusStart unless the caller asked for wider
+        float killPitch = 22f;    // and its elevation
+        float killDuration = 3f;  // and how long it holds before the chase camera takes over
         public float killCamRadiusEnd = 8.5f;
         public float killCamLines = 0.3f;
         public float killCamVignette = 0.8f;
@@ -134,7 +137,7 @@ namespace AotCamera
         public float Roll => roll;
         public float BlurIntensity => blur != null ? blur.intensity.value : 0f;
         public float Fov => Cam != null ? Cam.fieldOfView : 0f;
-        public float KillCamProgress => Mode == CameraMode.KillCam ? Mathf.Clamp01(killT / killCamDuration) : 0f;
+        public float KillCamProgress => Mode == CameraMode.KillCam ? Mathf.Clamp01(killT / killDuration) : 0f;
         /// <summary>Current kill-cam orbit yaw in degrees (world), for tests and logs.</summary>
         public float KillCamYaw { get; private set; }
 
@@ -203,7 +206,7 @@ namespace AotCamera
         /// Used on a nape stab, where a shake alone reads as noise but a lunge reads as impact.</summary>
         public void Punch(float amount) { punch = Mathf.Clamp01(punch + amount); }
 
-        /// <summary>Slow-motion orbit around a world point (the nape) for killCamDuration real seconds, then snap back to chase.</summary>
+        /// <summary>Slow-motion orbit around a world point (the nape) for killDuration real seconds, then snap back to chase.</summary>
         public void KillCam(Vector3 point)
         {
             if (Mode != CameraMode.KillCam)
@@ -216,6 +219,16 @@ namespace AotCamera
             Mode = CameraMode.KillCam;
             killPoint = point;
             killT = 0f;
+            // The caller can ask for a wider orbit through Ctx (Proxies does not reference this assembly). The
+            // authored 11 m frames a nape cut; a 15 m Titan going down needs the camera much further out or you
+            // are looking at his shins.
+            killRadius = Shared.Ctx.Has("killCamRadius") ? Mathf.Max(4f, Shared.Ctx.Get<float>("killCamRadius")) : killCamRadiusStart;
+            // A wide orbit at the authored 22 deg elevation just buries the camera in the surrounding houses, so a
+            // caller asking for a wide shot also asks for a high one: from above the roofline there is nothing to
+            // clip into and the whole body is visible going down.
+            killPitch = Shared.Ctx.Has("killCamPitch") ? Mathf.Clamp(Shared.Ctx.Get<float>("killCamPitch"), 0f, 80f) : killCamPitchStart;
+            killDuration = Shared.Ctx.Has("killCamHold") ? Mathf.Max(0.5f, Shared.Ctx.Get<float>("killCamHold")) : killCamDuration;
+            Shared.Ctx.Remove("killCamRadius"); Shared.Ctx.Remove("killCamPitch"); Shared.Ctx.Remove("killCamHold");
             // orbit across Mikasa's side of the nape: she stays in the foreground the whole sweep
             var side = (Target != null ? Target.Position : transform.position) - point; side.y = 0f;
             if (side.sqrMagnitude < 0.01f) { side = -headingDir; side.y = 0f; }
@@ -505,11 +518,11 @@ namespace AotCamera
         void UpdateKillCam(float udt)
         {
             killT += udt;
-            float u = Mathf.Clamp01(killT / killCamDuration);
+            float u = Mathf.Clamp01(killT / killDuration);
             float e = 1f - (1f - u) * (1f - u);                 // ease-out sweep
             float yaw = killYaw0 - killCamSweepDeg * e;
-            float pitch = Mathf.Lerp(killCamPitchStart, killCamPitchEnd, e);
-            float radius = Mathf.Lerp(killCamRadiusStart, killCamRadiusEnd, e);
+            float pitch = Mathf.Lerp(killPitch, killCamPitchEnd * (killPitch / Mathf.Max(0.01f, killCamPitchStart)), e);
+            float radius = Mathf.Lerp(killRadius, killCamRadiusEnd * (killRadius / Mathf.Max(0.01f, killCamRadiusStart)), e);
             KillCamYaw = yaw;
             var offset = Quaternion.Euler(-pitch, yaw, 0f) * Vector3.forward;   // from the nape out to the camera, pitch = elevation
             var pos = killPoint + offset * radius;
@@ -520,7 +533,7 @@ namespace AotCamera
                 rot = Quaternion.Slerp(rot, FrameAt(pos, Target.Position + Vector3.up * pivotHeight, new Vector2(0.5f, 0.35f), fov, Aspect), killCamPlayerBlend);
             transform.position = pos;
             transform.rotation = rot;
-            if (killT >= killCamDuration) EndKillCam();
+            if (killT >= killDuration) EndKillCam();
         }
 
         void EndKillCam()
@@ -583,10 +596,43 @@ namespace AotCamera
             return from + d * Mathf.Max(best, minCollisionDistance);
         }
 
+        const string SensKey = "aot.lookSensitivity";
+        static float sens = -1f;
+
+        /// <summary>
+        /// Look sensitivity multiplier, 1 = the authored feel. Persisted per machine, because the same physical
+        /// mouse sweep does not turn the same amount everywhere: the browser reports pointer-lock deltas through
+        /// the canvas, so a high-DPI display can read roughly twice as fast as the standalone build.
+        /// Clamped well away from zero so nobody can lock themselves out of turning at all.
+        /// </summary>
+        public static float LookSensitivity
+        {
+            get
+            {
+                if (sens < 0f)
+                {
+                    sens = PlayerPrefs.GetFloat(SensKey, Shared.Bootstrap.ArgInt("-sensitivity", 0) > 0
+                        ? Shared.Bootstrap.ArgInt("-sensitivity", 100) / 100f : 1f);
+                    sens = Mathf.Clamp(sens, MinSensitivity, MaxSensitivity);
+                }
+                return sens;
+            }
+            set
+            {
+                sens = Mathf.Clamp(value, MinSensitivity, MaxSensitivity);
+                PlayerPrefs.SetFloat(SensKey, sens);
+                PlayerPrefs.Save();
+            }
+        }
+        public const float MinSensitivity = 0.1f, MaxSensitivity = 3f, SensitivityStep = 0.1f;
+
         void ReadMouse(float dt)
         {
             if (!Application.isFocused || Application.isBatchMode) return;
-            var look = Shared.GameInput.Look;
+            // , and . nudge sensitivity live, so it can be dialled in mid-fight without opening the pause screen
+            if (Input.GetKeyDown(KeyCode.Comma)) LookSensitivity -= SensitivityStep;
+            if (Input.GetKeyDown(KeyCode.Period)) LookSensitivity += SensitivityStep;
+            var look = Shared.GameInput.Look * LookSensitivity;
             mouseYaw += look.x * 2.5f;
             mousePitch = Mathf.Clamp(mousePitch + look.y * 2.0f, -35f, 45f);
             // drift back behind the character while moving fast

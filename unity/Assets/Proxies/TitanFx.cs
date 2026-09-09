@@ -143,13 +143,15 @@ namespace Proxies
         public void Death()
         {
             if (Application.isBatchMode) return;
+            // Kept low and away from the camera: the point of the kill cam is the body going down, and a full
+            // steam bath simply whited out the shot. It builds as the plume instead.
             var c = transform.position + Vector3.up * height * 0.5f;
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < 5; i++)
             {
-                var ep = new ParticleSystem.EmitParams { position = c + Random.insideUnitSphere * height * 0.35f, applyShapeToPosition = true };
-                steam.Emit(ep, 6);
+                var ep = new ParticleSystem.EmitParams { position = c + Random.insideUnitSphere * height * 0.3f, applyShapeToPosition = true };
+                steam.Emit(ep, 3);
             }
-            plumeWant = 1.4f; Shake(0.8f);   // was 2.5: the ending card sat behind a wall of steam
+            plumeWant = 0.8f; Shake(0.8f);   // was 2.5, then 1.4: the ending card sat behind a wall of steam
         }
 
         void Update()

@@ -140,7 +140,8 @@ namespace Proxies
                     break;
                 case State.Dead:
                     // He stays down where he fell; the ending screen takes over.
-                    if (!endShown && t > 2.5f) { endShown = true; var ttl = Ctx.Get<string>("gameOverTitle"); Ctx.Set("gameOver", string.IsNullOrEmpty(ttl) ? "TITAN SLAIN" : ttl); }
+                    // 2.5 s put the ending card up while he was still going down. Let the body land and settle first.
+                    if (!endShown && t > DeathWatchSeconds) { endShown = true; var ttl = Ctx.Get<string>("gameOverTitle"); Ctx.Set("gameOver", string.IsNullOrEmpty(ttl) ? "TITAN SLAIN" : ttl); }
                     break;
             }
         }
@@ -221,6 +222,8 @@ namespace Proxies
         public float napePhaseAt = 0.25f;
         /// <summary>Mikasa is on the back of his neck: he runs and thrashes, cannot attack, and each stab takes a fifth of the last quarter.</summary>
         public bool Ridden;
+        /// <summary>How long the camera stays on the body after he drops before the ending card takes over.</summary>
+        public const float DeathWatchSeconds = 6f;
         public int StabsToKill = 5;
         float wanderSign = 1f, wanderT, stuckT, steerHoldSpent, progressT, bestDist = 1e9f, bulldozeT, rubbleT, plowT;
 
@@ -358,11 +361,63 @@ namespace Proxies
         public void FinishNapeKill()
         {
             if (Current == State.Dead) return;
+            StageTheFall();
             HP = 0f; Current = State.Dead; t = 2.0f; Set(Pose.Stagger); Invoke(nameof(DeathPose), 0.2f);
             Ctx.Set("bossDead", true); Ctx.Set("gameOverTitle", "YOU WON");
             Fx?.Death();
-            var rig = Ctx.Get<Component>("cameraRig"); if (rig != null && !Application.isBatchMode) rig.SendMessage("KillCam", Fx != null ? Fx.NapePos() : transform.position + Vector3.up * height * 0.9f, SendMessageOptions.DontRequireReceiver);
+            // Frame the body, not the nape: the orbit is what shows him going down, and aiming at his neck put
+            // the camera above the fall looking at steam.
+            Ctx.Set("killCamRadius", height * 1.6f);   // ~24 m out
+            Ctx.Set("killCamPitch", 42f);              // and ~16 m up, clear of the rooftops around the square
+            Ctx.Set("killCamHold", DeathWatchSeconds - 0.4f);   // stay on the body until the ending card, not 3 s
+            var rig = Ctx.Get<Component>("cameraRig"); if (rig != null && !Application.isBatchMode) rig.SendMessage("KillCam", transform.position + Vector3.up * (height * 0.42f), SendMessageOptions.DontRequireReceiver);
         }
+        /// <summary>
+        /// The cutscene is a hard cut, so it is the one moment we can move the world without the player seeing a
+        /// jump. Wherever he actually died - wedged in an alley, halfway through a block - he and Mikasa are put in
+        /// the market square for the fall, so 15 m of Titan lands in the open where the kill cam can see it instead
+        /// of sinking through a roof. Clamped inside the town bounds and dropped to the ground under him.
+        /// </summary>
+        void StageTheFall()
+        {
+            if (!Ctx.Has("townCenter")) return;
+            Vector3 c = Ctx.Get<Vector3>("townCenter");
+            if (Ctx.Has("town.bounds"))
+            {
+                var b = Ctx.Get<Bounds>("town.bounds");
+                c.x = Mathf.Clamp(c.x, b.min.x + height, b.max.x - height);
+                c.z = Mathf.Clamp(c.z, b.min.z + height, b.max.z - height);
+            }
+            if (Physics.Raycast(new Vector3(c.x, 200f, c.z), Vector3.down, out var g, 400f, ~0, QueryTriggerInteraction.Ignore))
+                c.y = g.point.y;
+
+            Vector3 centre = c;
+            c += new Vector3(0f, 0f, -1f) * (height * 0.75f);   // off the fountain that sits on the centre point
+            Vector3 was = transform.position;
+            transform.position = c;
+            transform.rotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
+
+            // Mikasa comes with him, off to one side and clear of where he is about to land, facing him. She is
+            // pushed away from the square's centre as well: the fountain sits exactly there and she was landing
+            // in the water.
+            var pl = Player;
+            if (pl != null)
+            {
+                Vector3 fromCentre = c - centre; fromCentre.y = 0f;
+                if (fromCentre.sqrMagnitude < 1f) fromCentre = -transform.forward;
+                Vector3 side = (Quaternion.Euler(0f, 50f, 0f) * fromCentre.normalized);
+                Vector3 stand = c + side * (height * 0.9f);
+                if (Physics.Raycast(stand + Vector3.up * 120f, Vector3.down, out var pg, 260f, ~0, QueryTriggerInteraction.Ignore))
+                    stand.y = pg.point.y;
+                stand.y += 1.1f;
+                var rb = pl.GetComponent<Rigidbody>();
+                if (rb != null) { rb.position = stand; rb.linearVelocity = Vector3.zero; }
+                pl.transform.position = stand;
+                pl.transform.rotation = Quaternion.LookRotation(new Vector3(c.x - stand.x, 0f, c.z - stand.z).normalized, Vector3.up);
+            }
+            if (Harness.Active) Debug.Log("[NapeKill] staged the fall: " + was.ToString("0") + " -> " + c.ToString("0"));
+        }
+
         public float Hit(string zone, Vector3 from)
         {
             if (Current == State.Dead) return 0f;

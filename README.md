@@ -1,4 +1,8 @@
-# AOT FABLE 5.1
+# AOT UNITY TEST
+
+Displayed name is "AOT UNITY TEST" (title screen, window/tab title, Railway project). The GitHub repo is still
+`Aot-Fable-5.1` - renaming it would break every existing remote, so it was left alone.
+Live: https://aot-unity-test-production.up.railway.app
 
 Repo: https://github.com/Ashen-Skool/Aot-Fable-5.1 (moved from the personal account 2026-09-02). Progress page: https://ashen-skool.github.io/Aot-Fable-5.1/progress.html
 
@@ -191,6 +195,23 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
   - `TownDestruction` marks a mesh dynamic only when a house in it actually falls, instead of every town mesh up front.
   - **Measuring lesson:** a Chrome tab that is not visible is throttled to exactly 1 Hz. A browser FPS reading is only real with
     `document.hidden === false`; several builds were bisected against a phantom "1 FPS" before that was checked.
+
+- Day of 09-09: renamed to **AOT UNITY TEST** (title screen, `productName`, Railway project). The GitHub repo keeps its old name.
+  This broke `tools/play.sh`, which hardcoded `AOT.app/Contents/MacOS/AOT` - the executable inside the bundle is named after
+  `productName`. It finds the binary now instead of assuming it.
+- Day of 09-09: **look sensitivity is a setting.** `CameraRig.LookSensitivity` (0.1-3.0, persisted in PlayerPrefs): `-` / `+` on the
+  pause screen, `,` and `.` any time, `-sensitivity 60` on the command line or `?-sensitivity=60` in the browser. The same physical
+  sweep does not turn the same amount everywhere - a browser reports pointer-lock deltas through the canvas, so a high-DPI display
+  reads far faster than the standalone build.
+- Day of 09-09: **the nape cutscene.** Space skipped it - and Space is the hook / jump-off key, so a player still on it when the last
+  stab landed never saw the clip. Nothing skips for the first 1.2 s now. It also could not fail into a black screen any more: if the
+  clip has not decoded within 1.5 s the THE NAPE card takes over, the clip gets its full seven seconds from the frame it actually
+  starts rendering (not from the kill), and `VideoPlayer.errorReceived` is logged.
+- Day of 09-09: **the kill is staged.** The cutscene is a hard cut, so `TitanBrain.StageTheFall` uses it to move him - and Mikasa -
+  into the market square, clear of the fountain, before he drops: he used to die wherever he happened to be, sinking through a roof.
+  The kill cam is passed a radius, pitch and hold through Ctx (`killCamRadius` / `killCamPitch` / `killCamHold`) because a 15 m body
+  needs a wide, high orbit that clears the rooftops, and it now holds until the ending card instead of cutting away after 3 s. Death
+  steam thinned again so the body reads through it.
 
 **Open items:** the tower grid visually swallows the town from above (cannons live there, his call).
 (Grey squares confirmed gone by the user 2026-09-07, with the effects on. Fist roll and Titan wrist roll confirmed fine at 0 deg.)

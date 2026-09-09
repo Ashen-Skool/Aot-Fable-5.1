@@ -38,13 +38,16 @@ namespace ODM
                     titleVideo = go.AddComponent<VideoPlayer>();
                     titleVideo.playOnAwake = false; titleVideo.isLooping = loop; titleVideo.source = VideoSource.Url; titleVideo.url = path;
                     titleVideo.renderMode = VideoRenderMode.RenderTexture; titleVideo.targetTexture = titleRt; titleVideo.audioOutputMode = VideoAudioOutputMode.None;
-                    titleVideo.aspectRatio = VideoAspectRatio.FitOutside; titleVideo.Play();
+                    titleVideo.aspectRatio = VideoAspectRatio.FitOutside;
+                    titleVideo.errorReceived += (vp, err) => Debug.LogWarning("[HudVideo] " + file + " error: " + err);
+                    titleVideo.Play();
                 }
             }
             if (titleVideo != null && loop && !titleVideo.isPlaying && titleVideo.isPrepared) titleVideo.Play();
             return titleVideo != null && titleVideo.isPrepared ? titleRt : null;
         }
         static bool VideoLoaded => titleVideo != null;
+        static bool VideoReady => titleVideo != null && titleVideo.isPrepared;
         static bool VideoDone => titleVideo != null && titleVideo.isPrepared && !titleVideo.isLooping && titleVideo.frameCount > 0 && titleVideo.frame >= 0 && (ulong)titleVideo.frame >= titleVideo.frameCount - 1;
         static void StopVideo() { if (titleVideo != null) { titleVideo.Stop(); Object.Destroy(titleVideo.gameObject); titleVideo = null; } videoFile = null; }
         static void DrawVideoCover(Texture vid, float W, float H)
@@ -301,6 +304,7 @@ namespace ODM
                 Box(0, 0, W, H, new Color(0f, 0f, 0f, 0.55f));
                 Text(new Rect(0, cy - 70f * s, W, 80f * s), "PAUSED", Sized(sTitle, 72f), Color.white, 3f);
                 Text(new Rect(0, cy + 10f * s, W, 34f * s), "CLICK OR ESC  RESUME      R  RESTART      CMD-Q  QUIT", Sized(sPrompt, 26f), new Color(1f, 1f, 1f, 0.85f));
+                Sensitivity(cy + 62f * s, W, s);
                 if (UnityEngine.Input.GetKeyDown(KeyCode.R) && !Reboot.Restarting) { OdmController.Paused = false; playStart = -1f; orbitStarted = false; OdmController.TitleDone = false;  Reboot.Now(); }
             }
             else if (!GameInput.CursorCaptured) Text(new Rect(0, H - 40f * s, W, 22f * s), "CLICK TO CAPTURE THE MOUSE  ·  ESC PAUSES", Sized(sSmall, 14f), new Color(1f, 1f, 1f, 0.7f), 1f);
@@ -330,7 +334,7 @@ namespace ODM
             var vid = Video("title.mp4", true);
             if (vid != null) DrawVideoCover(vid, W, H);
             Box(0, 0, W, H, new Color(0.02f, 0.02f, 0.03f, vid != null ? 0.3f : 0.42f));
-            Text(new Rect(0, H * 0.30f, W, 120f * s), "AOT FABLE 5.1", Sized(sTitle, 110f), Color.white, 4f);
+            Text(new Rect(0, H * 0.30f, W, 120f * s), "AOT UNITY TEST", Sized(sTitle, 110f), Color.white, 4f);
             var sub = Sized(sLabel, 18f); sub.alignment = TextAnchor.MiddleCenter;
             Text(new Rect(0, H * 0.30f + 122f * s, W, 30f * s), "SHIGANSHINA DISTRICT   ·   ONE TITAN   ·   CUT THE NAPE", sub, new Color(1f, 0.85f, 0.55f));
             Text(new Rect(0, H * 0.30f + 170f * s, W, 80f * s), "WASD move   ·   Mouse aim   ·   Space hook / release   ·   Shift gas   ·   LMB slash   ·   E fire a cannon\nHook a tower, cut both hamstrings to bring him down, and at a quarter health hook onto his neck and stab.", sub, new Color(1f, 1f, 1f, 0.75f));
@@ -349,25 +353,79 @@ namespace ODM
         /// <summary>The nape kill: the game freezes, StreamingAssets/nape.mp4 plays once (7 s), then the Titan drops and the
         /// win card follows. Without the file: a 1.6 s black beat with the words.</summary>
         public const float CutsceneSeconds = 7f;
+        /// <summary>Seconds at the start of the cutscene during which Space/Escape cannot skip it.</summary>
+        public const float SkipGrace = 1.2f;
+        /// <summary>How long to wait for the clip to decode before giving up and showing the card instead.</summary>
+        public const float PrepareGrace = 1.5f;
+        static float cutSceneStarted = -1f;
+
         static void Cutscene(OdmController c, float W, float H, float s)
         {
             Time.timeScale = 0f; Ctx.Set("titleHold", true);
             float since = Time.unscaledTime - Ctx.Get<float>("napeCutsceneAt");
             var vid = Video("nape.mp4", false);
-            bool has = VideoLoaded;
+            bool ready = vid != null && VideoReady;
+            if (ready && cutSceneStarted < 0f)
+            {
+                cutSceneStarted = Time.unscaledTime;
+                if (Harness.Active) Debug.Log("[HudVideo] nape.mp4 rendering after " + since.ToString("0.00") + "s");
+            }
+            // Still decoding: hold, but only briefly. A clip that never prepares used to leave the screen pure
+            // black for the full seven seconds with no way to tell it apart from a broken build.
+            bool waiting = !ready && VideoLoaded && since < PrepareGrace;
+
             Box(0, 0, W, H, Color.black);
-            if (vid != null) DrawVideoCover(vid, W, H);
-            else if (!has) { var st = Sized(sTitle, 96f); Text(new Rect(0, H * 0.42f, W, 110f * s), "THE NAPE", st, new Color(1f, 0.9f, 0.7f, Mathf.Clamp01(since * 2f)), 4f); }
-            // letterbox + fade in/out
-            float fade = Mathf.Clamp01(since * 3f); float end = has ? CutsceneSeconds : 1.6f;
+            if (ready) DrawVideoCover(vid, W, H);
+            else if (!waiting)
+            {
+                var st = Sized(sTitle, 96f);
+                Text(new Rect(0, H * 0.42f, W, 110f * s), "THE NAPE", st, new Color(1f, 0.9f, 0.7f, Mathf.Clamp01(since * 2f)), 4f);
+                if (VideoLoaded && cutSceneStarted < 0f && Harness.Active && Time.frameCount % 60 == 0)
+                    Debug.LogWarning("[HudVideo] nape.mp4 never prepared; falling back to the card");
+            }
+
+            // The clip gets its full length from the frame it actually started, not from the kill.
+            float end = ready || cutSceneStarted > 0f
+                ? (cutSceneStarted - (Time.unscaledTime - since)) + CutsceneSeconds
+                : waiting ? PrepareGrace + 1.6f : 1.6f;
+            float fade = Mathf.Clamp01(since * 3f);
             fade = Mathf.Min(fade, Mathf.Clamp01((end - since) * 2.5f));
             Box(0, 0, W, H, new Color(0f, 0f, 0f, 1f - fade));
-            bool skip = UnityEngine.Input.GetKeyDown(KeyCode.Space) || UnityEngine.Input.GetKeyDown(KeyCode.Escape);
-            if (since >= end || (has && VideoDone) || skip || Application.isBatchMode)
+            // Space is the hook / jump-off key, so a player still on it when the last stab lands used to skip the
+            // cutscene the frame it opened and never see it at all. Nothing skips for the first SkipGrace seconds.
+            bool skip = since > SkipGrace && (UnityEngine.Input.GetKeyDown(KeyCode.Space) || UnityEngine.Input.GetKeyDown(KeyCode.Escape));
+            if (since >= end || (ready && VideoDone) || skip || Application.isBatchMode)
             {
-                StopVideo(); Ctx.Set("napeCutscene", false); Ctx.Set("titleHold", false); Time.timeScale = 1f;
+                StopVideo(); cutSceneStarted = -1f; Ctx.Set("napeCutscene", false); Ctx.Set("titleHold", false); Time.timeScale = 1f;
                 var brain = Ctx.Get<Proxies.TitanBrain>("bossBrain"); if (brain != null) brain.FinishNapeKill();
             }
+        }
+
+        /// <summary>Look sensitivity on the pause screen: a readout with - / + you can click, plus the , and . keys.</summary>
+        static void Sensitivity(float y, float W, float s)
+        {
+            var rig = Ctx.Get<Component>("cameraRig");
+            if (rig == null) return;
+            var ty = rig.GetType();
+            var prop = ty.GetProperty("LookSensitivity", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            var stepF = ty.GetField("SensitivityStep", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            if (prop == null || stepF == null) return;
+            float value = (float)prop.GetValue(null), step = (float)stepF.GetValue(null);
+
+            var label = Sized(sPrompt, 22f);
+            Text(new Rect(0, y, W, 28f * s), "LOOK SENSITIVITY", label, new Color(1f, 1f, 1f, 0.55f));
+
+            float bw = 34f * s, gap = 14f * s, num = 90f * s;
+            float total = bw * 2f + gap * 2f + num, x0 = (W - total) * 0.5f;
+            var btn = Sized(sPrompt, 26f);
+            var numStyle = Sized(sPrompt, 26f);
+
+            if (GUI.Button(new Rect(x0, y + 30f * s, bw, 30f * s), "-", btn)) prop.SetValue(null, value - step);
+            Text(new Rect(x0 + bw + gap, y + 30f * s, num, 30f * s), value.ToString("0.0") + "x", numStyle, Color.white);
+            if (GUI.Button(new Rect(x0 + bw + gap + num + gap, y + 30f * s, bw, 30f * s), "+", btn)) prop.SetValue(null, value + step);
+
+            Text(new Rect(0, y + 64f * s, W, 22f * s), "OR  ,  AND  .  ANY TIME", Sized(sSmall, 14f), new Color(1f, 1f, 1f, 0.45f));
+            sSmall.alignment = TextAnchor.MiddleLeft;
         }
 
         static void Ending(OdmController c, string over, float W, float H, float s)
