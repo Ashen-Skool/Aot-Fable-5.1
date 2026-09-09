@@ -213,6 +213,18 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
   needs a wide, high orbit that clears the rooftops, and it now holds until the ending card instead of cutting away after 3 s. Death
   steam thinned again so the body reads through it.
 
+- Day of 09-09 (play-test): **the static was the Titan's steam.** `TitanFx` drives a white-noise `AudioSource` off the death plume,
+  which held at full forever - and once the music faded on the ending card it was the only thing playing. It fades out over a few
+  seconds after he drops, at less than half the volume.
+- Day of 09-09 (play-test): **camera trauma falls off much faster.** A stomp used linear falloff over 40 m and a house coming down
+  over 70 m, so events a block away still shoved the camera. All three (stomp, step, crush) are squared falloff over a shorter range.
+- Day of 09-09 (play-test): **free look holds.** The recentre pulled the view back behind her from 8 m/s at 3.0/s, which reads as the
+  camera snapping rather than free look; it starts at 14 m/s at 0.9/s now, and the ground re-base needs 7 m/s instead of 2 so a walk
+  no longer re-bases the view. Sensitivity defaults to 0.5 on WebGL, since a browser reports pointer-lock deltas through the canvas
+  and reads about twice as fast as the standalone build.
+- Day of 09-09 (play-test): the pause-screen sensitivity control is now real buttons (text-only `GUI.Button`s looked like labels and
+  had a glyph-wide hit area), and `-` / `+` / keypad work as keys anywhere, not just `,` and `.`.
+
 **Open items:** the tower grid visually swallows the town from above (cannons live there, his call).
 (Grey squares confirmed gone by the user 2026-09-07, with the effects on. Fist roll and Titan wrist roll confirmed fine at 0 deg.)
 Crushed houses settle as a flattish field of shards rather than a heaped mound - the collapse moves vertices, so the big roof and wall

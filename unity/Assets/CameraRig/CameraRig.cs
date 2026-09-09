@@ -611,8 +611,9 @@ namespace AotCamera
             {
                 if (sens < 0f)
                 {
-                    sens = PlayerPrefs.GetFloat(SensKey, Shared.Bootstrap.ArgInt("-sensitivity", 0) > 0
-                        ? Shared.Bootstrap.ArgInt("-sensitivity", 100) / 100f : 1f);
+                    float dflt = Application.platform == RuntimePlatform.WebGLPlayer ? 0.5f : 1f;
+                    if (Shared.Bootstrap.ArgInt("-sensitivity", 0) > 0) dflt = Shared.Bootstrap.ArgInt("-sensitivity", 100) / 100f;
+                    sens = PlayerPrefs.GetFloat(SensKey, dflt);
                     sens = Mathf.Clamp(sens, MinSensitivity, MaxSensitivity);
                 }
                 return sens;
@@ -629,20 +630,23 @@ namespace AotCamera
         void ReadMouse(float dt)
         {
             if (!Application.isFocused || Application.isBatchMode) return;
-            // , and . nudge sensitivity live, so it can be dialled in mid-fight without opening the pause screen
-            if (Input.GetKeyDown(KeyCode.Comma)) LookSensitivity -= SensitivityStep;
-            if (Input.GetKeyDown(KeyCode.Period)) LookSensitivity += SensitivityStep;
+            // Live sensitivity. - and + are what the pause screen shows and what people actually reach for; , and .
+            // are kept because they need no shift key.
+            if (Input.GetKeyDown(KeyCode.Comma) || Input.GetKeyDown(KeyCode.Minus) || Input.GetKeyDown(KeyCode.KeypadMinus)) LookSensitivity -= SensitivityStep;
+            if (Input.GetKeyDown(KeyCode.Period) || Input.GetKeyDown(KeyCode.Equals) || Input.GetKeyDown(KeyCode.Plus) || Input.GetKeyDown(KeyCode.KeypadPlus)) LookSensitivity += SensitivityStep;
             var look = Shared.GameInput.Look * LookSensitivity;
             mouseYaw += look.x * 2.5f;
             mousePitch = Mathf.Clamp(mousePitch + look.y * 2.0f, -35f, 45f);
-            // drift back behind the character while moving fast
-            float recenter = Mathf.Clamp01((Speed - 8f) / 20f) * 3f * dt;
+            // Drift back behind the character, but only when really moving and far more gently than before: at the
+            // old rate the view was pulled back to straight-ahead constantly, which reads as the camera snapping
+            // rather than as free look.
+            float recenter = Mathf.Clamp01((Speed - 14f) / 26f) * 0.9f * dt;
             // Recentre only at speed: on the ground and in slow flight the mouse is the authority, otherwise the
             // heading (which follows the player, who faces the camera) and the recentre chase each other and the view drifts.
             // Free look everywhere: the mouse offset is absolute. It only eases back toward straight-ahead while the player
             // is actively steering with WASD on the ground, so a run looks where it goes but flight lets you look around.
             var mv = Shared.GameInput.Move;
-            bool steering = (Target.State & CameraTargetState.Grounded) != 0 && mv.sqrMagnitude > 0.1f && Speed > 2f;
+            bool steering = (Target.State & CameraTargetState.Grounded) != 0 && mv.sqrMagnitude > 0.1f && Speed > 7f;   // was 2: a walk re-based the view
             // free flight (no cables): the mouse is the heading itself, so a 180 turn is a 180 turn and the body follows the view
             bool freeFlight = (Target.State & CameraTargetState.Flying) != 0;   // any air time, cables or not
             if (freeFlight) { mousePitch = Mathf.Clamp(mousePitch, -35f, 45f); }

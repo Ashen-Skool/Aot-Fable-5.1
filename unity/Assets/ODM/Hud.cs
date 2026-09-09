@@ -415,16 +415,29 @@ namespace ODM
             var label = Sized(sPrompt, 22f);
             Text(new Rect(0, y, W, 28f * s), "LOOK SENSITIVITY", label, new Color(1f, 1f, 1f, 0.55f));
 
-            float bw = 34f * s, gap = 14f * s, num = 90f * s;
-            float total = bw * 2f + gap * 2f + num, x0 = (W - total) * 0.5f;
-            var btn = Sized(sPrompt, 26f);
-            var numStyle = Sized(sPrompt, 26f);
+            // Drawn as real buttons: text-only GUI.Buttons looked like labels, so nobody could tell they were
+            // clickable and the hit area was a glyph wide.
+            float bw = 46f * s, bh = 40f * s, gap = 18f * s, num = 110f * s;
+            float total = bw * 2f + gap * 2f + num, x0 = (W - total) * 0.5f, by = y + 30f * s;
+            var btn = Sized(sPrompt, 30f); btn.alignment = TextAnchor.MiddleCenter;
 
-            if (GUI.Button(new Rect(x0, y + 30f * s, bw, 30f * s), "-", btn)) prop.SetValue(null, value - step);
-            Text(new Rect(x0 + bw + gap, y + 30f * s, num, 30f * s), value.ToString("0.0") + "x", numStyle, Color.white);
-            if (GUI.Button(new Rect(x0 + bw + gap + num + gap, y + 30f * s, bw, 30f * s), "+", btn)) prop.SetValue(null, value + step);
+            var minus = new Rect(x0, by, bw, bh);
+            var plus = new Rect(x0 + bw + gap + num + gap, by, bw, bh);
+            foreach (var r in new[] { minus, plus })
+            {
+                Box(r.x, r.y, r.width, r.height, new Color(1f, 1f, 1f, 0.12f));
+                Box(r.x + 1f, r.y + 1f, r.width - 2f, r.height - 2f, new Color(0.04f, 0.04f, 0.05f, 0.9f));
+            }
+            Text(minus, "-", btn, Color.white, 1f);
+            Text(plus, "+", btn, Color.white, 1f);
+            if (GUI.Button(minus, GUIContent.none, GUIStyle.none)) prop.SetValue(null, value - step);
+            if (GUI.Button(plus, GUIContent.none, GUIStyle.none)) prop.SetValue(null, value + step);
 
-            Text(new Rect(0, y + 64f * s, W, 22f * s), "OR  ,  AND  .  ANY TIME", Sized(sSmall, 14f), new Color(1f, 1f, 1f, 0.45f));
+            var numStyle = Sized(sPrompt, 30f); numStyle.alignment = TextAnchor.MiddleCenter;
+            Text(new Rect(x0 + bw + gap, by, num, bh), value.ToString("0.0") + "x", numStyle, Color.white);
+
+            var hint = Sized(sSmall, 14f); hint.alignment = TextAnchor.MiddleCenter;
+            Text(new Rect(0, y + 76f * s, W, 22f * s), "OR  -  AND  +  ANY TIME, EVEN UNPAUSED", hint, new Color(1f, 1f, 1f, 0.45f), 1f);
             sSmall.alignment = TextAnchor.MiddleLeft;
         }
 

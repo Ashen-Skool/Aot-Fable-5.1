@@ -355,7 +355,8 @@ namespace Town
             if (rig == null) return;
             var cam = Ctx.Get<Camera>("camera");
             float d = cam != null ? Vector3.Distance(cam.transform.position, at) : 0f;
-            float amount = Mathf.Clamp01(1f - d / 70f) * 0.7f;
+            float near = Mathf.Clamp01(1f - d / 45f);   // was linear over 70 m: a house coming down across the district shook the camera
+            float amount = near * near * 0.6f;
             if (amount > 0.01f) rig.SendMessage("Shake", amount, SendMessageOptions.DontRequireReceiver);
         }
     }

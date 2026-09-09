@@ -11,7 +11,7 @@ namespace Proxies
     {
         public float height = 15f;
         ParticleSystem steam, dust, rubble, sparks, drops;
-        Transform nape; float plume; float plumeWant; AudioSource steamSrc; AudioLowPassFilter steamLp;
+        Transform nape; float plume; float plumeWant; bool dying; AudioSource steamSrc; AudioLowPassFilter steamLp;
         TitanBrain brain;
         /// <summary>True while Mikasa rides the nape: the camera is metres from the steam, so it is emitted small and short.</summary>
         public bool Ridden { get { if (brain == null) brain = GetComponent<TitanBrain>(); return brain != null && brain.Ridden; } }
@@ -128,7 +128,8 @@ namespace Proxies
             if (Application.isBatchMode) return;
             var ep = new ParticleSystem.EmitParams { position = foot, applyShapeToPosition = true };
             dust.Emit(ep, 46); rubble.Emit(ep, 22);
-            float dist = toPlayer.magnitude; Shake(Mathf.Clamp01(1.4f - dist / 40f) * 0.9f);
+            // Squared falloff over 26 m, not linear over 40: a stomp a block away was still shoving the camera.
+            float dist = toPlayer.magnitude; float near = Mathf.Clamp01(1f - dist / 26f); Shake(near * near * 0.9f);
         }
 
         public void Swipe(Vector3 hand)
@@ -138,7 +139,7 @@ namespace Proxies
             dust.Emit(ep, 10);
         }
 
-        public void Step(float distToPlayer) { if (distToPlayer < 18f) Shake(Mathf.Clamp01(1f - distToPlayer / 18f) * 0.08f); }   // was a constant judder while he ran at you (user: "glitching side to side")
+        public void Step(float distToPlayer) { if (distToPlayer < 14f) { float n = Mathf.Clamp01(1f - distToPlayer / 14f); Shake(n * n * 0.06f); } }   // was a constant judder while he ran at you (user: "glitching side to side")
 
         public void Death()
         {
@@ -151,7 +152,7 @@ namespace Proxies
                 var ep = new ParticleSystem.EmitParams { position = c + Random.insideUnitSphere * height * 0.3f, applyShapeToPosition = true };
                 steam.Emit(ep, 3);
             }
-            plumeWant = 0.8f; Shake(0.8f);   // was 2.5, then 1.4: the ending card sat behind a wall of steam
+            plumeWant = 0.8f; dying = true; Shake(0.8f);   // was 2.5, then 1.4: the ending card sat behind a wall of steam
         }
 
         void Update()
@@ -164,7 +165,10 @@ namespace Proxies
                 if (Ridden) { ep.startSize = 0.8f; ep.startLifetime = 0.8f; }
                 steam.Emit(ep, Mathf.CeilToInt(plume * 1.5f));
             }
-            if (steamSrc != null) { steamSrc.transform.position = transform.position; steamSrc.volume = Mathf.Clamp01(plume * 0.35f); }
+            // The hiss is white noise. Held at the death plume it was a wall of static, and once the music faded on
+            // the ending card it was the only thing left playing. It fades out over a few seconds after he drops.
+            if (dying) plumeWant = Mathf.MoveTowards(plumeWant, 0f, Time.deltaTime * 0.35f);
+            if (steamSrc != null) { steamSrc.transform.position = transform.position; steamSrc.volume = Mathf.Clamp01(plume * 0.16f); }
         }
 
         void OnDestroy() { foreach (var p in new[] { steam, dust, rubble, sparks, drops }) if (p != null) Destroy(p.gameObject); }
