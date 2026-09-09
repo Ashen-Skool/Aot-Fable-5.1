@@ -225,6 +225,13 @@ and the user is the critic (he plays the mac build on his laptop; never screensh
 - Day of 09-09 (play-test): the pause-screen sensitivity control is now real buttons (text-only `GUI.Button`s looked like labels and
   had a glyph-wide hit area), and `-` / `+` / keypad work as keys anywhere, not just `,` and `.`.
 
+- Day of 09-09 (play-test): **R now really restarts.** Leaving the title is a `SendMessage` from the Hud to the camera rig, and after
+  a `Reboot` that message could land on a rig that no longer existed (or before the new one had registered), so the game restarted
+  underneath a camera still stuck in its title orbit - the "helicopter shot you can't get out of". `CameraMode.Title` now treats the
+  `titleHold` flag as the authority and dives out of the orbit whether or not the message arrived; the Hud only latches the orbit once
+  a live rig has taken it; and `Hud.RestartHud` resets every Hud static (video, orbit latch, cutscene timer, help fade) so a rebuilt
+  world does not inherit a half-finished title. `-autoRestart` lifts the rebuilt title too, so the harness exercises the whole loop.
+
 **Open items:** the tower grid visually swallows the town from above (cannons live there, his call).
 (Grey squares confirmed gone by the user 2026-09-07, with the effects on. Fist roll and Titan wrist roll confirmed fine at 0 deg.)
 Crushed houses settle as a flattish field of shards rather than a heaped mound - the collapse moves vertices, so the big roof and wall

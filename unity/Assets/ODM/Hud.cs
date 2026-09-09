@@ -305,7 +305,7 @@ namespace ODM
                 Text(new Rect(0, cy - 70f * s, W, 80f * s), "PAUSED", Sized(sTitle, 72f), Color.white, 3f);
                 Text(new Rect(0, cy + 10f * s, W, 34f * s), "CLICK OR ESC  RESUME      R  RESTART      CMD-Q  QUIT", Sized(sPrompt, 26f), new Color(1f, 1f, 1f, 0.85f));
                 Sensitivity(cy + 62f * s, W, s);
-                if (UnityEngine.Input.GetKeyDown(KeyCode.R) && !Reboot.Restarting) { OdmController.Paused = false; playStart = -1f; orbitStarted = false; OdmController.TitleDone = false;  Reboot.Now(); }
+                if (UnityEngine.Input.GetKeyDown(KeyCode.R) && !Reboot.Restarting) { OdmController.Paused = false; RestartHud(); Reboot.Now(); }
             }
             else if (!GameInput.CursorCaptured) Text(new Rect(0, H - 40f * s, W, 22f * s), "CLICK TO CAPTURE THE MOUSE  ·  ESC PAUSES", Sized(sSmall, 14f), new Color(1f, 1f, 1f, 0.7f), 1f);
             // frame rate, tiny, top right, so a build's cost is always visible
@@ -330,7 +330,10 @@ namespace ODM
             Music.Set("title");
             Time.timeScale = 0f;   // nothing moves until a key is pressed (the video runs on its own clock)
             Ctx.Set("titleHold", true);
-            if (!orbitStarted) { orbitStarted = true; var rig = Ctx.Get<Component>("cameraRig"); if (rig != null) rig.SendMessage("TitleOrbit", SendMessageOptions.DontRequireReceiver); }
+            // Latch only once a live rig has actually taken it: after a Reboot the Hud can reach this before the
+            // camera has re-registered, and latching on a null rig left the title with no orbit and, worse, left
+            // the old rig's mode untouched.
+            if (!orbitStarted) { var rig = Ctx.Get<Component>("cameraRig"); if (rig != null) { orbitStarted = true; rig.SendMessage("TitleOrbit", SendMessageOptions.DontRequireReceiver); } }
             var vid = Video("title.mp4", true);
             if (vid != null) DrawVideoCover(vid, W, H);
             Box(0, 0, W, H, new Color(0.02f, 0.02f, 0.03f, vid != null ? 0.3f : 0.42f));
@@ -441,6 +444,17 @@ namespace ODM
             sSmall.alignment = TextAnchor.MiddleLeft;
         }
 
+        /// <summary>Everything the Hud keeps in statics has to go back to its first-run state, or the rebuilt world
+        /// inherits a half-finished title: a stale video, a latched orbit, or the cutscene still counting.</summary>
+        static void RestartHud()
+        {
+            StopVideo();
+            playStart = -1f; orbitStarted = false; cutSceneStarted = -1f; helpFade = 1f;
+            OdmController.TitleDone = false;
+            Ctx.Set("titleHold", true);
+            Time.timeScale = 0f;
+        }
+
         static void Ending(OdmController c, string over, float W, float H, float s)
         {
             float cy = H * 0.5f;
@@ -451,7 +465,7 @@ namespace ODM
             sLabel.alignment = TextAnchor.MiddleLeft;
             float pulse = 0.6f + 0.4f * Mathf.Sin(Time.unscaledTime * 3f);
             Text(new Rect(0, cy + 44f * s, W, 40f * s), "R  PLAY AGAIN      CMD-Q  QUIT", Sized(sPrompt, 30f), new Color(1f, 1f, 1f, pulse));
-            if (UnityEngine.Input.GetKeyDown(KeyCode.R) && !Reboot.Restarting) { playStart = -1f; orbitStarted = false; OdmController.TitleDone = false;  Reboot.Now(); }
+            if (UnityEngine.Input.GetKeyDown(KeyCode.R) && !Reboot.Restarting) { RestartHud(); Reboot.Now(); }
         }
     }
 }

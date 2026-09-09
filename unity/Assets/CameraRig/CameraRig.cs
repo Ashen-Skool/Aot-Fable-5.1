@@ -370,8 +370,14 @@ namespace AotCamera
                     fovTarget = Mathf.Lerp(diveFov, baseFov, Mathf.Clamp01(diveT / diveDur));
                     break;
                 case CameraMode.Title:
-                    UpdateTitle(udt);
+                    // Safety net for "R restarts into an endless helicopter shot": leaving the title is a
+                    // SendMessage from the Hud, and after a Reboot that message can land on a rig that no longer
+                    // exists (or before this one has registered), stranding the camera orbiting forever with the
+                    // game running underneath. The title's own flag is the authority - if it is down, so is the
+                    // orbit, whether or not the message ever arrived.
                     fovTarget = 58f;
+                    if (!Ctx.Get<bool>("titleHold")) { BeginIntroDive(); break; }
+                    UpdateTitle(udt);
                     break;
                 default:
                     UpdateChase(dt, v, st);

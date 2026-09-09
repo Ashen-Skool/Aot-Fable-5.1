@@ -167,6 +167,9 @@ namespace Shared
 
         void AfterRestart()
         {
+            // Lift the rebuilt title the same way the first one was lifted, so -autoRestart exercises the whole
+            // loop (restart -> title -> dive -> play) rather than stopping at the title screen.
+            if (autoStart >= 0f) { Ctx.Set("autoStart", true); Debug.Log("[Harness] autoStart again after restart"); }
             var town = Ctx.Get<object>("town"); var player = Ctx.Get<Component>("player"); var boss = Ctx.Get<Component>("bossBrain");
             int houses = 0; var root = GameObject.Find("Town"); if (root != null) houses = root.transform.childCount;
             Debug.Log("[Harness] after restart: town=" + (town != null) + " player=" + (player != null) + " boss=" + (boss != null) + " townChildren=" + houses + " timeScale=" + Time.timeScale + " -> " + ((town != null && player != null && boss != null) ? "RESTART_OK" : "RESTART_FAIL"));
