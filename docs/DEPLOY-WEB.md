@@ -1,5 +1,22 @@
 # Deploying the web build
 
+## Live
+
+**https://aot-fable-5-1-production.up.railway.app** - Railway project `aot-fable-5-1`, served by Caddy.
+
+Redeploy after a change with **`tools/deploy-web.sh --build`** (rebuild + ship) or `tools/deploy-web.sh`
+(ship what is already in `builds/webgl`). It prints `DEPLOY_OK <url>` only after Railway reports SUCCESS.
+
+The script stages the build plus a Caddy Dockerfile in a temp directory and deploys *that*, because `builds/`
+is gitignored and `railway up` honours .gitignore - deploying from inside the repo uploads nothing. Caddy sets
+`Content-Encoding: gzip` on the `.unityweb` files so the browser inflates them natively instead of falling back
+to Unity's JavaScript decompressor.
+
+Project/service/environment ids are defaults in the script; override with `AOT_RAILWAY_PROJECT`,
+`AOT_RAILWAY_SERVICE`, `AOT_RAILWAY_ENV`.
+
+## Any other host
+
 `tools/build.sh webgl` writes a **self-contained static site** to `builds/webgl/`. There is no server code,
 no build step at the host, and no environment configuration. Upload the folder, serve it, done.
 
