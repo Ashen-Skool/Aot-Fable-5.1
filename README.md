@@ -252,20 +252,16 @@ sometimes leave a stale editor holding the project lock after an interrupted com
 3. `docs/PROMPTS.md` — the exact builder, critic and smoother prompts.
 4. `docs/HARNESS.md` — how to capture, build, test (exists once lane/harness merges).
 
-## Where things run
+## Local build environment
 
-- **Everything heavy runs on the Mac Studio**, reached by `ssh studio` (alias in the
-  user's SSH config; works over Tailscale from any network). The MacBook only
-  orchestrates. Never print IPs or hostnames in replies: the user streams.
-- Studio clone: `~/dev/aot-fable-5.1` (director's, stays on main). Builders use
-  worktrees at `~/dev/lanes/<lane>`. The Studio can push to GitHub via gh.
-- Unity 6000.3.20f1: `/Applications/Unity/Hub/Editor/6000.3.20f1/Unity.app/Contents/MacOS/Unity`.
-  Licensed through Unity Hub sign-in on the Studio. If batch mode says
-  "No valid Unity Editor license", ask the user to re-sign into Hub on the Studio.
-  WebGL module installed. Probe WebGL build: 40 s, 5 MB.
-- Blender 5.2 at `/opt/homebrew/bin/blender`. yt-dlp, ffmpeg, node 26, python3 present.
-- Secrets: `~/.claude/secrets/meshy.key` on both machines (Meshy API, ~1000 credits).
-  Higgsfield CLI is authenticated on the MacBook (`higgsfield account status`).
+- Build locally or on a development machine you control. Keep remote access details,
+  SSH aliases, hostnames and private network configuration outside this repository.
+- Keep each contributor's clone and worktrees in a local directory of their choosing.
+- Use Unity 6000.3.20f1 with the WebGL module, licensed through Unity Hub.
+  If batch mode reports an invalid license, sign into Unity Hub on the build machine.
+- The asset tools use Blender 5.2, yt-dlp, ffmpeg, Node.js 26 and Python 3.
+- Configure Meshy and Higgsfield credentials privately on the machine running those
+  tools. Keep credentials and account details out of source control and shared logs.
 
 ## State at handoff (2026-09-01)
 
