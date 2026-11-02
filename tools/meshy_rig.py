@@ -5,7 +5,17 @@ Downloads rigged GLB/FBX + free walk/run + each requested clip as <clip>.glb. Ne
 import sys, os, json, time, urllib.request, pathlib
 task = json.load(open(sys.argv[1])); out = pathlib.Path(sys.argv[2]); H = float(sys.argv[3])
 clips = [c.split("=") for c in sys.argv[4:]]
-key = open(os.path.expanduser("~/.claude/secrets/meshy.key")).read().strip()
+key = os.environ.get("MESHY_API_KEY", "").strip()
+if not key:
+    key_file = os.environ.get("MESHY_API_KEY_FILE", "").strip()
+    if not key_file:
+        raise SystemExit("Configure MESHY_API_KEY or MESHY_API_KEY_FILE before running this tool.")
+    try:
+        key = pathlib.Path(key_file).expanduser().read_text().strip()
+    except (OSError, UnicodeError, RuntimeError, ValueError):
+        raise SystemExit("Unable to read the configured Meshy credential file.") from None
+    if not key:
+        raise SystemExit("The configured Meshy credential is empty.")
 Hd = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}; B = "https://api.meshy.ai"
 def call(m, p, body=None):
     r = urllib.request.Request(B+p, method=m, headers=Hd, data=json.dumps(body).encode() if body else None)

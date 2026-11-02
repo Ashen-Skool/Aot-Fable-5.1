@@ -16,3 +16,14 @@ assets/characters/*/rig/drawsheathe/
 assets/characters/*/rig/runsheet/
 assets/characters/*/rig/rigged.fbx
 unity/mono_crash*.json
+
+# Local credentials and environment configuration
+.env
+.env.*
+!.env.example
+secrets/
+.credentials*
+.ssh/
+.aws/
+*.pem
+*.key

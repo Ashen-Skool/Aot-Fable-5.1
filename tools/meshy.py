@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Image -> 3D via Meshy. usage: meshy.py <image.png> <out-dir> [--polycount N] [--pose t-pose|a-pose]
-Reads the key from ~/.claude/secrets/meshy.key. Never prints the key."""
+Reads MESHY_API_KEY or the file configured by MESHY_API_KEY_FILE. Never prints the key."""
 import sys, os, json, time, base64, urllib.request, argparse, pathlib
 ap = argparse.ArgumentParser()
 ap.add_argument("image"); ap.add_argument("out")
@@ -8,7 +8,17 @@ ap.add_argument("--polycount", type=int, default=30000)
 ap.add_argument("--pose", default="a-pose")
 ap.add_argument("--no-texture", action="store_true")
 a = ap.parse_args()
-key = open(os.path.expanduser("~/.claude/secrets/meshy.key")).read().strip()
+key = os.environ.get("MESHY_API_KEY", "").strip()
+if not key:
+    key_file = os.environ.get("MESHY_API_KEY_FILE", "").strip()
+    if not key_file:
+        raise SystemExit("Configure MESHY_API_KEY or MESHY_API_KEY_FILE before running this tool.")
+    try:
+        key = pathlib.Path(key_file).expanduser().read_text().strip()
+    except (OSError, UnicodeError, RuntimeError, ValueError):
+        raise SystemExit("Unable to read the configured Meshy credential file.") from None
+    if not key:
+        raise SystemExit("The configured Meshy credential is empty.")
 H = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
 B = "https://api.meshy.ai"
 def call(method, path, body=None):

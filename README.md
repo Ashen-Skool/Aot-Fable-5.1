@@ -260,8 +260,10 @@ sometimes leave a stale editor holding the project lock after an interrupted com
 - Use Unity 6000.3.20f1 with the WebGL module, licensed through Unity Hub.
   If batch mode reports an invalid license, sign into Unity Hub on the build machine.
 - The asset tools use Blender 5.2, yt-dlp, ffmpeg, Node.js 26 and Python 3.
-- Configure Meshy and Higgsfield credentials privately on the machine running those
-  tools. Keep credentials and account details out of source control and shared logs.
+- Configure `MESHY_API_KEY` or `MESHY_API_KEY_FILE` through local secret management
+  before running the Meshy tools. The latter names a local credential file of your
+  choosing. Configure Higgsfield authentication locally. Keep credentials and account
+  details out of source control and shared logs.
 
 ## State at handoff (2026-09-01)
 
